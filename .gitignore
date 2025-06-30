@@ -383,7 +383,6 @@ $RECYCLE.BIN/
 .nfs*
 
 # PWA POS Shop - Server Files (exclude old server directory)
-server/
 server-old/
 backend-old/
 
@@ -414,6 +413,5 @@ public/images/banners/*
 !public/images/banners/.gitkeep
 
 # PWA POS Shop - License and Security
-license-server/
 *.license
 api-keys.json
