@@ -1,0 +1,464 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import admin styles */
+@import './styles/admin.css';
+
+@layer base {
+  :root {
+    /* Design System Variables */
+    --color-primary: #2563eb;
+    --color-secondary: #64748b;
+    --color-success: #16a34a;
+    --color-warning: #d97706;
+    --color-danger: #dc2626;
+    --color-background: #f9fafb;
+
+    /* Typography Variables */
+    --font-family: 'Inter', system-ui, sans-serif;
+    --font-size-heading: 24px;
+    --font-size-body: 16px;
+    --font-size-small: 14px;
+    --font-size-button: 14px;
+    --font-weight: 500;
+
+    /* Layout Variables */
+    --border-radius: 8px;
+    --card-padding: 24px;
+    --button-padding: 12px;
+  }
+
+  html {
+    font-family: var(--font-family);
+  }
+
+  body {
+    background-color: var(--color-background);
+    @apply text-gray-900;
+    font-size: var(--font-size-body);
+    font-weight: var(--font-weight);
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    border-radius: var(--border-radius);
+    padding: var(--button-padding) calc(var(--button-padding) * 1.5);
+    font-size: var(--font-size-button);
+    font-weight: var(--font-weight);
+  }
+
+  .btn-primary {
+    @apply btn text-white;
+    background-color: var(--color-primary);
+  }
+
+  .btn-primary:hover {
+    filter: brightness(0.9);
+  }
+
+  .btn-secondary {
+    @apply btn text-gray-900;
+    background-color: var(--color-secondary);
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    filter: brightness(0.9);
+  }
+
+  .btn-success {
+    @apply btn text-white;
+    background-color: var(--color-success);
+  }
+
+  .btn-success:hover {
+    filter: brightness(0.9);
+  }
+
+  .btn-danger {
+    @apply btn text-white;
+    background-color: var(--color-danger);
+  }
+
+  .btn-danger:hover {
+    filter: brightness(0.9);
+  }
+
+  .btn-outline {
+    @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .card {
+    @apply bg-white shadow-card border border-gray-100 overflow-hidden;
+    border-radius: var(--border-radius);
+    padding: var(--card-padding);
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover transition-shadow duration-200;
+  }
+  
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-glass;
+  }
+
+  .input {
+    @apply block w-full border border-gray-300 placeholder-gray-400 focus:outline-none focus:ring-1;
+    border-radius: var(--border-radius);
+    padding: calc(var(--button-padding) * 0.75) var(--button-padding);
+    font-size: var(--font-size-body);
+    border-color: var(--color-primary);
+  }
+
+  .input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
+  
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 font-medium;
+    border-radius: calc(var(--border-radius) * 2);
+    font-size: var(--font-size-small);
+  }
+
+  .badge-primary {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    color: var(--color-primary);
+  }
+
+  .badge-success {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--color-success) 20%, transparent);
+    color: var(--color-success);
+  }
+
+  .badge-warning {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--color-warning) 20%, transparent);
+    color: var(--color-warning);
+  }
+
+  .badge-danger {
+    @apply badge;
+    background-color: color-mix(in srgb, var(--color-danger) 20%, transparent);
+    color: var(--color-danger);
+  }
+
+  /* Admin Panel Specific Styles */
+  .admin-header {
+    font-size: var(--font-size-heading);
+    font-weight: var(--font-weight);
+    color: var(--color-primary);
+  }
+
+  .admin-card {
+    @apply card;
+    border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+
+  .admin-table {
+    border-radius: var(--border-radius);
+  }
+
+  .admin-table th {
+    background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight);
+  }
+
+  .admin-button {
+    @apply btn-primary;
+  }
+
+  .admin-button-secondary {
+    @apply btn-outline;
+  }
+  
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+  
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+  
+  .slide-up-enter-active {
+    transition: all 0.3s ease-out;
+  }
+  
+  .slide-up-leave-active {
+    transition: all 0.3s ease-in;
+  }
+  
+  .slide-up-enter-from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  
+  .slide-up-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Mobile Bottom Navigation Support */
+@media (max-width: 767px) {
+  /* Add bottom padding to main content to prevent overlap with bottom nav */
+  main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Hide desktop footer on mobile to save space */
+  footer {
+    display: none;
+  }
+
+  /* Mobile-friendly touch targets */
+  button, .btn, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Mobile-optimized cards */
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  /* Mobile product grid */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* Mobile Bottom Navigation Support */
+@media (max-width: 767px) {
+  /* Add bottom padding to main content to prevent overlap with bottom nav */
+  main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
+  /* Hide desktop footer on mobile to save space */
+  footer {
+    display: none;
+  }
+
+  /* Ensure proper spacing for mobile content */
+  .container {
+    padding-bottom: 1rem;
+  }
+
+  /* Mobile-friendly touch targets */
+  button, .btn, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Larger text for mobile readability */
+  body {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  /* Mobile-optimized cards */
+  .card {
+    margin-bottom: 1rem;
+    border-radius: 0.75rem;
+  }
+
+  /* Mobile header adjustments */
+  .mobile-header {
+    padding: 0.75rem 1rem;
+  }
+
+  /* Mobile product grid */
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* Mobile cart adjustments */
+  .cart-item {
+    padding: 0.75rem;
+  }
+
+  /* Mobile form improvements */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-input {
+    padding: 0.875rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Dark mode support */
+.dark {
+  /* Dark mode color variables */
+  --color-background: #111827;
+  --color-primary: #3b82f6;
+  --color-secondary: #6b7280;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+.dark body {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+.dark .card {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark .btn-outline {
+  @apply border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700;
+}
+
+.dark .admin-container {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+.dark .admin-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.dark .admin-table td {
+  border-color: #374151;
+}
+
+.dark .admin-input {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+/* Dark mode mobile nav */
+.dark .mobile-nav-bar {
+  background: rgba(31, 41, 55, 0.95);
+  border-color: #374151;
+}
+
+.dark .mobile-menu {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+/* Dark mode header */
+.dark header {
+  @apply bg-gray-800 border-gray-700;
+}
+
+.dark header h1 {
+  @apply text-gray-100;
+}
+
+.dark header p {
+  @apply text-gray-300;
+}
+
+/* Dark mode forms */
+.dark input,
+.dark textarea,
+.dark select {
+  @apply bg-gray-800 border-gray-600 text-gray-100;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  @apply border-primary-500 ring-primary-500;
+}
+
+/* Dark mode modals */
+.dark .modal-content {
+  @apply bg-gray-800 border-gray-700;
+}
+
+/* Dark mode notifications */
+.dark .notification {
+  @apply bg-gray-800 border-gray-700 text-gray-100;
+}
+
+@media (prefers-color-scheme: dark) {
+  .admin-container {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+
+  .admin-card {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  .admin-table td {
+    border-color: #374151;
+  }
+
+  .admin-input {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+
+  /* Dark mode mobile nav */
+  .mobile-nav-bar {
+    background: rgba(31, 41, 55, 0.95);
+    border-color: #374151;
+  }
+
+  .mobile-menu {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+}

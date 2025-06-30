@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Category {
+  id           String    @id @default(cuid())
+  name         String
+  display_name String
+  description  String?
+  image_url    String?
+  sort_order   Int       @default(0)
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  // Relations
+  products     Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                String   @id @default(cuid())
+  poster_product_id String?  @unique // Link to Poster POS
+  category_id       String
+  name              String
+  display_name      String
+  description       String?
+  price             Float
+  original_price    Float?   // For discounts
+  image_url         String?
+  display_image_url String?
+  sort_order        Int      @default(0)
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  inventory         ProductInventory[]
+  cart_items        CartItem[]
+
+  @@map("products")
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  poster_id   String?  @unique // Link to Poster POS storage
+  name        String
+  address     String?
+  phone       String?
+  latitude    Float?
+  longitude   Float?
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  inventory   ProductInventory[]
+  orders      Order[]
+
+  @@map("branches")
+}
+
+model ProductInventory {
+  id         String   @id @default(cuid())
+  product_id String
+  branch_id  String
+  quantity   Float    @default(0)
+  unit       String   @default("pcs")
+  min_stock  Float?   // Minimum stock alert
+  max_stock  Float?   // Maximum stock capacity
+  updated_at DateTime @updatedAt
+
+  // Relations
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  branch     Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, branch_id])
+  @@map("product_inventory")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?  @unique
+  phone      String?  @unique
+  address    String?
+  latitude   Float?
+  longitude  Float?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  orders     Order[]
+
+  @@map("customers")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  customer_id     String?
+  branch_id       String
+  order_number    String      @unique
+  status          OrderStatus @default(PENDING)
+  fulfillment     FulfillmentType
+  total_amount    Float
+  delivery_fee    Float       @default(0)
+  delivery_address String?
+  delivery_lat    Float?
+  delivery_lng    Float?
+  notes           String?
+  poster_order_id String?     // Link to Poster POS order
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  // Relations
+  customer        Customer?   @relation(fields: [customer_id], references: [id])
+  branch          Branch      @relation(fields: [branch_id], references: [id])
+  items           OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  order_id   String
+  product_id String
+  quantity   Int
+  unit_price Float
+  total_price Float
+  created_at DateTime @default(now())
+
+  // Relations
+  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  session_id String   // Browser session or user ID
+  product_id String
+  quantity   Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, product_id])
+  @@map("cart_items")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum FulfillmentType {
+  PICKUP
+  DELIVERY
+}
