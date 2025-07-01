@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id                 String    @id @default(cuid())
+  poster_category_id String?   @unique
+  name               String
+  display_name       String
+  description        String?
+  image_url          String?
+  sort_order         Int       @default(0)
+  is_active          Boolean   @default(true)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  products           Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                String             @id @default(cuid())
+  poster_product_id String?            @unique
+  ingredient_id     String?
+  category_id       String
+  name              String
+  display_name      String
+  description       String?
+  price             Float
+  original_price    Float?
+  image_url         String?
+  display_image_url String?
+  sort_order        Int                @default(0)
+  is_active         Boolean            @default(true)
+  requires_bottles  Boolean            @default(false)
+  attributes        String?            // JSON string for product attributes like alcohol%, IBU, density, etc.
+  // Custom quantity system for weight-based products
+  custom_quantity   Float?             // Custom selling quantity (e.g., 0.05 for 50g, 0.5 for 500ml)
+  custom_unit       String?            // Display unit (e.g., "г", "мл", "шт")
+  quantity_step     Float?             // Step for quantity increase (e.g., 0.5 for beer, 0.05 for snacks)
+  min_quantity      Float?             // Minimum order quantity
+  max_quantity      Float?             // Maximum order quantity
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  cart_items        CartItem[]
+  inventory         ProductInventory[]
+  category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model Branch {
+  id                 String             @id @default(cuid())
+  poster_id          String?            @unique
+  name               String
+  address            String?
+  phone              String?
+  email              String?
+  working_hours      String?
+  latitude           Float?
+  longitude          Float?
+  delivery_available Boolean            @default(true)
+  pickup_available   Boolean            @default(true)
+  is_active          Boolean            @default(true)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+  orders             Order[]
+  inventory          ProductInventory[]
+
+  @@map("branches")
+}
+
+model ProductInventory {
+  id         String   @id @default(cuid())
+  product_id String
+  branch_id  String
+  quantity   Float    @default(0)
+  unit       String   @default("pcs")
+  min_stock  Float?
+  max_stock  Float?
+  updated_at DateTime @updatedAt
+  branch     Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, branch_id])
+  @@map("product_inventory")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?  @unique
+  phone      String?  @unique
+  address    String?
+  latitude   Float?
+  longitude  Float?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  orders     Order[]
+
+  @@map("customers")
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  customer_id      String?
+  branch_id        String
+  order_number     String      @unique
+  status           String      @default("PENDING")
+  fulfillment      String
+  total_amount     Float
+  delivery_fee     Float       @default(0)
+  delivery_address String?
+  delivery_lat     Float?
+  delivery_lng     Float?
+  notes            String?
+  poster_order_id  String?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+  items            OrderItem[]
+  branch           Branch      @relation(fields: [branch_id], references: [id])
+  customer         Customer?   @relation(fields: [customer_id], references: [id])
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  order_id    String
+  product_id  String
+  quantity    Int
+  unit_price  Float
+  total_price Float
+  created_at  DateTime @default(now())
+  order       Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  session_id String
+  product_id String
+  quantity   Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([session_id, product_id])
+  @@map("cart_items")
+}
+
+model License {
+  id          String   @id @default(cuid())
+  license_key String   @unique
+  domain      String?
+  plan        String   // 'monthly' or 'yearly'
+  status      String   @default("pending") // 'pending', 'active', 'expired', 'suspended'
+  features    String   @default("[\"all\"]") // JSON array of enabled features
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+  updated_at  DateTime @updatedAt
+
+  @@map("licenses")
+}
+
+model Banner {
+  id         String   @id @default(cuid())
+  title      String
+  subtitle   String?
+  image_url  String?
+  link_url   String?
+  link_text  String?
+  is_active  Boolean  @default(true)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("banners")
+}
