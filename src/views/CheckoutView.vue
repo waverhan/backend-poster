@@ -586,10 +586,6 @@ const validateInventoryOnLoad = async () => {
 const getItemInventoryStatus = (item) => {
   if (!inventoryValidationResult.value) return 'unknown'
 
-  ),
-    adjusted_items: inventoryValidationResult.value.adjustedItems.map(i => ({ id: i.id || i.product_id, name: i.name }))
-  })
-
   // Try both id and product_id fields for matching
   const itemId = item.id || item.product_id
 
@@ -624,7 +620,6 @@ const getAdjustedQuantity = (item) => {
   )
 
   const adjustedQty = adjusted ? adjusted.quantity : item.quantity
-  `)
   return adjustedQty
 }
 

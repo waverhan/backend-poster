@@ -22,7 +22,7 @@ class EmailService {
 
       // Only create transporter if credentials are provided
       if (emailConfig.auth.user && emailConfig.auth.pass) {
-        this.transporter = nodemailer.createTransporter(emailConfig)
+        this.transporter = nodemailer.createTransport(emailConfig)
         this.isConfigured = true
         
       } else {

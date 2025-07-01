@@ -61,6 +61,25 @@ app.use((err, req, res, next) => {
   })
 })
 
+// Health check endpoints
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    service: 'PWA POS Backend'
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    service: 'PWA POS Backend API'
+  });
+});
+
 // 404 handler for API routes only
 app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API route not found' })

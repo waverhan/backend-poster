@@ -75,12 +75,12 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# API proxy for development (optional)
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://your-backend-api.com/api/:splat"
-#   status = 200
-#   force = true
+# API proxy to backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://your-backend-url.railway.app/api/:splat"
+  status = 200
+  force = true
 
 # Environment-specific redirects
 [context.production]

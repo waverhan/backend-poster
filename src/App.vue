@@ -17,7 +17,9 @@
       <main class="flex-1">
         <RouterView v-slot="{ Component, route }">
           <Transition name="fade" mode="out-in">
-            <component :is="Component" :key="route.path" />
+            <div :key="route.path" class="w-full">
+              <component :is="Component" />
+            </div>
           </Transition>
         </RouterView>
       </main>
@@ -126,11 +128,16 @@ onUnmounted(() => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
 }
 </style>
