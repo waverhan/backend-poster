@@ -15,6 +15,7 @@ import siteConfigRouter from './routes/siteConfig.js'
 import licenseRouter from './routes/license.js'
 import messagingRouter from './routes/messaging.js'
 import bannersRouter from './routes/banners.js'
+import inventoryRouter from './routes/inventory.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -51,6 +52,7 @@ app.use('/api/site-config', siteConfigRouter)
 app.use('/api/license', licenseRouter)
 app.use('/api/messaging', messagingRouter)
 app.use('/api/banners', bannersRouter)
+app.use('/api/inventory', inventoryRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

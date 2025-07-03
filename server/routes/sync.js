@@ -3,7 +3,7 @@ import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { createCategory, createProduct, createBranch, updateInventory, prisma } from '../services/database.js'
+import { createCategory, createProduct, createBranch, updateInventory, createSyncLog, updateSyncLog, prisma } from '../services/database.js'
 import { imageService } from '../services/imageService.js'
 
 const __filename = fileURLToPath(import.meta.url)

@@ -379,6 +379,8 @@ export async function updateBranch(id, data) {
 
 // Inventory
 export async function updateInventory(productId, branchId, quantity, unit) {
+  const now = new Date()
+
   await prisma.productInventory.upsert({
     where: {
       product_id_branch_id: {
@@ -388,13 +390,45 @@ export async function updateInventory(productId, branchId, quantity, unit) {
     },
     update: {
       quantity,
-      unit
+      unit,
+      last_updated: now,
+      last_sync_at: now
     },
     create: {
       product_id: productId,
       branch_id: branchId,
       quantity,
-      unit
+      unit,
+      last_updated: now,
+      last_sync_at: now
+    }
+  })
+}
+
+// Sync Logs
+export async function createSyncLog(syncType, status, totalRecords = null, errorMessage = null, details = null) {
+  return await prisma.syncLog.create({
+    data: {
+      sync_type: syncType,
+      status: status,
+      total_records: totalRecords,
+      error_message: errorMessage,
+      details: details,
+      started_at: new Date(),
+      completed_at: status === 'completed' || status === 'failed' ? new Date() : null
+    }
+  })
+}
+
+export async function updateSyncLog(syncLogId, status, totalRecords = null, errorMessage = null, details = null) {
+  return await prisma.syncLog.update({
+    where: { id: syncLogId },
+    data: {
+      status: status,
+      total_records: totalRecords,
+      error_message: errorMessage,
+      details: details,
+      completed_at: status === 'completed' || status === 'failed' ? new Date() : null
     }
   })
 }

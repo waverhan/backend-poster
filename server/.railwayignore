@@ -1,0 +1,26 @@
+# Frontend files (exclude from backend deployment)
+../src/
+../dist/
+../public/
+../vite.config.js
+../index.html
+../capacitor.config.ts
+../ionic.config.json
+../package.json
+../package-lock.json
+../.env
+../node_modules/
+
+# Development files
+.git/
+.vscode/
+.idea/
+*.log
+*.tmp
+*.temp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+dev.db

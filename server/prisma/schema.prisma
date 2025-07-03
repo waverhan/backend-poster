@@ -76,16 +76,19 @@ model Branch {
 }
 
 model ProductInventory {
-  id         String   @id @default(cuid())
-  product_id String
-  branch_id  String
-  quantity   Float    @default(0)
-  unit       String   @default("pcs")
-  min_stock  Float?
-  max_stock  Float?
-  updated_at DateTime @updatedAt
-  branch     Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  product_id   String
+  branch_id    String
+  quantity     Float    @default(0)
+  unit         String   @default("pcs")
+  min_stock    Float?
+  max_stock    Float?
+  last_updated DateTime @default(now())
+  last_sync_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  branch       Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  product      Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
 
   @@unique([product_id, branch_id])
   @@map("product_inventory")
@@ -182,4 +185,18 @@ model Banner {
   updated_at DateTime @updatedAt
 
   @@map("banners")
+}
+
+model SyncLog {
+  id            String    @id @default(cuid())
+  sync_type     String    // 'inventory', 'products', 'categories'
+  status        String    // 'started', 'completed', 'failed'
+  total_records Int?
+  error_message String?
+  details       String?   // JSON string with detailed results
+  started_at    DateTime  @default(now())
+  completed_at  DateTime?
+  created_at    DateTime  @default(now())
+
+  @@map("sync_logs")
 }
