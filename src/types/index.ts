@@ -427,6 +427,7 @@ export interface SiteConfig {
   enable_ai_chat: boolean
   enable_recommendations: boolean
   enable_notifications: boolean
+  enable_dark_mode: boolean
 
   // Theme
   primary_color: string

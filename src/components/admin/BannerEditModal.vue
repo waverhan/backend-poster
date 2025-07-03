@@ -224,7 +224,7 @@ const currentImageUrl = computed(() => {
   if (props.banner.image_url.startsWith('http')) {
     return props.banner.image_url
   }
-  return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}${props.banner.image_url}`
+  return `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}${props.banner.image_url}`
 })
 
 const resetForm = () => {

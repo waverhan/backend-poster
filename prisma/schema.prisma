@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Category {
@@ -172,4 +172,36 @@ enum OrderStatus {
 enum FulfillmentType {
   PICKUP
   DELIVERY
+}
+
+model ProductInventory {
+  id           String   @id @default(cuid())
+  product_id   String
+  branch_id    String
+  stock_level  Float    @default(0)
+  last_updated DateTime @default(now())
+  last_sync_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  product      Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  branch       Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, branch_id])
+  @@map("product_inventory")
+}
+
+model SyncLog {
+  id            String    @id @default(cuid())
+  sync_type     String    // 'inventory', 'products', 'categories'
+  status        String    // 'started', 'completed', 'failed'
+  total_records Int?
+  error_message String?
+  details       String?   // JSON string with detailed results
+  started_at    DateTime  @default(now())
+  completed_at  DateTime?
+  created_at    DateTime  @default(now())
+
+  @@map("sync_logs")
 }

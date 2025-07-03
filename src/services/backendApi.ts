@@ -1,8 +1,8 @@
 import type { Category, Product, Branch } from '../types'
 import type { Order, OrderFormData, OrderItem } from '@/stores/orders'
 
-const API_BASE_URL = 'http://localhost:3001/api'
-const BACKEND_BASE_URL = 'http://localhost:3001'
+const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 
 class BackendApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -266,8 +266,9 @@ class BackendApiService {
   // Get fallback Poster image URL
   getPosterImageUrl(posterProductId: string): string {
     if (!posterProductId) return ''
-    // Try the most common format first
-    return `https://joinposter.com/upload/pos_cdb_214175/menu/product_1679039883_${posterProductId}.png`
+    // Use the actual Poster API format - we'll need to fetch this from the API
+    // For now, return a placeholder that will trigger the image error handler
+    return `https://joinposter.com/upload/pos_cdb_214175/menu/product_placeholder_${posterProductId}.jpeg`
   }
 }
 

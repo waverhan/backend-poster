@@ -629,6 +629,11 @@
         <BannerManagement />
       </div>
 
+      <!-- Inventory Status Tab Content -->
+      <div v-if="activeTab === 'inventory'">
+        <InventoryStatus :show-debug-info="true" />
+      </div>
+
       <!-- Analytics Tab Content -->
       <div v-if="activeTab === 'analytics'">
         <RecommendationAnalytics />
@@ -694,6 +699,7 @@ import ProductEditModal from '@/components/ProductEditModal.vue'
 import SiteConfigModal from '@/components/admin/SiteConfigModal.vue'
 import BulkEditModal from '@/components/admin/BulkEditModal.vue'
 import BannerManagement from '@/components/admin/BannerManagement.vue'
+import InventoryStatus from '@/components/inventory/InventoryStatus.vue'
 import RecommendationAnalytics from '@/components/admin/RecommendationAnalytics.vue'
 import LicenseStatus from '@/components/license/LicenseStatus.vue'
 import AdminLogin from '@/components/auth/AdminLogin.vue'
@@ -721,6 +727,7 @@ const tabs = [
   { id: 'categories', name: 'Categories', icon: '📂' },
   { id: 'branches', name: 'Branches', icon: '🏪' },
   { id: 'banners', name: 'Banners', icon: '🎨' },
+  { id: 'inventory', name: 'Inventory Status', icon: '📋' },
   { id: 'analytics', name: 'AI Analytics', icon: '🤖' }
 ]
 
@@ -1330,3 +1337,7 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* Additional styles for inventory status component */
+</style>

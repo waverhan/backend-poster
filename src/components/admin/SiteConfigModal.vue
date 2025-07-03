@@ -485,20 +485,32 @@
               </label>
               <label class="flex items-center space-x-3">
                 <input
-                  v-model="formData.enable_recommendations"
-                  type="checkbox"
-                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span class="text-sm font-medium text-gray-700">Enable Product Recommendations</span>
-              </label>
-              <label class="flex items-center space-x-3">
-                <input
                   v-model="formData.enable_notifications"
                   type="checkbox"
                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <span class="text-sm font-medium text-gray-700">Enable Push Notifications</span>
               </label>
+            </div>
+          </div>
+
+          <!-- UI/UX Settings Section -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              🌙 UI/UX Settings
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label class="flex items-center space-x-3">
+                <input
+                  v-model="formData.enable_dark_mode"
+                  type="checkbox"
+                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span class="text-sm font-medium text-gray-700">Enable Dark Mode Toggle</span>
+              </label>
+              <div class="text-xs text-gray-500 mt-1">
+                Allow users to switch between light and dark themes
+              </div>
             </div>
           </div>
 

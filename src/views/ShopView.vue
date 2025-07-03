@@ -179,27 +179,48 @@
 
         <!-- Categories -->
         <div class="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-8">
-          <div class="card p-6">
-            <div v-if="loading.categories" class="text-center py-8">
-              <div class="spinner w-6 h-6 mx-auto mb-2"></div>
-              <span class="text-gray-600">Loading categories...</span>
+          <div class="px-4 py-3">
+            <div v-if="loading.categories" class="text-center py-4">
+              <div class="spinner w-5 h-5 mx-auto mb-2"></div>
+              <span class="text-gray-600 text-sm">Loading categories...</span>
             </div>
 
-            <div v-else class="flex flex-wrap gap-3">
-              <button
-                v-for="category in categoriesWithProducts"
-                :key="category.id"
-                @click="selectCategory(category)"
-                :class="[
-                  'px-4 py-2 rounded-lg transition-colors flex items-center space-x-2',
-                  selectedCategory?.id === category.id
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                ]"
-              >
-                <span>{{ category.display_name }}</span>
-                <span class="text-xs opacity-75">({{ getCategoryProductCount(category.id) }})</span>
-              </button>
+            <div v-else>
+              <!-- Mobile: Horizontal scrolling single line -->
+              <div class="block md:hidden">
+                <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                  <button
+                    v-for="category in categoriesWithProducts"
+                    :key="category.id"
+                    @click="selectCategory(category)"
+                    :class="[
+                      'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                      selectedCategory?.id === category.id
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ]"
+                  >
+                    {{ category.display_name }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Desktop: Flex wrap with counts -->
+              <div class="hidden md:flex flex-wrap gap-3">
+                <button
+                  v-for="category in categoriesWithProducts"
+                  :key="category.id"
+                  @click="selectCategory(category)"
+                  :class="[
+                    'px-4 py-2 rounded-lg transition-colors flex items-center space-x-2',
+                    selectedCategory?.id === category.id
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  ]"
+                >
+                  <span>{{ category.display_name }}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -832,3 +853,14 @@ onMounted(async () => {
 
 })
 </script>
+
+<style scoped>
+/* Hide scrollbar for mobile categories */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+</style>

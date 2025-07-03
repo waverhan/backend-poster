@@ -556,13 +556,25 @@ const canPlaceOrder = computed(() => {
 const validateInventoryOnLoad = async () => {
   if (cartItems.value.length === 0) return
 
-  const targetBranch = selectedMethod.value?.branch || branchStore.selectedBranch
-  if (!targetBranch) return
+  // For delivery, use the branch from selectedMethod (nearest to delivery address)
+  // For pickup, use the selected pickup branch
+  // Only fall back to branchStore.selectedBranch if no method is selected yet
+  let targetBranch = selectedMethod.value?.branch
 
+  if (!targetBranch) {
+    // If no method selected yet, try to get from branch store as fallback
+    targetBranch = branchStore.selectedBranch
+  }
+
+  if (!targetBranch) {
+    console.warn('⚠️ No target branch available for inventory validation')
+    return
+  }
+
+  console.log('🔍 Validating inventory for branch:', targetBranch.name, 'ID:', targetBranch.id)
   isValidatingInventory.value = true
 
   try {
-    
     const result = await ProductAvailabilityService.checkProductAvailability(
       cartItems.value,
       targetBranch
@@ -571,9 +583,9 @@ const validateInventoryOnLoad = async () => {
     inventoryValidationResult.value = result
 
     if (result.hasUnavailableItems || result.hasAdjustedItems) {
-      
+      console.log('⚠️ Inventory issues detected:', result)
     } else {
-      
+      console.log('✅ All items available in branch:', targetBranch.name)
     }
   } catch (error) {
     console.error('❌ Inventory validation failed on load:', error)
@@ -842,14 +854,22 @@ onMounted(async () => {
 
     // Get location and branch info from stores
     const location = locationStore.userLocation
-    const selectedBranch = branchStore.selectedBranch
+    let targetBranch = branchStore.selectedBranch
 
-    
+    // For delivery, find the nearest branch to the delivery address
+    if (method === 'delivery' && location) {
+      await branchStore.fetchBranches() // Ensure branches are loaded
+      const nearestBranch = branchStore.findNearestBranchByCoords(location.latitude, location.longitude)
+      if (nearestBranch) {
+        targetBranch = nearestBranch
+        console.log('🚚 Using nearest branch for delivery:', nearestBranch.name)
+      }
+    }
 
     selectedMethod.value = {
       method,
       location: method === 'delivery' ? location : undefined,
-      branch: selectedBranch,
+      branch: targetBranch,
       fee
     }
 
@@ -857,8 +877,8 @@ onMounted(async () => {
     customerForm.value.delivery_method = method
     if (method === 'delivery' && location) {
       customerForm.value.delivery_address = location.address || ''
-    } else if (method === 'pickup' && selectedBranch) {
-      customerForm.value.pickup_branch = selectedBranch
+    } else if (method === 'pickup' && targetBranch) {
+      customerForm.value.pickup_branch = targetBranch
     }
 
     
@@ -868,14 +888,22 @@ onMounted(async () => {
       const method = cartStore.deliveryMethod as 'delivery' | 'pickup'
       const fee = cartStore.deliveryFee
       const location = locationStore.userLocation
-      const selectedBranch = branchStore.selectedBranch
+      let targetBranch = branchStore.selectedBranch
 
-      
+      // For delivery, find the nearest branch to the delivery address
+      if (method === 'delivery' && location) {
+        await branchStore.fetchBranches() // Ensure branches are loaded
+        const nearestBranch = branchStore.findNearestBranchByCoords(location.latitude, location.longitude)
+        if (nearestBranch) {
+          targetBranch = nearestBranch
+          console.log('🚚 Using nearest branch for delivery (from cart):', nearestBranch.name)
+        }
+      }
 
       selectedMethod.value = {
         method,
         location: method === 'delivery' ? location : undefined,
-        branch: selectedBranch,
+        branch: targetBranch,
         fee
       }
 

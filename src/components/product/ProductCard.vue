@@ -115,8 +115,7 @@ const emit = defineEmits<Emits>()
 // Stores
 const branchStore = useBranchStore()
 
-// State for image fallback
-const imageError = ref(false)
+// Image error handling is done directly in the onImageError method
 
 // State for branch-specific inventory
 const branchInventory = ref<{
@@ -226,14 +225,11 @@ const formatDisplayPrice = (price: number): string => {
 const imageUrl = computed(() => {
   const primaryImage = props.product.display_image_url || props.product.image_url
 
-  if (!primaryImage) return ''
-
-  // If we've had an error with the local image, try the Poster fallback
-  if (imageError.value && primaryImage.startsWith('/images/')) {
-    return backendApi.getPosterImageUrl(props.product.poster_product_id)
+  if (!primaryImage) {
+    return ''
   }
 
-  // Use the primary image (local or external)
+  // Use the backend API to get the full image URL (same as admin panel)
   return backendApi.getImageUrl(primaryImage)
 })
 
@@ -292,9 +288,8 @@ const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
 
   // If this is a local image that failed, try the Poster fallback
-  if (img.src.includes('/images/products/')) {
-    imageError.value = true
-    // The computed property will automatically update with the fallback URL
+  if (img.src.includes('/images/')) {
+    img.src = backendApi.getPosterImageUrl(props.product.poster_product_id)
   } else {
     // If even the fallback fails, hide the image
     img.style.display = 'none'

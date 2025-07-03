@@ -274,7 +274,7 @@ const getImageUrl = (imageUrl: string) => {
   if (imageUrl.startsWith('http')) {
     return imageUrl
   }
-  return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}${imageUrl}`
+  return `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}${imageUrl}`
 }
 
 const handleImageError = (event: Event) => {

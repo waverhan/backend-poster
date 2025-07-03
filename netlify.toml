@@ -75,12 +75,26 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# API proxy to backend
+# API proxy to backend (must be first redirect)
 [[redirects]]
   from = "/api/*"
-  to = "https://your-backend-url.railway.app/api/:splat"
+  to = "https://backend-api-production-b3a0.up.railway.app/api/:splat"
   status = 200
   force = true
+  headers = {X-From = "Netlify"}
+
+# Images proxy to backend
+[[redirects]]
+  from = "/images/*"
+  to = "https://backend-api-production-b3a0.up.railway.app/images/:splat"
+  status = 200
+  force = true
+
+# SPA fallback (must be last)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
 # Environment-specific redirects
 [context.production]
@@ -91,3 +105,10 @@
 
 [context.branch-deploy]
   command = "npm run build"
+
+# Functions configuration
+[functions]
+  directory = "netlify/functions"
+
+# Note: Scheduled functions can be added later when needed
+# For now, inventory sync will be triggered manually or via external cron

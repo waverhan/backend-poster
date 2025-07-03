@@ -47,7 +47,7 @@
           </div>
 
           <!-- Theme Toggle -->
-          <ThemeToggle />
+          <ThemeToggle v-if="siteConfigStore.currentConfig.enable_dark_mode" />
 
           <!-- Language Switcher -->
           <LanguageSwitcher />
