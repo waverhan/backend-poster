@@ -200,3 +200,68 @@ model SyncLog {
 
   @@map("sync_logs")
 }
+
+model SiteConfig {
+  id                        String  @id @default(cuid())
+
+  // Branding
+  site_name                 String  @default("Opillia Shop")
+  site_description          String  @default("Найкращі напої та делікатеси з доставкою по Києву")
+  logo_url                  String  @default("/logo.png")
+  favicon_url               String  @default("/favicon.ico")
+
+  // SEO
+  seo_title                 String  @default("Opillia Shop - Найкращі напої та делікатеси")
+  seo_description           String  @default("Замовляйте найкращі напої, сири, м'ясо та делікатеси з доставкою по Києву")
+  seo_keywords              String  @default("напої, сир, м'ясо, делікатеси, доставка, Київ")
+  og_image_url              String  @default("/og-image.jpg")
+
+  // Homepage
+  homepage_type             String  @default("landing") // 'landing' or 'shop'
+  hero_title                String  @default("Найкращі напої та делікатеси")
+  hero_subtitle             String  @default("Швидка доставка свіжих продуктів по Києву")
+  hero_banner_url           String  @default("/hero-banner.jpg")
+  hero_cta_text             String  @default("Почати покупки")
+
+  // Contact & Footer
+  company_name              String  @default("ТОВ \"Опілля Шоп\"")
+  company_address           String  @default("вул. Хрещатик, 1, Київ, 01001")
+  company_phone             String  @default("+38 (097) 324 46 68")
+  company_email             String  @default("info@opillia.com.ua")
+  company_website           String  @default("https://opillia.com.ua")
+
+  // Social Media
+  facebook_url              String?
+  instagram_url             String?
+  telegram_url              String?
+  viber_url                 String?
+
+  // Business Settings
+  currency                  String  @default("UAH")
+  timezone                  String  @default("Europe/Kiev")
+  language                  String  @default("uk")
+  min_order_amount          Float   @default(300)
+
+  // Delivery Pricing
+  delivery_base_fee         Float   @default(99)
+  delivery_base_distance_km Float   @default(2)
+  delivery_extra_fee_per_km Float   @default(30)
+  free_delivery_threshold   Float   @default(1000)
+
+  // Features
+  enable_reviews            Boolean @default(true)
+  enable_ai_chat            Boolean @default(true)
+  enable_recommendations    Boolean @default(true)
+  enable_notifications      Boolean @default(true)
+  enable_dark_mode          Boolean @default(true)
+
+  // Theme
+  primary_color             String  @default("#2563eb")
+  secondary_color           String  @default("#64748b")
+  accent_color              String  @default("#f59e0b")
+
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  @@map("site_config")
+}

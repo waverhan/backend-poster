@@ -9,6 +9,7 @@
     "start": "node index.js",
     "cron": "node scripts/setup-cron.js",
     "sync": "node -e \"import('./scripts/setup-cron.js').then(m => m.triggerInventorySync())\"",
+    "migrate:site-config": "node scripts/migrate-site-config.js",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

@@ -5,7 +5,6 @@ const router = express.Router()
 
 // Default site configuration
 const defaultConfig = {
-  id: 'default',
   // Branding
   site_name: 'Opillia Shop',
   site_description: 'Найкращі напої та делікатеси з доставкою по Києву',
@@ -55,26 +54,34 @@ const defaultConfig = {
   enable_ai_chat: true,
   enable_recommendations: true,
   enable_notifications: true,
+  enable_dark_mode: true,
 
   // Theme
   primary_color: '#2563eb',
   secondary_color: '#64748b',
-  accent_color: '#f59e0b',
-
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString()
+  accent_color: '#f59e0b'
 }
 
 // GET /api/site-config
 router.get('/', async (req, res) => {
   try {
-    
+    console.log('📋 Fetching site configuration...')
 
-    // For now, just return the default config
-    // In the future, this could be stored in database
-    res.json(defaultConfig)
+    // Try to get existing config from database
+    let config = await prisma.siteConfig.findFirst()
+
+    if (!config) {
+      console.log('📝 No config found, creating default configuration...')
+      // Create default config if none exists
+      config = await prisma.siteConfig.create({
+        data: defaultConfig
+      })
+    }
+
+    console.log('✅ Site configuration fetched successfully')
+    res.json(config)
   } catch (error) {
-    console.error('Error fetching site config:', error)
+    console.error('❌ Error fetching site config:', error)
     res.status(500).json({ error: 'Failed to fetch site configuration' })
   }
 })
@@ -82,20 +89,31 @@ router.get('/', async (req, res) => {
 // PUT /api/site-config
 router.put('/', async (req, res) => {
   try {
-    
+    console.log('💾 Updating site configuration...', req.body)
 
-    // For now, just return the updated config
-    // In the future, this could be stored in database
-    const updatedConfig = {
-      ...defaultConfig,
-      ...req.body,
-      updated_at: new Date().toISOString()
+    // Get existing config or create default
+    let existingConfig = await prisma.siteConfig.findFirst()
+
+    if (!existingConfig) {
+      console.log('📝 No existing config, creating new one...')
+      existingConfig = await prisma.siteConfig.create({
+        data: defaultConfig
+      })
     }
 
-    
+    // Update the configuration
+    const updatedConfig = await prisma.siteConfig.update({
+      where: { id: existingConfig.id },
+      data: {
+        ...req.body,
+        updated_at: new Date()
+      }
+    })
+
+    console.log('✅ Site configuration updated successfully')
     res.json(updatedConfig)
   } catch (error) {
-    console.error('Error updating site config:', error)
+    console.error('❌ Error updating site config:', error)
     res.status(500).json({ error: 'Failed to update site configuration' })
   }
 })
