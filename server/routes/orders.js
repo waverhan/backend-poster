@@ -308,14 +308,99 @@ router.post('/', async (req, res) => {
       sendViberOrderNotification(transformedOrder)
         .then(result => {
           if (result.success) {
-            
+
           } else {
-            
+
           }
         })
         .catch(error => {
           console.error(`❌ Error sending Viber notification:`, error)
         })
+    }
+
+    // 🚀 AUTOMATICALLY SEND ORDER TO POSTER POS
+    try {
+      console.log('📤 Sending order to Poster POS automatically...')
+
+      // Get products to map to Poster product IDs
+      const productIds = order.items.map(item => item.product_id)
+      const products = await prisma.product.findMany({
+        where: {
+          id: { in: productIds }
+        }
+      })
+
+      // Map order items to Poster format with proper quantity handling
+      const posterProducts = order.items.map(item => {
+        const product = products.find(p => p.id === item.product_id)
+
+        // Calculate the correct quantity for Poster POS
+        let posterQuantity = item.quantity
+
+        // If product has custom quantity system, convert to kg for Poster
+        if (product?.custom_quantity) {
+          posterQuantity = item.quantity * product.custom_quantity
+          console.log(`📏 Converting quantity for ${product.name}: ${item.quantity} units × ${product.custom_quantity}kg = ${posterQuantity}kg`)
+        }
+
+        return {
+          product_id: parseInt(product?.poster_product_id) || parseInt(item.product_id),
+          count: posterQuantity
+        }
+      }).filter(item => item.product_id && !isNaN(item.product_id)) // Only include items with valid Poster product IDs
+
+      if (posterProducts.length > 0) {
+        // Prepare Poster API request according to documentation
+        const posterOrderData = {
+          spot_id: parseInt(order.branch.poster_id) || 1, // Use branch's Poster ID or default to 1
+          phone: order.customer?.phone || '+380000000000',
+          products: posterProducts
+        }
+
+        // Add delivery address if it's a delivery order
+        if (order.fulfillment === 'DELIVERY' && order.delivery_address) {
+          posterOrderData.address = order.delivery_address
+        }
+
+        console.log('📋 Poster order data:', JSON.stringify(posterOrderData, null, 2))
+
+        // Send to Poster POS API
+        const posterResponse = await axios.post(
+          `${POSTER_API_BASE}/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`,
+          posterOrderData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000 // 10 second timeout
+          }
+        )
+
+        console.log('✅ Poster POS response:', posterResponse.data)
+
+        // Update order with Poster order ID
+        if (posterResponse.data && posterResponse.data.response) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              poster_order_id: posterResponse.data.response.toString(),
+              status: 'CONFIRMED' // Update status to confirmed after successful Poster integration
+            }
+          })
+
+          // Update the transformed order status
+          transformedOrder.status = 'confirmed'
+
+          console.log(`🎉 Order successfully sent to Poster POS! Poster Order ID: ${posterResponse.data.response}`)
+        }
+      } else {
+        console.log('⚠️ No valid Poster product IDs found, skipping Poster integration')
+      }
+    } catch (posterError) {
+      console.error('❌ Failed to send order to Poster POS:', posterError.message)
+      console.error('📋 Poster error details:', posterError.response?.data || posterError)
+      // Don't fail the entire order creation if Poster integration fails
+      // The order is still created in our system
     }
 
     res.status(201).json(transformedOrder)
@@ -462,10 +547,10 @@ router.post('/:id/send-to-poster', async (req, res) => {
       }
 
       return {
-        product_id: product?.poster_product_id || item.product_id,
+        product_id: parseInt(product?.poster_product_id) || parseInt(item.product_id),
         count: posterQuantity
       }
-    }).filter(item => item.product_id) // Only include items with valid Poster product IDs
+    }).filter(item => item.product_id && !isNaN(item.product_id)) // Only include items with valid Poster product IDs
 
     if (posterProducts.length === 0) {
       return res.status(400).json({
@@ -474,9 +559,9 @@ router.post('/:id/send-to-poster', async (req, res) => {
       })
     }
 
-    // Prepare Poster API request
+    // Prepare Poster API request according to documentation
     const posterOrderData = {
-      spot_id: order.branch.poster_id || 1, // Use branch's Poster ID or default to 1
+      spot_id: parseInt(order.branch.poster_id) || 1, // Use branch's Poster ID or default to 1
       phone: order.customer?.phone || '+380000000000',
       products: posterProducts
     }
@@ -486,7 +571,7 @@ router.post('/:id/send-to-poster', async (req, res) => {
       posterOrderData.address = order.delivery_address
     }
 
-    
+    console.log('📋 Manual Poster order data:', JSON.stringify(posterOrderData, null, 2))
 
     // Send to Poster POS API
     const posterResponse = await axios.post(
@@ -495,7 +580,8 @@ router.post('/:id/send-to-poster', async (req, res) => {
       {
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 10000 // 10 second timeout
       }
     )
 
@@ -565,6 +651,116 @@ router.post('/send-email', async (req, res) => {
       success: false,
       message: 'Failed to send email',
       error: error.message
+    })
+  }
+})
+
+// GET /api/orders/debug/poster-products - Debug endpoint to check Poster product mappings
+router.get('/debug/poster-products', async (req, res) => {
+  try {
+    console.log('🔍 Checking Poster product mappings...')
+
+    // Get all products with their Poster IDs
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        poster_product_id: true,
+        custom_quantity: true,
+        is_active: true
+      },
+      where: {
+        is_active: true
+      }
+    })
+
+    // Check which products have valid Poster IDs
+    const validPosterProducts = products.filter(p => p.poster_product_id && !isNaN(parseInt(p.poster_product_id)))
+    const invalidPosterProducts = products.filter(p => !p.poster_product_id || isNaN(parseInt(p.poster_product_id)))
+
+    // Test Poster API connection
+    let posterApiStatus = 'unknown'
+    try {
+      const testResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts?token=${POSTER_TOKEN}&type=products`, {
+        timeout: 5000
+      })
+      posterApiStatus = testResponse.status === 200 ? 'connected' : 'error'
+    } catch (apiError) {
+      posterApiStatus = `error: ${apiError.message}`
+    }
+
+    res.json({
+      success: true,
+      poster_api_status: posterApiStatus,
+      total_products: products.length,
+      valid_poster_products: validPosterProducts.length,
+      invalid_poster_products: invalidPosterProducts.length,
+      valid_products: validPosterProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        poster_product_id: p.poster_product_id,
+        custom_quantity: p.custom_quantity
+      })),
+      invalid_products: invalidPosterProducts.map(p => ({
+        id: p.id,
+        name: p.name,
+        poster_product_id: p.poster_product_id || 'missing'
+      }))
+    })
+  } catch (error) {
+    console.error('❌ Error checking Poster products:', error)
+    res.status(500).json({ error: 'Failed to check Poster products' })
+  }
+})
+
+// POST /api/orders/debug/test-poster - Test Poster API with sample order
+router.post('/debug/test-poster', async (req, res) => {
+  try {
+    console.log('🧪 Testing Poster API with sample order...')
+
+    // Create a test order payload according to Poster API documentation
+    const testOrderData = {
+      spot_id: 1, // Default spot
+      phone: '+380680000000', // Test phone number
+      products: [
+        {
+          product_id: 169, // Example from documentation
+          count: 1
+        }
+      ]
+    }
+
+    console.log('📋 Test order data:', JSON.stringify(testOrderData, null, 2))
+
+    // Send to Poster POS API
+    const posterResponse = await axios.post(
+      `${POSTER_API_BASE}/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`,
+      testOrderData,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    )
+
+    console.log('✅ Poster API test response:', posterResponse.data)
+
+    res.json({
+      success: true,
+      message: 'Poster API test successful',
+      poster_response: posterResponse.data,
+      test_order_data: testOrderData
+    })
+  } catch (error) {
+    console.error('❌ Poster API test failed:', error.message)
+    console.error('📋 Error details:', error.response?.data || error)
+
+    res.status(500).json({
+      success: false,
+      error: 'Poster API test failed',
+      message: error.message,
+      poster_error: error.response?.data || null
     })
   }
 })

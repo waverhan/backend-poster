@@ -78,14 +78,8 @@ export const useOrdersStore = defineStore('orders', () => {
       // Send email notification
       await sendOrderConfirmationEmail(order)
 
-      // Send order to Poster POS system
-      try {
-        await backendApi.sendOrderToPoster(order.id)
-        
-      } catch (posterError) {
-        console.error('❌ Failed to send order to Poster POS:', posterError)
-        // Don't fail the entire order creation if Poster integration fails
-      }
+      // Note: Order is automatically sent to Poster POS by the backend
+      console.log('✅ Order created and automatically sent to Poster POS')
 
       return order
     } catch (err) {
