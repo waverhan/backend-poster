@@ -6,17 +6,17 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "start": "node index.js",
+    "start": "./start.sh",
     "cron": "node scripts/setup-cron.js",
     "sync": "node -e \"import('./scripts/setup-cron.js').then(m => m.triggerInventorySync())\"",
     "migrate:site-config": "node scripts/migrate-site-config.js",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@heroicons/vue": "^2.2.0",
     "@prisma/client": "^5.22.0",
     "axios": "^1.10.0",
     "cors": "^2.8.5",

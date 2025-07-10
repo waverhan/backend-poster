@@ -1,8 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Homepage Redirect Notice -->
-    <HomepageRedirectNotice />
-
     <!-- Banner Slider -->
     <BannerSlider />
 
@@ -388,7 +385,6 @@ import ProductCard from '@/components/product/ProductCard.vue'
 import AddressAutocomplete from '@/components/AddressAutocomplete.vue'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
-import HomepageRedirectNotice from '@/components/ui/HomepageRedirectNotice.vue'
 import BannerSlider from '@/components/BannerSlider.vue'
 
 // Types

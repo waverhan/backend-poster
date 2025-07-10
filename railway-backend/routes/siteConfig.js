@@ -55,6 +55,7 @@ const defaultConfig = {
   enable_ai_chat: true,
   enable_recommendations: true,
   enable_notifications: true,
+  enable_dark_mode: true,
 
   // Theme
   primary_color: '#2563eb',

@@ -20,14 +20,29 @@ router.get('/', async (req, res) => {
 // POST /api/categories
 router.post('/', async (req, res) => {
   try {
+    console.log('📝 Creating category with data:', req.body)
+
     const { name, display_name, description, image_url, sort_order, is_active } = req.body
+
+    // Validation
+    if (!display_name || display_name.trim() === '') {
+      console.error('❌ Validation error: display_name is required')
+      return res.status(400).json({ error: 'Display name is required' })
+    }
+
+    // Auto-generate name if not provided
+    const categoryName = name && name.trim() !== ''
+      ? name.trim()
+      : display_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+
+    console.log('📝 Processed category name:', categoryName)
 
     const category = await prisma.category.create({
       data: {
-        name,
-        display_name,
-        description,
-        image_url,
+        name: categoryName,
+        display_name: display_name.trim(),
+        description: description || null,
+        image_url: image_url || null,
         sort_order: sort_order || 0,
         is_active: is_active !== undefined ? is_active : true
       },
@@ -38,6 +53,8 @@ router.post('/', async (req, res) => {
         }
       }
     })
+
+    console.log('✅ Category created successfully:', category.id)
 
     const formattedCategory = {
       id: category.id,
@@ -54,8 +71,26 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(formattedCategory)
   } catch (error) {
-    console.error('Error creating category:', error)
-    res.status(500).json({ error: 'Failed to create category' })
+    console.error('❌ Error creating category:', error)
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    })
+
+    // Handle specific Prisma errors
+    if (error.code === 'P2002') {
+      return res.status(400).json({ error: 'A category with this name already exists' })
+    }
+
+    if (error.code === 'P2000') {
+      return res.status(400).json({ error: 'Invalid data provided' })
+    }
+
+    res.status(500).json({
+      error: 'Failed to create category',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   }
 })
 

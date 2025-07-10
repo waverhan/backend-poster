@@ -1,19 +1,49 @@
 <template>
   <div class="delivery-map-selector">
-    <!-- Address Input with Autocomplete -->
+    <!-- Address Input with Separate Street and House Number -->
     <div class="mb-6">
       <label class="block text-sm font-medium text-gray-700 mb-2">
         📍 Адреса доставки в Києві
       </label>
-      <AddressAutocomplete
-        v-model="deliveryAddress"
-        placeholder="Введіть вулицю та номер будинку..."
-        :show-manual-entry="true"
-        :show-help="true"
-        @select="handleAddressSelected"
-        @manual="handleManualAddress"
-        class="mb-4"
-      />
+
+      <!-- Street Input -->
+      <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Вулиця
+        </label>
+        <AddressAutocomplete
+          v-model="streetName"
+          placeholder="Введіть назву вулиці..."
+          :show-manual-entry="true"
+          :show-help="false"
+          :street-only="true"
+          @select="handleStreetSelected"
+          @manual="handleManualStreet"
+          class="mb-2"
+        />
+      </div>
+
+      <!-- House Number Input -->
+      <div class="mb-3">
+        <label class="block text-xs font-medium text-gray-600 mb-1">
+          Номер будинку
+        </label>
+        <input
+          v-model="houseNumber"
+          type="text"
+          placeholder="Введіть номер будинку..."
+          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          @input="handleHouseNumberChange"
+        />
+      </div>
+
+      <!-- Combined Address Display -->
+      <div v-if="deliveryAddress" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div class="flex items-center gap-2">
+          <span class="text-blue-600">📍</span>
+          <span class="text-sm font-medium text-blue-900">{{ deliveryAddress }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- Map Container -->
@@ -215,6 +245,8 @@ const locationStore = useLocationStore()
 const mapContainer = ref<HTMLDivElement>()
 const map = ref<any>(null)
 const deliveryAddress = ref('')
+const streetName = ref('')
+const houseNumber = ref('')
 const userLocation = ref<LocationData | null>(null)
 const selectedBranch = ref<Branch | null>(null)
 const distance = ref(0)
@@ -400,6 +432,32 @@ const addDeliveryZones = () => {
       deliveryZoneCircles.value.push(zone1, zone2, zone3)
     }
   })
+}
+
+const handleStreetSelected = async (suggestion: AddressSuggestion) => {
+  streetName.value = suggestion.street
+  updateCombinedAddress()
+}
+
+const handleManualStreet = async (street: string) => {
+  streetName.value = street
+  updateCombinedAddress()
+}
+
+const handleHouseNumberChange = () => {
+  updateCombinedAddress()
+}
+
+const updateCombinedAddress = async () => {
+  if (streetName.value && houseNumber.value) {
+    const fullAddress = `${streetName.value}, ${houseNumber.value}, Київ, Україна`
+    deliveryAddress.value = fullAddress
+    await geocodeAddress(fullAddress)
+  } else if (streetName.value) {
+    deliveryAddress.value = `${streetName.value}, Київ, Україна`
+  } else {
+    deliveryAddress.value = ''
+  }
 }
 
 const handleAddressSelected = async (suggestion: AddressSuggestion) => {

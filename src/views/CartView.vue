@@ -20,67 +20,135 @@
             <div
               v-for="item in items"
               :key="item.product_id"
-              class="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0"
+              class="py-4 border-b border-gray-200 last:border-b-0"
             >
-              <div class="flex items-center space-x-4">
-                <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <img
-                    v-if="item.image_url"
-                    :src="item.image_url"
-                    :alt="item.name"
-                    class="w-full h-full object-cover rounded-lg"
-                  />
-                  <span v-else class="text-2xl">🍽️</span>
-                </div>
-                <div>
-                  <h3 class="font-medium">{{ item.name }}</h3>
-                  <p class="text-gray-600">
-                    {{ formatItemPrice(item) }} ₴
-                    <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
-                    <span v-else-if="item.custom_unit">per {{ formatCustomUnit(item) }}</span>
-                    <span v-else>each</span>
-                  </p>
-                  <!-- Bottle Information -->
-                  <div v-if="item.is_draft_beverage && item.bottles" class="text-sm text-gray-500 mt-1">
-                    <div>🍾 Пляшки: {{ getBottleSelectionSummary(item.bottles) }}</div>
-                    <div>💰 Вартість пляшок: {{ (item.bottle_cost || 0).toFixed(2) }} ₴</div>
+              <!-- Mobile Layout -->
+              <div class="block sm:hidden">
+                <div class="flex items-start space-x-3">
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <img
+                      v-if="item.image_url"
+                      :src="item.image_url"
+                      :alt="item.name"
+                      class="w-full h-full object-cover rounded-lg"
+                    />
+                    <span v-else class="text-lg">🍽️</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-medium text-sm">{{ item.name }}</h3>
+                    <p class="text-gray-600 text-sm">
+                      {{ formatItemPrice(item) }} ₴
+                      <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
+                      <span v-else-if="item.custom_unit">per {{ formatCustomUnit(item) }}</span>
+                      <span v-else>each</span>
+                    </p>
+                    <!-- Bottle Information -->
+                    <div v-if="item.is_draft_beverage && item.bottles" class="text-xs text-gray-500 mt-1">
+                      <div>🍾 Пляшки: {{ getBottleSelectionSummary(item.bottles) }}</div>
+                      <div>💰 Вартість пляшок: {{ (item.bottle_cost || 0).toFixed(2) }} ₴</div>
+                    </div>
+
+                    <!-- Mobile quantity controls and total -->
+                    <div class="flex items-center justify-between mt-2">
+                      <div class="flex items-center space-x-2">
+                        <!-- Quantity controls - disabled for draft beverages -->
+                        <div v-if="!item.is_draft_beverage" class="flex items-center space-x-1">
+                          <button
+                            @click="decreaseQuantity(item.product_id)"
+                            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
+                          >
+                            -
+                          </button>
+                          <span class="w-6 text-center text-sm">{{ item.quantity }}</span>
+                          <button
+                            @click="increaseQuantity(item.product_id)"
+                            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <!-- Draft beverage info -->
+                        <div v-else class="text-xs text-gray-600">
+                          Кількість: {{ item.quantity }}L
+                        </div>
+                      </div>
+
+                      <div class="flex items-center space-x-2">
+                        <div class="font-bold text-sm">{{ formatItemTotal(item) }} ₴</div>
+                        <button
+                          @click="removeItem(item.product_id)"
+                          class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="flex items-center space-x-4">
-                <!-- Quantity controls - disabled for draft beverages -->
-                <div v-if="!item.is_draft_beverage" class="flex items-center space-x-2">
+              <!-- Desktop Layout -->
+              <div class="hidden sm:flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                  <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <img
+                      v-if="item.image_url"
+                      :src="item.image_url"
+                      :alt="item.name"
+                      class="w-full h-full object-cover rounded-lg"
+                    />
+                    <span v-else class="text-2xl">🍽️</span>
+                  </div>
+                  <div>
+                    <h3 class="font-medium">{{ item.name }}</h3>
+                    <p class="text-gray-600">
+                      {{ formatItemPrice(item) }} ₴
+                      <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
+                      <span v-else-if="item.custom_unit">per {{ formatCustomUnit(item) }}</span>
+                      <span v-else>each</span>
+                    </p>
+                    <!-- Bottle Information -->
+                    <div v-if="item.is_draft_beverage && item.bottles" class="text-sm text-gray-500 mt-1">
+                      <div>🍾 Пляшки: {{ getBottleSelectionSummary(item.bottles) }}</div>
+                      <div>💰 Вартість пляшок: {{ (item.bottle_cost || 0).toFixed(2) }} ₴</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                  <!-- Quantity controls - disabled for draft beverages -->
+                  <div v-if="!item.is_draft_beverage" class="flex items-center space-x-2">
+                    <button
+                      @click="decreaseQuantity(item.product_id)"
+                      class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+                    >
+                      -
+                    </button>
+                    <span class="w-8 text-center">{{ item.quantity }}</span>
+                    <button
+                      @click="increaseQuantity(item.product_id)"
+                      class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <!-- Draft beverage info -->
+                  <div v-else class="text-sm text-gray-600">
+                    Кількість: {{ item.quantity }}L
+                  </div>
+
+                  <div class="text-right">
+                    <div class="font-bold">{{ formatItemTotal(item) }} ₴</div>
+                  </div>
+
                   <button
-                    @click="decreaseQuantity(item.product_id)"
-                    class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+                    @click="removeItem(item.product_id)"
+                    class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
                   >
-                    -
-                  </button>
-                  <span class="w-8 text-center">{{ item.quantity }}</span>
-                  <button
-                    @click="increaseQuantity(item.product_id)"
-                    class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
-                  >
-                    +
+                    🗑️
                   </button>
                 </div>
-
-                <!-- Draft beverage info -->
-                <div v-else class="text-sm text-gray-600">
-                  Кількість: {{ item.quantity }}L
-                </div>
-
-                <div class="text-right">
-                  <div class="font-bold">{{ formatItemTotal(item) }} ₴</div>
-                </div>
-
-                <button
-                  @click="removeItem(item.product_id)"
-                  class="text-red-500 hover:text-red-700"
-                >
-                  🗑️
-                </button>
               </div>
             </div>
           </div>

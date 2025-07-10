@@ -63,13 +63,16 @@ export interface DayHours {
 // Product Types
 export interface Category {
   id: string
-  poster_id?: string
+  poster_category_id?: string
   name: string
   display_name: string
   description?: string
   image_url?: string
   sort_order?: number
   is_active: boolean
+  created_at?: string
+  updated_at?: string
+  product_count?: number
 }
 
 export interface ProductAttribute {

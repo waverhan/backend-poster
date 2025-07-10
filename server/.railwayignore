@@ -3,6 +3,26 @@
 ../dist/
 ../public/
 ../vite.config.js
+
+# Backend files to ignore
+node_modules/
+public/
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+test.txt
+prisma/dev.db-journal
 ../index.html
 ../capacitor.config.ts
 ../ionic.config.json

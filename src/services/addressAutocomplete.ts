@@ -93,7 +93,11 @@ class AddressAutocompleteService {
 
     try {
       const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
-      url.searchParams.set('input', `${query}, Київ, Україна`)
+      // Only add Kyiv if not already present in the query
+      const searchQuery = query.toLowerCase().includes('київ') || query.toLowerCase().includes('kyiv')
+        ? query
+        : `${query}, Київ, Україна`
+      url.searchParams.set('input', searchQuery)
       url.searchParams.set('key', this.googleApiKey)
       url.searchParams.set('language', 'uk')
       url.searchParams.set('components', 'country:ua')
@@ -129,7 +133,11 @@ class AddressAutocompleteService {
   private async searchOpenStreetMap(query: string, limit = 5): Promise<AddressSuggestion[]> {
     try {
       const url = new URL('https://nominatim.openstreetmap.org/search')
-      url.searchParams.set('q', `${query}, Київ, Україна`)
+      // Only add Kyiv if not already present in the query
+      const searchQuery = query.toLowerCase().includes('київ') || query.toLowerCase().includes('kyiv')
+        ? query
+        : `${query}, Київ, Україна`
+      url.searchParams.set('q', searchQuery)
       url.searchParams.set('format', 'json')
       url.searchParams.set('addressdetails', '1')
       url.searchParams.set('limit', (limit * 2).toString()) // Get more results to filter

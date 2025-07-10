@@ -209,7 +209,7 @@ router.post('/full', async (req, res) => {
 
       // Debug logging for ingredient_id - specific products
       if (posterProduct.product_id === '267' || posterProduct.product_id === '397' || posterProduct.product_id === '13') {
-        console.log(`Debug product ${posterProduct.product_id}: ingredient_id=${posterProduct.ingredient_id}`)
+        
       }
 
       // Upsert product
@@ -246,7 +246,7 @@ router.post('/full', async (req, res) => {
 
       // Debug logging after database save
       if (posterProduct.product_id === '267' || posterProduct.product_id === '397' || posterProduct.product_id === '13') {
-        console.log(`Product ${posterProduct.product_id} saved to database with ingredient_id: ${product.ingredient_id}`)
+        
       }
 
       allProducts.push(product)
@@ -270,7 +270,7 @@ router.post('/full', async (req, res) => {
 
         // Debug: Log sample inventory item to verify field names
         if (inventoryData.length > 0) {
-          console.log(`Sample inventory for ${branch.name}:`, inventoryData.slice(0, 3))
+          )
         }
 
         // Create inventory map
@@ -362,7 +362,7 @@ router.post('/inventory', async (req, res) => {
 
         // Debug: Log sample inventory item to verify field names
         if (inventoryData.length > 0) {
-          console.log(`Sample inventory for ${branch.name}:`, inventoryData.slice(0, 3))
+          )
         }
 
         // Create inventory map
@@ -378,7 +378,7 @@ router.post('/inventory', async (req, res) => {
 
             // Log first processed item for debugging
             if (!sampleProcessed) {
-              console.log(`Sample inventory item: ${item.ingredient_name} - ${quantity} ${item.ingredient_unit}`)
+              
               sampleProcessed = true
             }
           }

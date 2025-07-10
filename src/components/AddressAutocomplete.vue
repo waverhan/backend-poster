@@ -137,6 +137,7 @@ interface Props {
   disabled?: boolean
   required?: boolean
   class?: string
+  streetOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -146,7 +147,8 @@ const props = withDefaults(defineProps<Props>(), {
   showManualEntry: true,
   showHelp: true,
   disabled: false,
-  required: false
+  required: false,
+  streetOnly: false
 })
 
 // Emits

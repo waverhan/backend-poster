@@ -432,7 +432,7 @@ const getTimeOfDayText = (hour: number): string => {
 
 const trackRecommendationClick = (product: Product) => {
   // Track recommendation effectiveness for learning
-  console.log('Recommendation clicked:', product.display_name)
+  
 
   // Could send to analytics service
 }

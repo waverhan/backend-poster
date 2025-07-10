@@ -571,7 +571,7 @@ const validateInventoryOnLoad = async () => {
     return
   }
 
-  console.log('🔍 Validating inventory for branch:', targetBranch.name, 'ID:', targetBranch.id)
+  
   isValidatingInventory.value = true
 
   try {
@@ -583,9 +583,9 @@ const validateInventoryOnLoad = async () => {
     inventoryValidationResult.value = result
 
     if (result.hasUnavailableItems || result.hasAdjustedItems) {
-      console.log('⚠️ Inventory issues detected:', result)
+      
     } else {
-      console.log('✅ All items available in branch:', targetBranch.name)
+      
     }
   } catch (error) {
     console.error('❌ Inventory validation failed on load:', error)
@@ -862,7 +862,7 @@ onMounted(async () => {
       const nearestBranch = branchStore.findNearestBranchByCoords(location.latitude, location.longitude)
       if (nearestBranch) {
         targetBranch = nearestBranch
-        console.log('🚚 Using nearest branch for delivery:', nearestBranch.name)
+        
       }
     }
 
@@ -896,7 +896,6 @@ onMounted(async () => {
         const nearestBranch = branchStore.findNearestBranchByCoords(location.latitude, location.longitude)
         if (nearestBranch) {
           targetBranch = nearestBranch
-          console.log('🚚 Using nearest branch for delivery (from cart):', nearestBranch.name)
         }
       }
 

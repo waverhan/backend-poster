@@ -65,7 +65,7 @@ const defaultConfig = {
 // GET /api/site-config
 router.get('/', async (req, res) => {
   try {
-    console.log('📋 Fetching site configuration...')
+    
 
     // Try to get existing config from database
     let config = null
@@ -73,18 +73,18 @@ router.get('/', async (req, res) => {
     try {
       config = await prisma.siteConfig.findFirst()
     } catch (dbError) {
-      console.log('⚠️ Database table not found, using default config:', dbError.message)
+      
     }
 
     if (!config) {
-      console.log('📝 No config found, trying to create default configuration...')
+      
       try {
         // Create default config if none exists
         config = await prisma.siteConfig.create({
           data: defaultConfig
         })
       } catch (createError) {
-        console.log('⚠️ Could not create config in database, using static default:', createError.message)
+        
         // Fallback to static config with enable_dark_mode
         config = { ...defaultConfig, id: 'default', enable_dark_mode: true }
       }
@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
       config.enable_dark_mode = true
     }
 
-    console.log('✅ Site configuration fetched successfully')
+    
     res.json(config)
   } catch (error) {
     console.error('❌ Error fetching site config:', error)
@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
 // PUT /api/site-config
 router.put('/', async (req, res) => {
   try {
-    console.log('💾 Updating site configuration...', req.body)
+    
 
     let updatedConfig = null
 
@@ -117,7 +117,7 @@ router.put('/', async (req, res) => {
       let existingConfig = await prisma.siteConfig.findFirst()
 
       if (!existingConfig) {
-        console.log('📝 No existing config, creating new one...')
+        
         existingConfig = await prisma.siteConfig.create({
           data: defaultConfig
         })
@@ -132,7 +132,7 @@ router.put('/', async (req, res) => {
         }
       })
     } catch (dbError) {
-      console.log('⚠️ Database update failed, using fallback:', dbError.message)
+      
       // Fallback: return the updated config without saving to database
       updatedConfig = {
         ...defaultConfig,
@@ -143,7 +143,7 @@ router.put('/', async (req, res) => {
       }
     }
 
-    console.log('✅ Site configuration updated successfully')
+    
     res.json(updatedConfig)
   } catch (error) {
     console.error('❌ Error updating site config:', error)

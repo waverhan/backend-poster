@@ -191,22 +191,39 @@ router.post('/', async (req, res) => {
     // Create or find customer
     let customer = null
     if (customer_email || customer_phone) {
-      customer = await prisma.customer.upsert({
-        where: {
-          email: customer_email || undefined,
-          phone: customer_phone || undefined
-        },
-        update: {
-          name: customer_name,
-          email: customer_email,
-          phone: customer_phone
-        },
-        create: {
-          name: customer_name,
-          email: customer_email,
-          phone: customer_phone
-        }
-      })
+      // Try to find existing customer by email first, then by phone
+      if (customer_email) {
+        customer = await prisma.customer.findUnique({
+          where: { email: customer_email }
+        })
+      }
+
+      if (!customer && customer_phone) {
+        customer = await prisma.customer.findUnique({
+          where: { phone: customer_phone }
+        })
+      }
+
+      if (customer) {
+        // Update existing customer
+        customer = await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            name: customer_name,
+            email: customer_email,
+            phone: customer_phone
+          }
+        })
+      } else {
+        // Create new customer
+        customer = await prisma.customer.create({
+          data: {
+            name: customer_name,
+            email: customer_email,
+            phone: customer_phone
+          }
+        })
+      }
     }
 
     // Find branch (use pickup branch or default to first branch for delivery)
@@ -320,7 +337,7 @@ router.post('/', async (req, res) => {
 
     // 🚀 AUTOMATICALLY SEND ORDER TO POSTER POS
     try {
-      console.log('📤 Sending order to Poster POS automatically...')
+      
 
       // Get products to map to Poster product IDs
       const productIds = order.items.map(item => item.product_id)
@@ -340,7 +357,7 @@ router.post('/', async (req, res) => {
         // If product has custom quantity system, convert to kg for Poster
         if (product?.custom_quantity) {
           posterQuantity = item.quantity * product.custom_quantity
-          console.log(`📏 Converting quantity for ${product.name}: ${item.quantity} units × ${product.custom_quantity}kg = ${posterQuantity}kg`)
+          
         }
 
         return {
@@ -362,7 +379,7 @@ router.post('/', async (req, res) => {
           posterOrderData.address = order.delivery_address
         }
 
-        console.log('📋 Poster order data:', JSON.stringify(posterOrderData, null, 2))
+        )
 
         // Send to Poster POS API
         const posterResponse = await axios.post(
@@ -376,7 +393,7 @@ router.post('/', async (req, res) => {
           }
         )
 
-        console.log('✅ Poster POS response:', posterResponse.data)
+        
 
         // Update order with Poster order ID
         if (posterResponse.data && posterResponse.data.response) {
@@ -391,10 +408,10 @@ router.post('/', async (req, res) => {
           // Update the transformed order status
           transformedOrder.status = 'confirmed'
 
-          console.log(`🎉 Order successfully sent to Poster POS! Poster Order ID: ${posterResponse.data.response}`)
+          
         }
       } else {
-        console.log('⚠️ No valid Poster product IDs found, skipping Poster integration')
+        
       }
     } catch (posterError) {
       console.error('❌ Failed to send order to Poster POS:', posterError.message)
@@ -571,7 +588,7 @@ router.post('/:id/send-to-poster', async (req, res) => {
       posterOrderData.address = order.delivery_address
     }
 
-    console.log('📋 Manual Poster order data:', JSON.stringify(posterOrderData, null, 2))
+    )
 
     // Send to Poster POS API
     const posterResponse = await axios.post(
@@ -626,7 +643,7 @@ router.post('/send-email', async (req, res) => {
   try {
     const { to, subject, html, text, order_id } = req.body
 
-    console.log('Sending email notification:', { to, subject, order_id })
+    
 
     // In a real application, you would integrate with an email service like:
     // - SendGrid
@@ -636,7 +653,7 @@ router.post('/send-email', async (req, res) => {
 
     // For now, we'll just simulate success
     setTimeout(() => {
-      console.log('Email simulation completed')
+      
     }, 1000)
 
     res.json({
@@ -658,7 +675,7 @@ router.post('/send-email', async (req, res) => {
 // GET /api/orders/debug/poster-products - Debug endpoint to check Poster product mappings
 router.get('/debug/poster-products', async (req, res) => {
   try {
-    console.log('🔍 Checking Poster product mappings...')
+    
 
     // Get all products with their Poster IDs
     const products = await prisma.product.findMany({
@@ -716,7 +733,7 @@ router.get('/debug/poster-products', async (req, res) => {
 // POST /api/orders/debug/test-poster - Test Poster API with sample order
 router.post('/debug/test-poster', async (req, res) => {
   try {
-    console.log('🧪 Testing Poster API with sample order...')
+    
 
     // Create a test order payload according to Poster API documentation
     const testOrderData = {
@@ -730,7 +747,7 @@ router.post('/debug/test-poster', async (req, res) => {
       ]
     }
 
-    console.log('📋 Test order data:', JSON.stringify(testOrderData, null, 2))
+    )
 
     // Send to Poster POS API
     const posterResponse = await axios.post(
@@ -744,7 +761,7 @@ router.post('/debug/test-poster', async (req, res) => {
       }
     )
 
-    console.log('✅ Poster API test response:', posterResponse.data)
+    
 
     res.json({
       success: true,

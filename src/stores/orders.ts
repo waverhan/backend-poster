@@ -79,7 +79,7 @@ export const useOrdersStore = defineStore('orders', () => {
       await sendOrderConfirmationEmail(order)
 
       // Note: Order is automatically sent to Poster POS by the backend
-      console.log('✅ Order created and automatically sent to Poster POS')
+      
 
       return order
     } catch (err) {

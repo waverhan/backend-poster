@@ -248,7 +248,7 @@ const triggerSync = async () => {
   
   try {
     const result = await inventoryService.triggerInventorySync()
-    console.log('Sync triggered:', result)
+    
     
     // Refresh data after sync
     setTimeout(async () => {

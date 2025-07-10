@@ -8,7 +8,7 @@ router.get('/branch/:branchId', async (req, res) => {
   try {
     const { branchId } = req.params
     
-    console.log(`📦 Getting inventory for branch: ${branchId}`)
+    
 
     // Check if branch exists
     const branch = await prisma.branch.findUnique({
@@ -49,7 +49,7 @@ router.get('/branch/:branchId', async (req, res) => {
       unit: item.unit || 'pcs'
     }))
 
-    console.log(`✅ Found ${inventoryStatus.length} inventory records for branch ${branch.name}`)
+    
 
     res.json(inventoryStatus)
 
@@ -73,7 +73,7 @@ router.post('/products', async (req, res) => {
       })
     }
 
-    console.log(`📦 Getting inventory for ${product_ids.length} products in branch: ${branch_id}`)
+    
 
     const inventory = await prisma.productInventory.findMany({
       where: {
@@ -120,7 +120,7 @@ router.get('/check/:productId/:branchId', async (req, res) => {
     const { productId, branchId } = req.params
     const requiredQuantity = parseFloat(req.query.quantity) || 1
 
-    console.log(`🔍 Checking availability: Product ${productId}, Branch ${branchId}, Quantity ${requiredQuantity}`)
+    
 
     const inventory = await prisma.productInventory.findUnique({
       where: {
@@ -157,7 +157,7 @@ router.get('/low-stock/:branchId', async (req, res) => {
     const { branchId } = req.params
     const threshold = parseFloat(req.query.threshold) || 5
 
-    console.log(`⚠️ Getting low stock alerts for branch: ${branchId}, threshold: ${threshold}`)
+    
 
     const lowStockItems = await prisma.productInventory.findMany({
       where: {
@@ -191,7 +191,7 @@ router.get('/low-stock/:branchId', async (req, res) => {
       unit: item.unit || 'pcs'
     }))
 
-    console.log(`⚠️ Found ${alerts.length} low stock items`)
+    
 
     res.json(alerts)
 
@@ -207,7 +207,7 @@ router.get('/low-stock/:branchId', async (req, res) => {
 // POST /api/inventory/sync/trigger - Trigger manual inventory sync
 router.post('/sync/trigger', async (req, res) => {
   try {
-    console.log('🔄 Manual inventory sync triggered')
+    
 
     // This will call the existing sync endpoint
     const syncResponse = await fetch(`${req.protocol}://${req.get('host')}/api/sync/inventory`, {
@@ -242,7 +242,7 @@ router.post('/sync/trigger', async (req, res) => {
 // GET /api/inventory/sync/status/latest - Get latest sync status
 router.get('/sync/status/latest', async (req, res) => {
   try {
-    console.log('📊 Getting latest sync status')
+    
 
     // Get the latest sync log entry
     const latestSync = await prisma.syncLog.findFirst({
@@ -280,7 +280,7 @@ router.get('/sync/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10
 
-    console.log(`📊 Getting sync history (limit: ${limit})`)
+    `)
 
     const syncHistory = await prisma.syncLog.findMany({
       where: { sync_type: 'inventory' },
