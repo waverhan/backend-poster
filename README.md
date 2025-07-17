@@ -1,6 +1,42 @@
-# 🛒 PWA POS Shop - AI-Powered E-commerce Platform
+# 🛒 PWA POS Shop - Complete Full-Stack E-commerce Platform
 
 A modern Progressive Web App (PWA) for beverage and food delivery with AI chat assistant, multi-channel messaging, intelligent product recommendations, and advanced bottle management system.
+
+## 📁 Repository Structure
+
+This repository contains the **complete full-stack application**:
+
+```
+📦 backend-poster/
+├── 🖥️ Frontend PWA (Root Directory)
+│   ├── src/                    # Vue 3 + TypeScript source code
+│   ├── public/                 # Static assets and PWA files
+│   ├── dist/                   # Built frontend (production ready)
+│   └── package.json            # Frontend dependencies
+│
+├── 🔧 Backend API (/server)
+│   ├── index.js                # Express.js server
+│   ├── routes/                 # API endpoints
+│   ├── services/               # Business logic
+│   ├── prisma/                 # Database schema & migrations
+│   ├── public/images/          # File upload storage
+│   └── package.json            # Backend dependencies
+│
+└── 📚 Documentation
+    ├── README.md               # This file
+    ├── status.md               # Project completion status
+    └── docs/                   # Additional documentation
+```
+
+## 🚀 **PRODUCTION READY & DEPLOYED**
+
+### **Live URLs:**
+- **🌐 Frontend PWA**: https://opillia.com.ua
+- **⚡ Backend API**: https://backend-api-production-b3a0.up.railway.app
+- **📝 Blog**: https://blog.opillia.com.ua
+
+### **📊 Analytics:**
+- **Google Analytics 4**: G-Y3NZ5WWN9G ✅ Active
 
 ## 🌟 Features
 
@@ -98,8 +134,61 @@ npm run dev
 
 Visit `http://localhost:5176` to see the application.
 
-### 5. Test AI Features
-Visit `http://localhost:5176/communication-demo` to test all AI and communication features.
+### 5. Backend Setup (API Server)
+
+**Navigate to server directory:**
+```bash
+cd server
+```
+
+**Install backend dependencies:**
+```bash
+npm install
+```
+
+**Create backend environment file:**
+```bash
+cp .env.example .env
+```
+
+**Edit `server/.env`:**
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/pwa_pos"
+POSTER_API_TOKEN=218047:05891220e474bad7f26b6eaa0be3f344
+OPENAI_API_KEY=your_openai_api_key
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+VIBER_BOT_TOKEN=your_viber_bot_token
+```
+
+**Initialize database:**
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+**Start backend server:**
+```bash
+npm start
+# Server runs on http://localhost:3001
+```
+
+### 6. Full Development Setup
+
+**Terminal 1 - Backend API:**
+```bash
+cd server && npm start
+```
+
+**Terminal 2 - Frontend PWA:**
+```bash
+npm run dev
+```
+
+### 7. Test the Complete Application
+- **PWA Shop**: http://localhost:5176
+- **Admin Panel**: http://localhost:5176/admin
+- **API Health**: http://localhost:3001/health
+- **AI Features**: http://localhost:5176/communication-demo
 
 ## 🛠️ Technical Stack
 
