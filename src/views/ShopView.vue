@@ -171,21 +171,52 @@
         </div>
       </section>
 
+      <!-- Initial Loading Screen -->
+      <section v-if="loading.initial" class="text-center py-20">
+        <div class="spinner w-12 h-12 mx-auto mb-6"></div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">Завантаження магазину...</h2>
+        <p class="text-gray-500">Підготовуємо товари для вас</p>
+      </section>
+
       <!-- Selected Branch & Products -->
-      <section v-if="selectedBranch">
+      <section v-else-if="selectedBranch">
 
         <!-- Categories -->
         <div class="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-8">
           <div class="px-4 py-3">
+            <!-- Debug Info (temporary) -->
+            <div v-if="false" class="mb-2 p-2 bg-yellow-100 text-xs text-yellow-800 rounded">
+              Debug: Categories={{ categoriesWithProducts.length }}, Products={{ products.length }}, Branch={{ selectedBranch?.name }}
+            </div>
+
             <div v-if="loading.categories" class="text-center py-4">
               <div class="spinner w-5 h-5 mx-auto mb-2"></div>
               <span class="text-gray-600 text-sm">Loading categories...</span>
+            </div>
+
+            <div v-else-if="categoriesWithProducts.length === 0" class="text-center py-4">
+              <span class="text-gray-600 text-sm">No categories available</span>
+              <button @click="loadCategories" class="ml-2 text-blue-600 hover:text-blue-800 underline">Retry</button>
             </div>
 
             <div v-else>
               <!-- Mobile: Horizontal scrolling single line -->
               <div class="block md:hidden">
                 <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                  <!-- Daily Deals Tab -->
+                  <button
+                    v-if="productsOnSale.length > 0"
+                    @click="selectDealsCategory()"
+                    :class="[
+                      'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                      selectedCategory?.id === 'deals'
+                        ? 'bg-red-600 text-white shadow-md'
+                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    ]"
+                  >
+                    🔥 {{ $t('deals.title') }}
+                  </button>
+
                   <button
                     v-for="category in categoriesWithProducts"
                     :key="category.id"
@@ -204,6 +235,21 @@
 
               <!-- Desktop: Flex wrap with counts -->
               <div class="hidden md:flex flex-wrap gap-3">
+                <!-- Daily Deals Tab -->
+                <button
+                  v-if="productsOnSale.length > 0"
+                  @click="selectDealsCategory()"
+                  :class="[
+                    'px-4 py-2 rounded-lg transition-colors flex items-center space-x-2',
+                    selectedCategory?.id === 'deals'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  ]"
+                >
+                  <span>🔥 {{ $t('deals.title') }}</span>
+                  <span class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ productsOnSale.length }}</span>
+                </button>
+
                 <button
                   v-for="category in categoriesWithProducts"
                   :key="category.id"
@@ -233,16 +279,20 @@
             <p class="text-gray-600">Завантаження товарів...</p>
           </div>
 
-          <div v-else-if="productsByCategory.length === 0" class="text-center py-12">
+          <div v-else-if="displayedProducts.length === 0" class="text-center py-12">
             <div class="text-4xl mb-4">📦</div>
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">Товари відсутні</h3>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+              {{ selectedCategory?.id === 'deals' ? 'Акції відсутні' : 'Товари відсутні' }}
+            </h3>
             <p class="text-gray-600 mb-4">
-              {{ selectedCategory
-                ? `Товари з категорії "${selectedCategory.display_name}" наразі відсутні на складі цього магазину.`
-                : 'Товари наразі відсутні в цьому магазині.'
+              {{ selectedCategory?.id === 'deals'
+                ? 'Наразі немає товарів зі знижками.'
+                : selectedCategory
+                  ? `Товари з категорії "${selectedCategory.display_name}" наразі відсутні на складі цього магазину.`
+                  : 'Товари наразі відсутні в цьому магазині.'
               }}
             </p>
-            <div class="space-y-2 text-sm text-gray-500">
+            <div v-if="selectedCategory?.id !== 'deals'" class="space-y-2 text-sm text-gray-500">
               <p>• Товари відображаються на основі актуальних залишків</p>
               <p>• Спробуйте обрати іншу категорію або магазин</p>
               <p>• Залишки оновлюються з системи Poster POS</p>
@@ -251,16 +301,17 @@
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <ProductCard
-              v-for="product in productsByCategory"
+              v-for="product in displayedProducts"
               :key="product.id"
               :product="product"
               @add-to-cart="addToCart"
+              @add-bottle-to-cart="addBottleToCart"
             />
           </div>
         </div>
 
         <!-- AI Recommendations Section -->
-        <div v-if="!loading.products && productsByCategory.length > 0 && showRecommendations" class="card p-6 mt-6">
+        <div v-if="!loading.products && displayedProducts.length > 0 && showRecommendations && selectedCategory?.id !== 'deals'" class="card p-6 mt-6">
           <ProductRecommendations
             context="shop"
             :max-recommendations="4"
@@ -271,6 +322,19 @@
             @hide-recommendations="hideRecommendations"
           />
         </div>
+      </section>
+
+      <!-- No Branch Selected Fallback -->
+      <section v-else class="text-center py-20">
+        <div class="text-6xl mb-4">🏪</div>
+        <h2 class="text-xl font-semibold text-gray-700 mb-2">Оберіть філію</h2>
+        <p class="text-gray-500 mb-6">Будь ласка, оберіть спосіб отримання та філію для перегляду товарів</p>
+        <button
+          @click="deliveryMethod = 'pickup'"
+          class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Обрати філію
+        </button>
       </section>
     </div>
 
@@ -363,6 +427,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
 // Stores
@@ -379,6 +444,7 @@ import { capacitorService } from '@/services/capacitor'
 
 // Utils
 import { testPosterApi } from '@/utils/testApi'
+import { isDraftBeverage } from '@/utils/bottleUtils'
 
 // Components
 import ProductCard from '@/components/product/ProductCard.vue'
@@ -393,6 +459,9 @@ import type { AddressSuggestion } from '@/services/addressAutocomplete'
 
 const router = useRouter()
 
+// Translation
+const { t } = useI18n()
+
 // Stores
 const cartStore = useCartStore()
 const locationStore = useLocationStore()
@@ -405,14 +474,15 @@ const bannerStore = useBannerStore()
 // Reactive refs from stores
 const { userLocation, locationError } = storeToRefs(locationStore)
 const { branches, selectedBranch } = storeToRefs(branchStore)
-const { categories, products, selectedCategory, categoriesWithProducts, productsByCategory } = storeToRefs(productStore)
+const { categories, products, selectedCategory, categoriesWithProducts, productsByCategory, productsOnSale } = storeToRefs(productStore)
 
 // Local state
 const loading = ref({
   branches: false,
   categories: false,
   products: false,
-  location: false
+  location: false,
+  initial: true // Add initial loading state
 })
 
 const deliveryMethod = ref<FulfillmentType>('pickup') // Default to pickup
@@ -438,6 +508,14 @@ const hasBanners = computed(() => bannerStore.banners.length > 0)
 const getCategoryProductCount = (categoryId: string) => {
   return products.value.filter(product => product.category_id === categoryId).length
 }
+
+// Computed property for displayed products (either by category or deals)
+const displayedProducts = computed(() => {
+  if (selectedCategory.value?.id === 'deals') {
+    return productsOnSale.value
+  }
+  return productsByCategory.value
+})
 
 // Methods
 const openDeliveryModal = () => {
@@ -661,6 +739,8 @@ const loadBranches = async () => {
 }
 
 const loadDefaultBranch = async () => {
+  loading.value.branches = true
+
   try {
     await branchStore.fetchBranches(true)
 
@@ -668,12 +748,19 @@ const loadDefaultBranch = async () => {
     const defaultBranch = branches.value.find(b => b.name.includes('4')) || branches.value[0]
 
     if (defaultBranch) {
-      
       branchStore.selectBranch(defaultBranch)
       await loadCategories()
     }
   } catch (error) {
     console.error('❌ Failed to load default branch:', error)
+    notificationStore.add({
+      type: 'error',
+      title: 'Failed to load branch',
+      message: 'Please check your internet connection and try again',
+      duration: 5000
+    })
+  } finally {
+    loading.value.branches = false
   }
 }
 
@@ -688,19 +775,31 @@ const selectBranch = async (branch: Branch) => {
 
 const loadCategories = async () => {
   loading.value.categories = true
+  loading.value.products = true
 
   try {
+    // Check if categories are already loaded (from App.vue preloading)
+    const hasCategories = categoriesWithProducts.value.length > 0
+    const hasProducts = products.value.length > 0
+
     
 
-    // Clear cache to force fresh data
-    productStore.clearCache()
+    // Only fetch categories if not already loaded
+    if (!hasCategories) {
+      
+      await productStore.fetchCategories(true) // force = true to get fresh data
+    } else {
+      
+    }
 
-    await productStore.fetchCategories(true) // force = true to get fresh data
-
-    // Load ALL products from backend database (with inventory data)
-    
+    // Only fetch products if not already loaded for this branch
     const branchId = selectedBranch.value?.id
-    await productStore.fetchProducts(undefined, true, branchId, true) // categoryId=undefined, force=true, branchId, useDatabase=true
+    if (!hasProducts || branchId) {
+      
+      await productStore.fetchProducts(undefined, true, branchId, true) // categoryId=undefined, force=true, branchId, useDatabase=true
+    } else {
+      
+    }
 
     // Auto-select first category if no category is selected
     if (!selectedCategory.value && categoriesWithProducts.value.length > 0) {
@@ -710,6 +809,7 @@ const loadCategories = async () => {
     }
 
     
+
   } catch (error) {
     console.error('❌ Failed to load categories and products:', error)
     notificationStore.add({
@@ -720,6 +820,7 @@ const loadCategories = async () => {
     })
   } finally {
     loading.value.categories = false
+    loading.value.products = false
   }
 }
 
@@ -727,6 +828,22 @@ const selectCategory = async (category: Category | null) => {
   productStore.selectCategory(category)
   // Don't reload products - just filter the existing ones
   // await loadProducts() // REMOVED: This was causing the wrong products to show
+}
+
+const selectDealsCategory = () => {
+  // Create a special "deals" category
+  const dealsCategory = {
+    id: 'deals',
+    name: 'deals',
+    display_name: t('deals.title'),
+    description: 'Products on sale',
+    image_url: null,
+    sort_order: -1,
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+  productStore.selectCategory(dealsCategory)
 }
 
 const loadProducts = async () => {
@@ -776,11 +893,17 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
     cartItem.quantity_step = product.quantity_step || product.custom_quantity
   }
 
-  // Add bottle information for draft beverages
-  if (bottles && bottleCost !== undefined) {
-    cartItem.bottles = bottles
-    cartItem.bottle_cost = bottleCost
+  // Check if this is a draft beverage (requires bottles)
+  if (isDraftBeverage(product)) {
     cartItem.is_draft_beverage = true
+
+    // Add bottle information if provided (fallback mode)
+    if (bottles) {
+      cartItem.bottles = bottles
+    }
+    if (bottleCost !== undefined) {
+      cartItem.bottle_cost = bottleCost
+    }
   }
 
   cartStore.addItem(cartItem)
@@ -788,11 +911,11 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
   // Show success notification
   const message = bottles
     ? `${product.display_name} (${quantity}L) з пляшками додано до кошика`
-    : `${product.display_name} added to your cart`
+    : `${product.display_name} ${t('cart.addedToCart')}`
 
   notificationStore.add({
     type: 'success',
-    title: 'Added to cart!',
+    title: t('cart.addedToCart'),
     message,
     duration: 2000
   })
@@ -802,6 +925,37 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
 
   // Success haptic feedback
   await capacitorService.hapticNotification('success')
+}
+
+const addBottleToCart = async (bottleItem: any) => {
+  // Haptic feedback for better UX
+  await capacitorService.hapticImpact('light')
+
+  const cartItem: any = {
+    product_id: `bottle_${bottleItem.poster_product_id}`,
+    poster_product_id: bottleItem.poster_product_id,
+    name: bottleItem.name,
+    price: bottleItem.price,
+    quantity: bottleItem.quantity,
+    image_url: '',
+    unit: 'pcs',
+    is_bottle_product: true
+  }
+
+  cartStore.addItem(cartItem)
+
+  // Show success notification
+  const message = `${bottleItem.name} (${bottleItem.quantity}шт) додано до кошика`
+
+  notificationStore.add({
+    type: 'success',
+    title: 'Тара додана',
+    message,
+    duration: 1500
+  })
+
+  // Show native toast on mobile
+  await capacitorService.showToast(message, 'short')
 }
 
 const calculateDeliveryFee = (distanceKm: number): number => {
@@ -838,15 +992,18 @@ const hideRecommendations = () => {
 
 // Lifecycle
 onMounted(async () => {
+  try {
+    // Load banners for the slider
+    await bannerStore.fetchBanners()
 
-
-  // Load banners for the slider
-  await bannerStore.fetchBanners()
-
-  // Load default branch (Branch 4) and show products immediately for better UX
-  await loadDefaultBranch()
-
-
+    // Load default branch (Branch 4) and show products immediately for better UX
+    await loadDefaultBranch()
+  } catch (error) {
+    console.error('❌ Failed to initialize shop:', error)
+  } finally {
+    // Always set initial loading to false when done
+    loading.value.initial = false
+  }
 })
 </script>
 

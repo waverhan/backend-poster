@@ -58,7 +58,7 @@
             <div>
               <h4 class="text-sm font-medium text-gray-900 mb-2">Сума замовлення</h4>
               <div class="text-lg font-semibold text-gray-900">
-                {{ order.total.toFixed(2) }} ₴
+                {{ (order.total / 100).toFixed(2) }} ₴
               </div>
               <div class="text-xs text-gray-500">
                 {{ order.items.length }} {{ getItemsText(order.items.length) }}
@@ -80,7 +80,7 @@
                   <span class="text-gray-500 ml-2">× {{ item.quantity }}</span>
                 </div>
                 <span class="text-gray-900 font-medium">
-                  {{ (item.quantity * item.price).toFixed(2) }} ₴
+                  {{ (item.quantity * item.price / 100).toFixed(2) }} ₴
                 </span>
               </div>
             </div>

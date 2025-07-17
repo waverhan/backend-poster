@@ -186,7 +186,7 @@
         </div>
 
         <!-- Requires Bottles -->
-        <div class="mb-6">
+        <div class="mb-4">
           <label class="flex items-center">
             <input
               v-model="formData.requires_bottles"
@@ -198,6 +198,83 @@
           <p class="text-xs text-gray-500 mt-1">
             Enable this for draft beverages like beer, wine, cider, or kvas that need bottle size selection
           </p>
+        </div>
+
+        <!-- Custom Quantity Settings -->
+        <div class="mb-6 border-t pt-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-3">Custom Quantity Settings</h3>
+          <p class="text-xs text-gray-500 mb-3">
+            Configure custom quantities for weight-based products (e.g., caviar, snacks sold by grams)
+          </p>
+
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Custom Quantity
+              </label>
+              <input
+                v-model.number="formData.custom_quantity"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 0.05 for 50g"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Unit
+              </label>
+              <input
+                v-model="formData.custom_unit"
+                type="text"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., г, мл, L"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Quantity Step
+              </label>
+              <input
+                v-model.number="formData.quantity_step"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0.05"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Min Quantity
+              </label>
+              <input
+                v-model.number="formData.min_quantity"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="0.05"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Max Quantity
+              </label>
+              <input
+                v-model.number="formData.max_quantity"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="1.0"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- Buttons -->
@@ -275,7 +352,9 @@ const formData = ref({
 
 // Watch for product changes to populate form
 watch(() => props.product, (newProduct) => {
+  
   if (newProduct) {
+
     formData.value = {
       poster_product_id: newProduct.poster_product_id || '',
       category_id: newProduct.category_id || '',
@@ -294,6 +373,8 @@ watch(() => props.product, (newProduct) => {
       min_quantity: newProduct.min_quantity || null,
       max_quantity: newProduct.max_quantity || null
     }
+
+    
   } else {
     // Reset form for new product
     formData.value = {
@@ -332,6 +413,7 @@ watch(() => formData.value.image_url, (newImageUrl) => {
 })
 
 const handleSubmit = async () => {
+  
   isLoading.value = true
 
   try {
@@ -342,6 +424,7 @@ const handleSubmit = async () => {
       original_price: formData.value.original_price || formData.value.price
     }
 
+    
     emit('save', productData)
   } finally {
     isLoading.value = false

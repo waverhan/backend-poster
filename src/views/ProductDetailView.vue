@@ -153,6 +153,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
@@ -163,6 +164,10 @@ import type { Product } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+
+// Translation
+const { t } = useI18n()
+
 const productStore = useProductStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
@@ -228,8 +233,8 @@ const addToCart = () => {
 
   notificationStore.add({
     type: 'success',
-    title: 'Added to Cart',
-    message: `${product.value.display_name} has been added to your cart`,
+    title: t('cart.addedToCart'),
+    message: `${product.value.display_name} ${t('cart.addedToCart')}`,
     duration: 3000
   })
 }

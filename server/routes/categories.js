@@ -9,7 +9,8 @@ const router = express.Router()
 // GET /api/categories
 router.get('/', async (req, res) => {
   try {
-    const categories = await getCategories()
+    const includeInactive = req.query.includeInactive === 'true'
+    const categories = await getCategories(includeInactive)
     res.json(categories)
   } catch (error) {
     console.error('Error fetching categories:', error)
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
 // POST /api/categories
 router.post('/', async (req, res) => {
   try {
-    console.log('📝 Creating category with data:', req.body)
+    
 
     const { name, display_name, description, image_url, sort_order, is_active } = req.body
 
@@ -35,7 +36,7 @@ router.post('/', async (req, res) => {
       ? name.trim()
       : display_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
-    console.log('📝 Processed category name:', categoryName)
+    
 
     const category = await prisma.category.create({
       data: {
@@ -54,7 +55,7 @@ router.post('/', async (req, res) => {
       }
     })
 
-    console.log('✅ Category created successfully:', category.id)
+    
 
     const formattedCategory = {
       id: category.id,
@@ -98,18 +99,49 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params
+    console.log(`📥 PUT /api/categories/${id} - Request received`)
+
     const { name, display_name, description, image_url, sort_order, is_active } = req.body
+
+    console.log(`🔄 Updating category ${id} with data:`, {
+      name, display_name, description, image_url, sort_order, is_active
+    })
+
+    // First check if category exists
+    const existingCategory = await prisma.category.findUnique({
+      where: { id }
+    })
+
+    if (!existingCategory) {
+      console.error(`❌ Category not found: ${id}`)
+      return res.status(404).json({ error: 'Category not found' })
+    }
+
+    // Prepare update data, filtering out undefined values and validating types
+    const updateData = {}
+    if (name !== undefined) updateData.name = name
+    if (display_name !== undefined) updateData.display_name = display_name
+    if (description !== undefined) updateData.description = description
+    if (image_url !== undefined) updateData.image_url = image_url
+    if (sort_order !== undefined) {
+      // Ensure sort_order is a number
+      let sortOrderNum
+      if (typeof sort_order === 'number') {
+        sortOrderNum = sort_order
+      } else {
+        sortOrderNum = parseInt(sort_order, 10)
+        if (isNaN(sortOrderNum)) {
+          console.error(`❌ Invalid sort_order value: ${sort_order}`)
+          return res.status(400).json({ error: 'sort_order must be a valid number' })
+        }
+      }
+      updateData.sort_order = sortOrderNum
+    }
+    if (is_active !== undefined) updateData.is_active = is_active
 
     const category = await prisma.category.update({
       where: { id },
-      data: {
-        name,
-        display_name,
-        description,
-        image_url,
-        sort_order,
-        is_active
-      },
+      data: updateData,
       include: {
         products: {
           where: { is_active: true },
@@ -131,10 +163,26 @@ router.put('/:id', async (req, res) => {
       product_count: category.products.length
     }
 
+    
     res.json(formattedCategory)
   } catch (error) {
-    console.error('Error updating category:', error)
-    res.status(500).json({ error: 'Failed to update category' })
+    console.error('❌ Error updating category:', error)
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      stack: error.stack
+    })
+    console.error('❌ Request details:', {
+      params: req.params,
+      body: req.body,
+      headers: req.headers
+    })
+    res.status(500).json({
+      error: 'Failed to update category',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: error.code
+    })
   }
 })
 

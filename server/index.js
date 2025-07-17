@@ -26,8 +26,37 @@ const app = express()
 const port = process.env.PORT || 3001
 const prisma = new PrismaClient()
 
-// Middleware
-app.use(cors())
+// Middleware - Simple CORS configuration that allows all origins
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200
+}))
+
+// Additional CORS headers for extra compatibility
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin')
+  res.header('Access-Control-Allow-Credentials', 'true')
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end()
+    return
+  }
+
+  next()
+})
+
+// Add request logging for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url} - Origin: ${req.headers.origin}`)
+  next()
+})
+
 app.use(express.json())
 
 // Serve static images FIRST (before API routes)
@@ -39,6 +68,16 @@ app.use('/images', (req, res, next) => {
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'PWA POS Backend is running' })
+})
+
+// CORS test endpoint
+app.get('/cors-test', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'CORS is working',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  })
 })
 
 // API Routes

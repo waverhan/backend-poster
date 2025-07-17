@@ -2,8 +2,8 @@
   <div class="delivery-method-selector">
     <!-- Header -->
     <div class="mb-6">
-      <h2 class="text-xl font-semibold text-gray-900 mb-2">Choose Delivery Method</h2>
-      <p class="text-sm text-gray-600">Select how you'd like to receive your order</p>
+      <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ $t('checkout.chooseDeliveryMethod') }}</h2>
+      <p class="text-sm text-gray-600">{{ $t('checkout.selectHowReceive') }}</p>
     </div>
 
 
@@ -30,10 +30,10 @@
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-gray-600 text-lg">🚚</span>
-              <h3 class="font-medium text-gray-900">Delivery</h3>
+              <h3 class="font-medium text-gray-900">{{ $t('checkout.delivery') }}</h3>
             </div>
             <p class="text-sm text-gray-600 mb-2">
-              We'll deliver to your address
+              {{ $t('checkout.deliveryDescription') }}
             </p>
             <div v-if="nearestBranch && userLocation" class="text-xs text-gray-500">
               <p>From: {{ nearestBranch.name }}</p>
@@ -66,13 +66,13 @@
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-gray-600 text-lg">🏪</span>
-              <h3 class="font-medium text-gray-900">Pickup</h3>
+              <h3 class="font-medium text-gray-900">{{ $t('checkout.pickup') }}</h3>
             </div>
             <p class="text-sm text-gray-600 mb-2">
-              Pick up from our store
+              {{ $t('checkout.pickupDescription') }}
             </p>
             <div class="text-xs text-green-600 font-medium">
-              Free
+              {{ $t('checkout.free') }}
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@
     <!-- No branches available -->
     <div v-else class="text-center py-8">
       <div class="text-2xl mb-2">🏪</div>
-      <p class="text-gray-600 mb-2">No delivery options available</p>
+      <p class="text-gray-600 mb-2">{{ $t('checkout.noDeliveryOptions') }}</p>
       <p class="text-sm text-gray-500">Branches: {{ branchStore.branches.length }}, Available: {{ availableBranches.length }}</p>
     </div>
 
@@ -182,19 +182,19 @@
     <div v-if="canProceed" class="mt-4 p-3 bg-gray-50 rounded-lg">
       <div class="text-sm">
         <div class="flex justify-between items-center">
-          <span class="text-gray-600">Method:</span>
-          <span class="font-medium">{{ selectedMethod === 'delivery' ? 'Delivery' : 'Pickup' }}</span>
+          <span class="text-gray-600">{{ $t('checkout.method') }}:</span>
+          <span class="font-medium">{{ selectedMethod === 'delivery' ? $t('checkout.delivery') : $t('checkout.pickup') }}</span>
         </div>
         <div v-if="selectedMethod === 'delivery' && nearestBranch" class="flex justify-between items-center mt-1">
-          <span class="text-gray-600">From:</span>
+          <span class="text-gray-600">{{ $t('checkout.from') }}:</span>
           <span class="font-medium">{{ nearestBranch.name }}</span>
         </div>
         <div v-if="selectedMethod === 'pickup' && selectedPickupBranch" class="flex justify-between items-center mt-1">
-          <span class="text-gray-600">Location:</span>
+          <span class="text-gray-600">{{ $t('checkout.location') }}:</span>
           <span class="font-medium">{{ selectedPickupBranch.name }}</span>
         </div>
         <div class="flex justify-between items-center mt-1">
-          <span class="text-gray-600">Fee:</span>
+          <span class="text-gray-600">{{ $t('checkout.fee') }}:</span>
           <span class="font-medium text-green-600">{{ totalFee }} UAH</span>
         </div>
       </div>
@@ -205,6 +205,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 // Using text icons instead of Heroicons for now
 import { useLocationStore } from '@/stores/location'
 import { useBranchStore } from '@/stores/branch'
@@ -236,6 +237,9 @@ const emit = defineEmits<{
 
 // Router
 const router = useRouter()
+
+// Translation
+const { t } = useI18n()
 
 // Stores
 const locationStore = useLocationStore()
@@ -307,12 +311,12 @@ const canProceed = computed(() => {
 })
 
 const confirmButtonText = computed(() => {
-  if (!selectedMethod.value) return 'Select Method'
+  if (!selectedMethod.value) return t('checkout.selectMethod')
   if (selectedMethod.value === 'delivery' && !userLocation.value) return 'Detect Location'
   if (selectedMethod.value === 'pickup' && !selectedPickupBranch.value) return 'Select Branch'
 
   // Different text based on context
-  if (props.context === 'cart') return 'Proceed to Checkout'
+  if (props.context === 'cart') return t('checkout.proceedToCheckout')
   if (props.context === 'checkout') return 'Continue'
   return 'Continue'
 })

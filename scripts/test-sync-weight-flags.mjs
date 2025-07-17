@@ -43,7 +43,7 @@ async function testSyncWeightFlags() {
         // Test name-based fallback
         const nameBasedProducts = products.filter(p => {
           const hasWeightFlag = p.attributes && p.attributes.Weight_Flag === '1'
-          const hasWeightKeywords = ['ікра', 'анчоус', 'арахіс'].some(keyword => 
+          const hasWeightKeywords = ['анчоус', 'арахіс'].some(keyword =>
             p.name.toLowerCase().includes(keyword)
           )
           return !hasWeightFlag && hasWeightKeywords

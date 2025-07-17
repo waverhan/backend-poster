@@ -39,7 +39,7 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs text-gray-600 mb-1">Adjustment Type</label>
-              <select v-model="priceAdjustment.type" 
+              <select v-model="priceAdjustment.type"
                       :disabled="!updateFields.price"
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:bg-gray-100">
                 <option value="set">Set Fixed Price</option>
@@ -47,12 +47,14 @@
                 <option value="decrease_percent">Decrease by %</option>
                 <option value="increase_amount">Increase by Amount</option>
                 <option value="decrease_amount">Decrease by Amount</option>
+                <option value="multiply">Multiply by Factor</option>
               </select>
             </div>
             <div>
               <label class="block text-xs text-gray-600 mb-1">
-                {{ priceAdjustment.type === 'set' ? 'New Price (UAH)' : 
-                   priceAdjustment.type.includes('percent') ? 'Percentage' : 'Amount (UAH)' }}
+                {{ priceAdjustment.type === 'set' ? 'New Price (UAH)' :
+                   priceAdjustment.type.includes('percent') ? 'Percentage' :
+                   priceAdjustment.type === 'multiply' ? 'Multiplier (e.g., 10 for 10x)' : 'Amount (UAH)' }}
               </label>
               <input v-model.number="priceAdjustment.value"
                      :disabled="!updateFields.price"
@@ -201,7 +203,7 @@ const formData = ref({
 })
 
 const priceAdjustment = ref({
-  type: 'set' as 'set' | 'increase_percent' | 'decrease_percent' | 'increase_amount' | 'decrease_amount',
+  type: 'set' as 'set' | 'increase_percent' | 'decrease_percent' | 'increase_amount' | 'decrease_amount' | 'multiply',
   value: 0
 })
 

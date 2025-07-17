@@ -8,10 +8,6 @@ async function fixWeightBasedPricesSQL() {
 
     // Weight-based products that need price conversion
     const weightBasedProducts = [
-      'ікра мінтая',
-      'ікра судака', 
-      'ікра тарані',
-      'Ікряники',
       'анчоус ваг.',
       'Арахіс бекон',
       'Арахіс сир', 
@@ -55,8 +51,6 @@ async function fixWeightBasedPricesSQL() {
 
     console.log(`\n✅ Updated ${updatedCount} weight-based products`)
     console.log('\n🧪 Price conversion examples:')
-    console.log('• ікра судака: 170 UAH/100g → 1700 UAH/kg (50g = 85 UAH)')
-    console.log('• Ікряники: 80 UAH/100g → 800 UAH/kg (50g = 40 UAH)')
     console.log('• анчоус ваг.: 78 UAH/100g → 780 UAH/kg (50g = 39 UAH)')
     console.log('\n🎯 Now the prices correctly show per kg with 50g portion pricing!')
 

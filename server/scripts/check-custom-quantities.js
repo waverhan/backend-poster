@@ -35,15 +35,13 @@ async function checkCustomQuantities() {
     })
 
     // Check specific products mentioned by user
-    console.log('🔍 Checking specific products (Анчоус, ікра)...\n')
+    console.log('🔍 Checking specific products (Анчоус)...\n')
 
     const specificProducts = await prisma.product.findMany({
       where: {
         OR: [
           { name: { contains: 'Анчоус' } },
-          { name: { contains: 'ікра' } },
-          { display_name: { contains: 'Анчоус' } },
-          { display_name: { contains: 'ікра' } }
+          { display_name: { contains: 'Анчоус' } }
         ]
       },
       select: {

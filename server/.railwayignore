@@ -6,7 +6,13 @@
 
 # Backend files to ignore
 node_modules/
-public/
+# Ignore large image files but keep directory structure for image sync
+public/images/products/*.jpg
+public/images/products/*.png
+public/images/products/*.jpeg
+public/images/banners/*.jpg
+public/images/banners/*.png
+public/images/banners/*.jpeg
 *.log
 .env.local
 .env.development.local
@@ -44,3 +50,31 @@ prisma/dev.db-journal
 *.sqlite
 *.sqlite3
 dev.db
+
+# Test files and development scripts
+scripts/test-*.mjs
+scripts/test-*.js
+scripts/*test*.mjs
+scripts/*test*.js
+scripts/add-*.mjs
+scripts/add-*.js
+scripts/fix-*.mjs
+scripts/fix-*.js
+scripts/update-*.mjs
+scripts/update-*.js
+scripts/list-*.mjs
+scripts/list-*.js
+scripts/check-*.mjs
+scripts/check-*.js
+scripts/reset-*.mjs
+scripts/reset-*.js
+
+# Specific unnecessary development files
+scripts/add-weight-based-products.mjs
+scripts/fix-weight-based-detection.mjs
+scripts/fix-weight-prices-sql.mjs
+scripts/update-weight-products.mjs
+scripts/list-products.mjs
+scripts/test-sync-weight-flags.mjs
+scripts/test-weight-price-conversion.mjs
+scripts/reset-ikr-to-piece-based.mjs

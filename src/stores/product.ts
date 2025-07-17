@@ -60,6 +60,12 @@ export const useProductStore = defineStore('product', () => {
     return (id: string) => products.value.find(product => product.id === id)
   })
 
+  const productsOnSale = computed(() => {
+    return availableProducts.value.filter(product =>
+      product.original_price && product.original_price > product.price
+    )
+  })
+
   const categoriesWithProducts = computed(() => {
     // Safety check for categories array
     if (!Array.isArray(categories.value)) {
@@ -86,28 +92,32 @@ export const useProductStore = defineStore('product', () => {
   })
 
   // Actions
-  const fetchCategories = async (force = false, useDatabase = true) => {
+  const fetchCategories = async (force = false, useDatabase = true, includeInactive = false) => {
     if (isLoading.value) return
-    if (!force && categories.value.length > 0 && !isDataStale.value) return
+    if (!force && categories.value.length > 0 && !isDataStale.value && !includeInactive) return
 
     isLoading.value = true
     error.value = null
 
     try {
       if (useDatabase) {
-        
-        const fetchedCategories = await backendApi.getCategories()
-        categories.value = fetchedCategories.filter(category => category.is_active)
-        
+
+        const fetchedCategories = await backendApi.getCategories(includeInactive)
+        // Only filter by is_active if not explicitly including inactive items
+        categories.value = includeInactive ? fetchedCategories : fetchedCategories.filter(category => category.is_active)
+
       } else {
-        
+
         const fetchedCategories = await posterApi.getCategories()
-        categories.value = fetchedCategories.filter(category => category.is_active)
-        
+        categories.value = includeInactive ? fetchedCategories : fetchedCategories.filter(category => category.is_active)
+
       }
 
       lastFetched.value = new Date()
-      saveToStorage()
+      // Only save to storage if not including inactive items (for normal app usage)
+      if (!includeInactive) {
+        saveToStorage()
+      }
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch categories'
       console.error('❌ Failed to fetch categories:', err)
@@ -120,9 +130,9 @@ export const useProductStore = defineStore('product', () => {
     }
   }
 
-  const fetchProducts = async (categoryId?: string, force = false, branchId?: string, useDatabase = true) => {
+  const fetchProducts = async (categoryId?: string, force = false, branchId?: string, useDatabase = true, includeInactive = false) => {
     if (isLoading.value) return
-    if (!force && products.value.length > 0 && !isDataStale.value && !categoryId) return
+    if (!force && products.value.length > 0 && !isDataStale.value && !categoryId && !includeInactive) return
 
     isLoading.value = true
     error.value = null
@@ -132,19 +142,19 @@ export const useProductStore = defineStore('product', () => {
 
       if (useDatabase) {
         // Fetch from backend API with optional branch filtering
-        
-        fetchedProducts = await backendApi.getProducts(categoryId, branchId)
-        
+
+        fetchedProducts = await backendApi.getProducts(categoryId, branchId, includeInactive)
+
       } else {
         // Fallback to Poster API
         if (branchId) {
-          
+
           fetchedProducts = await posterApi.getProductsWithInventory(branchId, categoryId)
         } else {
-          
+
           fetchedProducts = await posterApi.getProducts(categoryId)
         }
-        
+
       }
 
       if (categoryId) {
@@ -273,6 +283,9 @@ export const useProductStore = defineStore('product', () => {
   }
 
   const refreshProducts = async () => {
+    // Clear localStorage cache to force fresh data
+    localStorage.removeItem('products')
+    localStorage.removeItem('categories')
     await fetchProducts(undefined, true)
   }
 
@@ -315,11 +328,22 @@ export const useProductStore = defineStore('product', () => {
 
   const syncImages = async () => {
     try {
-      
+
       await backendApi.syncImages()
-      
+
     } catch (err: any) {
       console.error('❌ Image sync failed:', err)
+    }
+  }
+
+  const downloadImages = async () => {
+    try {
+
+      await backendApi.downloadImages()
+
+    } catch (err: any) {
+      console.error('❌ Image download failed:', err)
+      throw err
     }
   }
 
@@ -409,6 +433,7 @@ export const useProductStore = defineStore('product', () => {
     inStockProducts,
     outOfStockProducts,
     productById,
+    productsOnSale,
     categoriesWithProducts,
     isDataStale,
 
@@ -427,6 +452,7 @@ export const useProductStore = defineStore('product', () => {
     syncFromPoster,
     quickInventorySync,
     syncImages,
+    downloadImages,
     validateProduct,
     validateCategory,
     clearCache,

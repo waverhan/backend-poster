@@ -5,13 +5,15 @@ const prisma = new PrismaClient()
 export { prisma }
 
 // Categories
-export async function getCategories() {
+export async function getCategories(includeInactive = false) {
+  const where = includeInactive ? {} : { is_active: true }
+
   const categories = await prisma.category.findMany({
-    where: { is_active: true },
+    where,
     orderBy: { sort_order: 'asc' },
     include: {
       products: {
-        where: { is_active: true },
+        where: includeInactive ? {} : { is_active: true },
         select: { id: true }
       }
     }
@@ -141,8 +143,8 @@ function convertPrice(price, product) {
 }
 
 // Products
-export async function getProducts(categoryId, branchId) {
-  const where = { is_active: true }
+export async function getProducts(categoryId, branchId, includeInactive = false) {
+  const where = includeInactive ? {} : { is_active: true }
   if (categoryId) {
     where.category_id = categoryId
   }
@@ -283,15 +285,18 @@ export async function createProduct(data) {
 }
 
 // Branches
-export async function getBranches() {
+export async function getBranches(includeInactive = false) {
+  const where = includeInactive ? {} : { is_active: true }
+
   const branches = await prisma.branch.findMany({
-    where: { is_active: true },
+    where,
     orderBy: { name: 'asc' }
   })
 
   return branches.map(branch => ({
     id: branch.id,
     poster_id: branch.poster_id,
+    shop_id: branch.shop_id,
     name: branch.name,
     address: branch.address || '',
     phone: branch.phone || '',
@@ -355,13 +360,16 @@ export async function updateBranch(id, data) {
       longitude: data.longitude,
       delivery_available: data.delivery_available,
       pickup_available: data.pickup_available,
-      is_active: data.is_active
+      is_active: data.is_active,
+      poster_id: data.poster_id,
+      shop_id: data.shop_id
     }
   })
 
   return {
     id: branch.id,
     poster_id: branch.poster_id,
+    shop_id: branch.shop_id,
     name: branch.name,
     address: branch.address || '',
     phone: branch.phone || '',

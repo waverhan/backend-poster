@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
 import { useProductStore } from '@/stores/product'
 import { useLocationStore } from '@/stores/location'
@@ -113,6 +114,9 @@ const emit = defineEmits<{
   productSelected: [product: Product]
   hideRecommendations: []
 }>()
+
+// Translation
+const { t } = useI18n()
 
 // Stores
 const cartStore = useCartStore()
@@ -316,8 +320,8 @@ const addToCart = (product: Product) => {
   // Show success notification
   notificationStore.add({
     type: 'success',
-    title: 'Added to cart',
-    message: `${product.display_name || product.name} added to cart`,
+    title: t('cart.addedToCart'),
+    message: `${product.display_name || product.name} ${t('cart.addedToCart')}`,
     duration: 2000
   })
 

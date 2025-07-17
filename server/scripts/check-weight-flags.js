@@ -10,7 +10,6 @@ async function checkWeightFlags() {
     const weightProducts = await prisma.product.findMany({
       where: {
         OR: [
-          { name: { contains: 'ікра' } },
           { name: { contains: 'анчоус' } },
           { name: { contains: 'арахіс' } }
         ]

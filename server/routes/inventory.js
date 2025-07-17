@@ -280,7 +280,7 @@ router.get('/sync/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10
 
-    `)
+    
 
     const syncHistory = await prisma.syncLog.findMany({
       where: { sync_type: 'inventory' },

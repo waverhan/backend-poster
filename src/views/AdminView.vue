@@ -71,7 +71,7 @@
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Data Sync</h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
           <!-- Full Sync -->
           <div class="border border-gray-200 rounded-lg p-4">
             <h3 class="font-medium text-gray-900 mb-2">Full Sync</h3>
@@ -82,6 +82,48 @@
               class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ isLoading ? 'Syncing...' : 'Start Full Sync' }}
+            </button>
+          </div>
+
+          <!-- Products Only Sync -->
+          <div class="border border-orange-200 rounded-lg p-4 bg-orange-50">
+            <h3 class="font-medium text-gray-900 mb-2 flex items-center">
+              <span class="text-orange-600 mr-2">🛍️</span>
+              Products Only Sync
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Sync products from Poster API while <strong>preserving your category changes</strong></p>
+            <div class="bg-orange-100 border border-orange-200 rounded-lg p-2 mb-3">
+              <p class="text-xs text-orange-800">
+                ✅ <strong>Safe for modified categories</strong> - Your category changes will NOT be overwritten
+              </p>
+            </div>
+            <button
+              @click="handleProductsOnlySync"
+              :disabled="isLoading"
+              class="w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Syncing...' : 'Sync Products Only' }}
+            </button>
+          </div>
+
+          <!-- Price Sync -->
+          <div class="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+            <h3 class="font-medium text-gray-900 mb-2 flex items-center">
+              <span class="text-yellow-600 mr-2">💰</span>
+              Price Sync
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Update product prices from Poster API while <strong>preserving all other data</strong></p>
+            <div class="bg-yellow-100 border border-yellow-200 rounded-lg p-2 mb-3">
+              <p class="text-xs text-yellow-800">
+                ✅ <strong>Safe update</strong> - Only prices will be updated, all other product data preserved
+              </p>
+            </div>
+            <button
+              @click="handlePriceSync"
+              :disabled="isLoading"
+              class="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Syncing...' : 'Sync Prices Only' }}
             </button>
           </div>
 
@@ -101,13 +143,26 @@
           <!-- Image Sync -->
           <div class="border border-gray-200 rounded-lg p-4">
             <h3 class="font-medium text-gray-900 mb-2">Image Sync</h3>
-            <p class="text-sm text-gray-600 mb-4">Download and store product images</p>
+            <p class="text-sm text-gray-600 mb-4">Download fresh product images from Poster API and store locally</p>
             <button
               @click="handleImageSync"
               :disabled="isLoading"
               class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ isLoading ? 'Syncing...' : 'Sync Images' }}
+              {{ isLoading ? 'Downloading...' : 'Download Images' }}
+            </button>
+          </div>
+
+          <!-- Fix Image URLs -->
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h3 class="font-medium text-gray-900 mb-2">Fix Image URLs</h3>
+            <p class="text-sm text-gray-600 mb-4">Update database URLs to local images</p>
+            <button
+              @click="handleFixImageUrls"
+              :disabled="isLoading"
+              class="w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Fixing...' : 'Fix URLs' }}
             </button>
           </div>
 
@@ -204,7 +259,10 @@
                 <td class="px-6 py-4">
                   <div class="text-sm font-medium text-gray-900">{{ order.customer_name }}</div>
                   <div class="text-sm text-gray-500">{{ order.customer_email }}</div>
-                  <div class="text-sm text-gray-500">{{ order.customer_phone }}</div>
+                  <div class="text-sm text-gray-500">{{ formatPhoneNumber(order.customer_phone) }}</div>
+                  <div v-if="order.no_callback_confirmation" class="text-xs text-blue-600 mt-1">
+                    ✓ Без дзвінка для підтвердження
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm text-gray-900">
@@ -261,7 +319,17 @@
         <!-- Branches Management -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">Branches</h2>
+          <div class="flex items-center space-x-4">
+            <h2 class="text-lg font-semibold text-gray-900">Branches</h2>
+            <label class="flex items-center space-x-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                v-model="showInactiveBranches"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Show inactive</span>
+            </label>
+          </div>
           <button
             @click="openBranchModal()"
             class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -282,9 +350,16 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="branch in branches" :key="branch.id">
+              <tr v-for="branch in branches" :key="branch.id" :class="{ 'opacity-50 bg-gray-50': !branch.is_active }">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ branch.display_name || branch.name }}</div>
+                  <div class="flex items-center space-x-2">
+                    <div class="text-sm font-medium" :class="branch.is_active ? 'text-gray-900' : 'text-gray-500'">
+                      {{ branch.display_name || branch.name }}
+                    </div>
+                    <span v-if="!branch.is_active" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  </div>
                   <div class="text-sm text-gray-500">ID: {{ branch.id }}</div>
                 </td>
                 <td class="px-6 py-4">
@@ -333,7 +408,17 @@
         <!-- Categories Management -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">Categories</h2>
+          <div class="flex items-center space-x-4">
+            <h2 class="text-lg font-semibold text-gray-900">Categories</h2>
+            <label class="flex items-center space-x-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                v-model="showInactiveCategories"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Show inactive</span>
+            </label>
+          </div>
           <button
             @click="openCategoryModal()"
             class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -353,9 +438,16 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="category in categories" :key="category.id">
+              <tr v-for="category in categories" :key="category.id" :class="{ 'opacity-50 bg-gray-50': !category.is_active }">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">{{ category.display_name }}</div>
+                  <div class="flex items-center space-x-2">
+                    <div class="text-sm font-medium" :class="category.is_active ? 'text-gray-900' : 'text-gray-500'">
+                      {{ category.display_name }}
+                    </div>
+                    <span v-if="!category.is_active" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  </div>
                   <div class="text-sm text-gray-500">ID: {{ category.id }}</div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -393,7 +485,17 @@
         <!-- Products Management -->
         <div class="bg-white rounded-lg shadow-sm p-6">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">Products</h2>
+          <div class="flex items-center space-x-4">
+            <h2 class="text-lg font-semibold text-gray-900">Products</h2>
+            <label class="flex items-center space-x-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                v-model="showInactiveProducts"
+                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span>Show inactive</span>
+            </label>
+          </div>
           <div class="flex space-x-2">
             <button
               v-if="selectedProducts.length > 0"
@@ -499,7 +601,10 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
               <tr v-for="product in sortedAndFilteredProducts" :key="product.id"
-                  :class="selectedProducts.includes(product.id) ? 'bg-blue-50' : 'hover:bg-gray-50'">
+                  :class="[
+                    selectedProducts.includes(product.id) ? 'bg-blue-50' : 'hover:bg-gray-50',
+                    !product.is_active ? 'opacity-50 bg-gray-50' : ''
+                  ]">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <input
                     type="checkbox"
@@ -516,8 +621,9 @@
                          class="h-10 w-10 rounded-lg object-cover mr-3"
                          @error="handleImageError($event, product.poster_product_id)">
                     <div>
-                      <div class="text-sm font-medium text-gray-900">
-                        <span v-if="!editingProduct[product.id]?.name">{{ product.display_name }}</span>
+                      <div class="flex items-center space-x-2">
+                        <div class="text-sm font-medium" :class="product.is_active ? 'text-gray-900' : 'text-gray-500'">
+                          <span v-if="!editingProduct[product.id]?.name">{{ product.display_name }}</span>
                         <input v-else
                                v-model="editingProduct[product.id].display_name"
                                @blur="saveInlineEdit(product.id)"
@@ -533,6 +639,10 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
+                        </div>
+                        <span v-if="!product.is_active" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Inactive
+                        </span>
                       </div>
                       <div class="text-sm text-gray-500">ID: {{ product.id }}</div>
                     </div>
@@ -624,6 +734,122 @@
         </div>
       </div>
 
+      <!-- Price Sync Tab Content -->
+      <div v-if="activeTab === 'price-sync'">
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-6">Price Synchronization & Bulk Operations</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Price Sync from Poster API -->
+            <div class="border border-gray-200 rounded-lg p-6">
+              <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                <span class="text-2xl mr-2">🔄</span>
+                Sync Prices from Poster API
+              </h3>
+              <p class="text-sm text-gray-600 mb-4">
+                Update all product prices from the Poster POS system. This will overwrite current prices with the latest data from Poster API.
+              </p>
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p class="text-xs text-yellow-800">
+                  ⚠️ This action will update prices for all products that have a Poster Product ID. Current prices will be overwritten.
+                </p>
+              </div>
+              <button
+                @click="handlePriceSync"
+                :disabled="isLoading"
+                class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ isLoading ? 'Syncing Prices...' : 'Sync Prices from Poster' }}
+              </button>
+            </div>
+
+            <!-- Bulk Price Operations -->
+            <div class="border border-gray-200 rounded-lg p-6">
+              <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                <span class="text-2xl mr-2">💰</span>
+                Bulk Price Operations
+              </h3>
+              <p class="text-sm text-gray-600 mb-4">
+                Apply price changes to multiple products at once. Select products from the Products tab first.
+              </p>
+
+              <div class="space-y-4">
+                <!-- Quick Multipliers -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Quick Price Multipliers</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button
+                      @click="applyQuickMultiplier(2)"
+                      :disabled="selectedProducts.length === 0 || isLoading"
+                      class="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 disabled:opacity-50"
+                    >
+                      ×2 (Double)
+                    </button>
+                    <button
+                      @click="applyQuickMultiplier(5)"
+                      :disabled="selectedProducts.length === 0 || isLoading"
+                      class="bg-orange-600 text-white px-3 py-2 rounded text-sm hover:bg-orange-700 disabled:opacity-50"
+                    >
+                      ×5 (5x)
+                    </button>
+                    <button
+                      @click="applyQuickMultiplier(10)"
+                      :disabled="selectedProducts.length === 0 || isLoading"
+                      class="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 disabled:opacity-50"
+                    >
+                      ×10 (10x)
+                    </button>
+                    <button
+                      @click="applyQuickMultiplier(0.5)"
+                      :disabled="selectedProducts.length === 0 || isLoading"
+                      class="bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      ×0.5 (Half)
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Custom Multiplier -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Custom Multiplier</label>
+                  <div class="flex space-x-2">
+                    <input
+                      v-model.number="customMultiplier"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      placeholder="e.g., 1.5"
+                      class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    >
+                    <button
+                      @click="applyQuickMultiplier(customMultiplier)"
+                      :disabled="selectedProducts.length === 0 || isLoading || !customMultiplier"
+                      class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Selected Products Info -->
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <p class="text-sm text-gray-600">
+                    {{ selectedProducts.length > 0
+                      ? `${selectedProducts.length} products selected for bulk operations`
+                      : 'No products selected. Go to Products tab and select products first.' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sync Status -->
+          <div v-if="syncStatus" class="mt-6 p-4 rounded-lg" :class="syncStatus.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'">
+            {{ syncStatus.message }}
+          </div>
+        </div>
+      </div>
+
       <!-- Banners Tab Content -->
       <div v-if="activeTab === 'banners'">
         <BannerManagement />
@@ -685,7 +911,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/product'
 import { useBranchStore } from '@/stores/branch'
@@ -726,6 +952,7 @@ const tabs = [
   { id: 'products', name: 'Products', icon: '🛍️' },
   { id: 'categories', name: 'Categories', icon: '📂' },
   { id: 'branches', name: 'Branches', icon: '🏪' },
+  { id: 'price-sync', name: 'Price Sync', icon: '💰' },
   { id: 'banners', name: 'Banners', icon: '🎨' },
   { id: 'inventory', name: 'Inventory Status', icon: '📋' },
   { id: 'analytics', name: 'AI Analytics', icon: '🤖' }
@@ -737,9 +964,17 @@ const selectedStatusFilter = ref('')
 const sortBy = ref('name')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
+// Show inactive items toggles
+const showInactiveProducts = ref(false)
+const showInactiveCategories = ref(false)
+const showInactiveBranches = ref(false)
+
 // Bulk editing
 const selectedProducts = ref<string[]>([])
 const showBulkEditModal = ref(false)
+
+// Price sync
+const customMultiplier = ref<number>(1)
 
 // Inline editing
 const editingProduct = ref<Record<string, any>>({})
@@ -888,62 +1123,12 @@ const handleBulkEdit = async (bulkUpdates: any) => {
   try {
     isLoading.value = true
 
-    // Apply bulk updates to each selected product
-    for (const productId of bulkUpdates.productIds) {
-      const updates: any = {}
+    
 
-      // Apply category update
-      if (bulkUpdates.updates.category_id) {
-        updates.category_id = bulkUpdates.updates.category_id
-      }
+    // Use the new backend bulk edit endpoint
+    const result = await backendApi.bulkEditProducts(bulkUpdates)
 
-      // Apply status updates
-      if (bulkUpdates.updates.is_active !== undefined) {
-        updates.is_active = bulkUpdates.updates.is_active
-      }
-      if (bulkUpdates.updates.requires_bottles !== undefined) {
-        updates.requires_bottles = bulkUpdates.updates.requires_bottles
-      }
-
-      // Apply custom quantity updates
-      if (bulkUpdates.updates.custom_quantity !== undefined) {
-        updates.custom_quantity = bulkUpdates.updates.custom_quantity
-        updates.custom_unit = bulkUpdates.updates.custom_unit
-        updates.quantity_step = bulkUpdates.updates.quantity_step
-      }
-
-      // Apply price updates
-      if (bulkUpdates.updates.priceAdjustment) {
-        const product = products.value.find(p => p.id === productId)
-        if (product) {
-          const { type, value } = bulkUpdates.updates.priceAdjustment
-          let newPrice = product.price
-
-          switch (type) {
-            case 'set':
-              newPrice = value
-              break
-            case 'increase_percent':
-              newPrice = product.price * (1 + value / 100)
-              break
-            case 'decrease_percent':
-              newPrice = product.price * (1 - value / 100)
-              break
-            case 'increase_amount':
-              newPrice = product.price + value
-              break
-            case 'decrease_amount':
-              newPrice = product.price - value
-              break
-          }
-
-          updates.price = Math.max(0, newPrice)
-        }
-      }
-
-      // Update the product
-      await backendApi.updateProduct(productId, updates)
-    }
+    
 
     // Refresh products and clear selection
     await productStore.fetchProducts(undefined, true)
@@ -952,10 +1137,14 @@ const handleBulkEdit = async (bulkUpdates: any) => {
 
     syncStatus.value = {
       type: 'success',
-      message: `Successfully updated ${bulkUpdates.productIds.length} products!`
+      message: result.message || `Successfully updated ${bulkUpdates.productIds.length} products!`
     }
-  } catch (error) {
-    syncStatus.value = { type: 'error', message: 'Failed to update products. Please try again.' }
+  } catch (error: any) {
+    console.error('❌ Bulk edit failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'Failed to update products. Please try again.'
+    }
   } finally {
     isLoading.value = false
   }
@@ -1027,6 +1216,62 @@ const handleFullSync = async () => {
   }
 }
 
+const handleProductsOnlySync = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    
+
+    const result = await backendApi.syncProductsOnly()
+    
+
+    // Refresh products to show updated data
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: result.message || 'Products-only sync completed successfully! Your category changes have been preserved.'
+    }
+  } catch (error: any) {
+    console.error('❌ Products-only sync failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'Products-only sync failed. Please try again.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handlePriceSync = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+
+
+    const result = await backendApi.syncPricesOnly()
+
+
+    // Refresh products to show updated prices
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: result.message || 'Price sync completed successfully! Product prices have been updated from Poster POS.'
+    }
+  } catch (error: any) {
+    console.error('❌ Price sync failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'Price sync failed. Please try again.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
 const handleQuickSync = async () => {
   isLoading.value = true
   syncStatus.value = null
@@ -1047,11 +1292,112 @@ const handleImageSync = async () => {
   syncStatus.value = null
 
   try {
-    await productStore.syncImages()
-    await productStore.fetchProducts(undefined, true) // Refresh products to get updated image URLs
-    syncStatus.value = { type: 'success', message: 'Image sync completed successfully!' }
+    // Use the download-images endpoint to fetch fresh images from Poster API
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/download-images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // Refresh products to get updated image URLs
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Image sync completed! Downloaded ${result.stats?.downloaded_images || 0} images for ${result.stats?.total_products || 0} products.`
+    }
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Image sync failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const handleFixImageUrls = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/fix-image-urls`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    
+
+    // Refresh products to show updated image URLs
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Image URL fix completed! Updated ${result.updated || 0} products out of ${result.total_products || 0} total.`
+    }
+  } catch (error) {
+    console.error('❌ Image URL fix failed:', error)
+    syncStatus.value = { type: 'error', message: 'Image URL fix failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const applyQuickMultiplier = async (multiplier: number) => {
+  if (selectedProducts.value.length === 0) {
+    syncStatus.value = { type: 'error', message: 'Please select products first from the Products tab.' }
+    return
+  }
+
+  if (!multiplier || multiplier <= 0) {
+    syncStatus.value = { type: 'error', message: 'Please enter a valid multiplier greater than 0.' }
+    return
+  }
+
+  try {
+    isLoading.value = true
+    
+
+    const bulkUpdates = {
+      productIds: selectedProducts.value,
+      updates: {
+        priceAdjustment: {
+          type: 'multiply',
+          value: multiplier
+        }
+      }
+    }
+
+    const result = await backendApi.bulkEditProducts(bulkUpdates)
+    
+
+    // Refresh products and clear selection
+    await productStore.fetchProducts(undefined, true)
+    selectedProducts.value = []
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Successfully applied ${multiplier}x multiplier to ${result.stats?.success || 0} products!`
+    }
+  } catch (error: any) {
+    console.error('❌ Quick multiplier failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'Failed to apply price multiplier. Please try again.'
+    }
   } finally {
     isLoading.value = false
   }
@@ -1146,6 +1492,7 @@ const closeCategoryModal = () => {
 }
 
 const openProductModal = (product?: Product) => {
+  
   selectedProduct.value = product || null
   showProductModal.value = true
 }
@@ -1314,6 +1661,32 @@ const formatOrderDate = (dateString: string): string => {
   })
 }
 
+const formatPhoneNumber = (phone: string): string => {
+  if (!phone) return ''
+
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '')
+
+  // If it's in the correct format (starts with 380 and 12 digits)
+  if (digits.startsWith('380') && digits.length === 12) {
+    const localDigits = digits.slice(3) // Remove 380 prefix (get 9 digits)
+    return `+38(0${localDigits.slice(0, 2)}) ${localDigits.slice(2, 5)}-${localDigits.slice(5, 7)}-${localDigits.slice(7, 9)}`
+  }
+
+  // If it starts with 0 (Ukrainian format)
+  if (digits.startsWith('0') && digits.length === 10) {
+    return `+38(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8, 10)}`
+  }
+
+  // If it's 9 digits (without leading 0)
+  if (digits.length === 9) {
+    return `+38(0${digits.slice(0, 2)}) ${digits.slice(2, 5)}-${digits.slice(5, 7)}-${digits.slice(7, 9)}`
+  }
+
+  // For invalid/short numbers, just return as is with a note
+  return phone + ' (неповний номер)'
+}
+
 const getStatusColor = (status: Order['status']): string => {
   const colors = {
     pending: 'bg-yellow-100 text-yellow-800',
@@ -1325,6 +1698,25 @@ const getStatusColor = (status: Order['status']): string => {
   }
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
+
+// Watch for toggle changes to refresh data
+watch(showInactiveProducts, async (newValue) => {
+  if (authStore.canAccessAdmin) {
+    await productStore.fetchProducts(undefined, true, undefined, true, newValue)
+  }
+})
+
+watch(showInactiveCategories, async (newValue) => {
+  if (authStore.canAccessAdmin) {
+    await productStore.fetchCategories(true, true, newValue)
+  }
+})
+
+watch(showInactiveBranches, async (newValue) => {
+  if (authStore.canAccessAdmin) {
+    await branchStore.fetchBranches(true, true, newValue)
+  }
+})
 
 // Initialize
 onMounted(async () => {

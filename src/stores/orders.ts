@@ -28,6 +28,7 @@ export interface Order {
   payment_method: string
   payment_status: 'pending' | 'paid' | 'failed'
   notes?: string
+  no_callback_confirmation?: boolean
   created_at: string
   updated_at: string
   estimated_delivery?: string
@@ -41,6 +42,7 @@ export interface OrderFormData {
   delivery_address?: string
   pickup_branch?: Branch
   notes?: string
+  no_callback_confirmation?: boolean
 }
 
 export const useOrdersStore = defineStore('orders', () => {

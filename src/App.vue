@@ -56,6 +56,8 @@ import { useLoadingStore } from '@/stores/loading'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useThemeStore } from '@/stores/theme'
 import { useDarkModeStore } from '@/stores/darkMode'
+import { useBranchStore } from '@/stores/branch'
+import { useProductStore } from '@/stores/product'
 import { licenseService } from '@/services/licenseService'
 import { storeToRefs } from 'pinia'
 
@@ -78,6 +80,8 @@ const loadingStore = useLoadingStore()
 const siteConfigStore = useSiteConfigStore()
 const themeStore = useThemeStore()
 const darkModeStore = useDarkModeStore()
+const branchStore = useBranchStore()
+const productStore = useProductStore()
 
 // Reactive refs
 const { isOnline } = storeToRefs(networkStore)
@@ -105,6 +109,38 @@ onMounted(async () => {
 
   // Initialize network monitoring
   await networkStore.initialize()
+
+  // Preload branches and categories for better UX
+  try {
+    console.log('🚀 App.vue: Starting data preloading...')
+
+    // Load branches first
+    await branchStore.fetchBranches()
+    console.log('📥 App.vue: Branches loaded:', branchStore.branches.length)
+
+    // Find and select default branch (Branch 4 or first available)
+    const branches = branchStore.branches
+    const defaultBranch = branches.find(b => b.name.includes('4')) || branches[0]
+
+    if (defaultBranch) {
+      branchStore.selectBranch(defaultBranch)
+      console.log('🎯 App.vue: Selected default branch:', defaultBranch.name)
+
+      // Preload categories and products for the default branch
+      await productStore.fetchCategories(true) // force = true for fresh data
+      console.log('📥 App.vue: Categories loaded:', productStore.categories.length)
+
+      await productStore.fetchProducts(undefined, true, defaultBranch.id, true) // categoryId=undefined, force=true, branchId, useDatabase=true
+      console.log('📥 App.vue: Products loaded:', productStore.products.length)
+
+      console.log('✅ App.vue: Preloaded categories and products for default branch')
+    } else {
+      console.warn('⚠️ App.vue: No default branch found')
+    }
+  } catch (error) {
+    console.warn('⚠️ App.vue: Failed to preload data:', error)
+    // Don't show error notification on app startup - let individual pages handle their own loading
+  }
 
   // Show welcome notification with site name
   const siteName = siteConfigStore.currentConfig.site_name

@@ -46,9 +46,14 @@ export class ProductAvailabilityService {
     
 
     for (const item of cartItems) {
-      // Get detailed inventory information
-      
+      // Skip inventory check for bottle products (they're always available)
+      if (item.is_bottle_product || item.product_id.startsWith('bottle_')) {
+        availableItems.push(item)
+        totalAvailableValue += item.subtotal || (item.price * item.quantity)
+        continue
+      }
 
+      // Get detailed inventory information for regular products
       const inventory = await this.getProductInventory(item.product_id, targetBranch.id)
       
 

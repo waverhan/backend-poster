@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue'
 export const useDarkModeStore = defineStore('darkMode', () => {
   // State
   const isDark = ref(false)
-  const isSystemPreference = ref(true)
+  const isSystemPreference = ref(false) // Default to manual mode
 
   // Getters
   const currentTheme = computed(() => isDark.value ? 'dark' : 'light')
@@ -60,20 +60,23 @@ export const useDarkModeStore = defineStore('darkMode', () => {
       const saved = localStorage.getItem('darkMode')
       if (saved) {
         const { isDark: savedIsDark, isSystemPreference: savedIsSystemPreference } = JSON.parse(saved)
-        isSystemPreference.value = savedIsSystemPreference ?? true
-        
+        isSystemPreference.value = savedIsSystemPreference ?? false // Default to manual mode
+
         if (isSystemPreference.value) {
           isDark.value = systemPrefersDark.value
         } else {
           isDark.value = savedIsDark ?? false
         }
       } else {
-        // First time - use system preference
-        isDark.value = systemPrefersDark.value
+        // First time - default to light mode (manual)
+        isSystemPreference.value = false
+        isDark.value = false
       }
     } catch (error) {
       console.error('Failed to load dark mode preference:', error)
-      isDark.value = systemPrefersDark.value
+      // Default to light mode on error
+      isSystemPreference.value = false
+      isDark.value = false
     }
   }
 

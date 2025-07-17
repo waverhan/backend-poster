@@ -23,26 +23,56 @@
         />
       </div>
 
-      <!-- House Number Input -->
-      <div class="mb-3">
-        <label class="block text-xs font-medium text-gray-600 mb-1">
-          Номер будинку
-        </label>
-        <input
-          v-model="houseNumber"
-          type="text"
-          placeholder="Введіть номер будинку..."
-          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          @input="handleHouseNumberChange"
-        />
+      <!-- House Number and Entrance Inputs -->
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <!-- House Number Input -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">
+            Номер будинку
+          </label>
+          <input
+            v-model="houseNumber"
+            type="text"
+            placeholder="Введіть номер будинку..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            @input="handleHouseNumberChange"
+          />
+        </div>
+
+        <!-- Entrance Input -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">
+            Під'їзд
+          </label>
+          <input
+            v-model="entrance"
+            type="text"
+            placeholder="Номер під'їзду..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            @input="handleEntranceChange"
+          />
+        </div>
       </div>
 
-      <!-- Combined Address Display -->
-      <div v-if="deliveryAddress" class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+
+
+      <!-- Delivery Info -->
+      <div class="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
         <div class="flex items-center gap-2">
-          <span class="text-blue-600">📍</span>
-          <span class="text-sm font-medium text-blue-900">{{ deliveryAddress }}</span>
+          <span class="text-green-600">🚚</span>
+          <span class="text-sm font-medium text-green-900">Доставка кур'єром до парадного</span>
         </div>
+      </div>
+
+      <!-- Find on Map Button -->
+      <div class="mb-4">
+        <button
+          @click="findAddressOnMap"
+          :disabled="!streetName || !houseNumber"
+          class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
+        >
+          🔍 Знайти на карті: "{{ searchButtonText }}"
+        </button>
       </div>
     </div>
 
@@ -208,6 +238,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useBranchStore } from '@/stores/branch'
 import { useLocationStore } from '@/stores/location'
+import { useNotificationStore } from '@/stores/notification'
 import AddressAutocomplete from '@/components/AddressAutocomplete.vue'
 import type { Branch, LocationData } from '@/types'
 import type { AddressSuggestion } from '@/services/addressAutocomplete'
@@ -240,6 +271,7 @@ const emit = defineEmits<{
 // Stores
 const branchStore = useBranchStore()
 const locationStore = useLocationStore()
+const notificationStore = useNotificationStore()
 
 // State
 const mapContainer = ref<HTMLDivElement>()
@@ -247,6 +279,7 @@ const map = ref<any>(null)
 const deliveryAddress = ref('')
 const streetName = ref('')
 const houseNumber = ref('')
+const entrance = ref('')
 const userLocation = ref<LocationData | null>(null)
 const selectedBranch = ref<Branch | null>(null)
 const distance = ref(0)
@@ -273,6 +306,24 @@ const estimatedDeliveryTime = computed(() => {
   if (distance.value <= 3) return '30-45 хв'
   if (distance.value <= 7) return '45-60 хв'
   return '60-90 хв'
+})
+
+const fullDeliveryAddress = computed(() => {
+  let address = deliveryAddress.value
+  if (entrance.value) {
+    address += `, під'їзд ${entrance.value}`
+  }
+  return address
+})
+
+const searchButtonText = computed(() => {
+  if (streetName.value && houseNumber.value) {
+    return `${streetName.value}, ${houseNumber.value}`
+  } else if (streetName.value) {
+    return streetName.value
+  } else {
+    return 'Введіть адресу'
+  }
 })
 
 // Methods
@@ -446,6 +497,64 @@ const handleManualStreet = async (street: string) => {
 
 const handleHouseNumberChange = () => {
   updateCombinedAddress()
+}
+
+const handleEntranceChange = () => {
+  // Entrance doesn't affect geocoding, just the display
+  // The fullDeliveryAddress computed property will handle the display
+}
+
+const findAddressOnMap = async () => {
+  if (!streetName.value || !houseNumber.value) return
+
+  try {
+    // Force update the combined address and geocode it
+    await updateCombinedAddress()
+
+    // Wait a moment for geocoding to complete
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // If we have a location, center the map on it
+    if (userLocation.value && map.value) {
+      map.value.setView([userLocation.value.latitude, userLocation.value.longitude], 16)
+
+      // Add or update the user marker
+      if (userMarker.value) {
+        map.value.removeLayer(userMarker.value)
+      }
+
+      if (L) {
+        userMarker.value = L.marker([userLocation.value.latitude, userLocation.value.longitude])
+          .addTo(map.value)
+          .bindPopup(`📍 ${streetName.value}, ${houseNumber.value}`)
+          .openPopup()
+      }
+
+      // Show success notification
+      notificationStore.add({
+        type: 'success',
+        title: 'Адресу знайдено',
+        message: `${streetName.value}, ${houseNumber.value}`,
+        duration: 3000
+      })
+    } else {
+      // Show error if geocoding failed
+      notificationStore.add({
+        type: 'error',
+        title: 'Не вдалося знайти адресу',
+        message: 'Перевірте правильність введеної адреси',
+        duration: 5000
+      })
+    }
+  } catch (error) {
+    console.error('Error finding address on map:', error)
+    notificationStore.add({
+      type: 'error',
+      title: 'Помилка пошуку',
+      message: 'Спробуйте ще раз',
+      duration: 5000
+    })
+  }
 }
 
 const updateCombinedAddress = async () => {
@@ -774,7 +883,7 @@ const confirmDelivery = () => {
   if (!userLocation.value || !selectedBranch.value) return
 
   const deliveryData = {
-    address: deliveryAddress.value,
+    address: fullDeliveryAddress.value,
     branch: selectedBranch.value,
     distance: distance.value,
     fee: deliveryFee.value,

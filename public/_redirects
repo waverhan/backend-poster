@@ -1,0 +1,53 @@
+# Blog redirects - redirect old blog posts to new blog subdomain
+# Redirect all blog posts from opillia.com.ua to blog.opillia.com.ua
+
+# Blog category and page redirects (highest priority)
+/ohliady/* https://blog.opillia.com.ua/ohliady/:splat 301
+/novyny/* https://blog.opillia.com.ua/novyny/:splat 301
+/sales/* https://blog.opillia.com.ua/sales/:splat 301
+/karta-sajtu/ https://blog.opillia.com.ua/karta-sajtu/ 301
+/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ https://blog.opillia.com.ua/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ 301
+/contact-us/ https://blog.opillia.com.ua/contact-us/ 301
+/home/ https://blog.opillia.com.ua/home/ 301
+
+# Specific blog post redirects (examples from sitemap)
+/2024/10/mizhnarodnyj-den-pyva-2024-data-sviatkuvannia-ta-istoriia-sviata/ https://blog.opillia.com.ua/2024/10/mizhnarodnyj-den-pyva-2024-data-sviatkuvannia-ta-istoriia-sviata/ 301
+/2023/05/domashnij-kvas/ https://blog.opillia.com.ua/2023/05/domashnij-kvas/ 301
+
+# General blog redirects - catch all blog posts by year/month pattern
+/2024/:month/:slug/ https://blog.opillia.com.ua/2024/:month/:slug/ 301
+/2023/:month/:slug/ https://blog.opillia.com.ua/2023/:month/:slug/ 301
+/2022/:month/:slug/ https://blog.opillia.com.ua/2022/:month/:slug/ 301
+/2021/:month/:slug/ https://blog.opillia.com.ua/2021/:month/:slug/ 301
+/2020/:month/:slug/ https://blog.opillia.com.ua/2020/:month/:slug/ 301
+/2019/:month/:slug/ https://blog.opillia.com.ua/2019/:month/:slug/ 301
+/2018/:month/:slug/ https://blog.opillia.com.ua/2018/:month/:slug/ 301
+
+# General blog redirects - catch all blog posts by year only (no month folder)
+/2024/:slug/ https://blog.opillia.com.ua/2024/:slug/ 301
+/2023/:slug/ https://blog.opillia.com.ua/2023/:slug/ 301
+/2022/:slug/ https://blog.opillia.com.ua/2022/:slug/ 301
+/2021/:slug/ https://blog.opillia.com.ua/2021/:slug/ 301
+/2020/:slug/ https://blog.opillia.com.ua/2020/:slug/ 301
+/2019/:slug/ https://blog.opillia.com.ua/2019/:slug/ 301
+/2018/:slug/ https://blog.opillia.com.ua/2018/:slug/ 301
+
+# Redirect common blog paths
+/blog/* https://blog.opillia.com.ua/:splat 301
+/category/* https://blog.opillia.com.ua/category/:splat 301
+/tag/* https://blog.opillia.com.ua/tag/:splat 301
+/author/* https://blog.opillia.com.ua/author/:splat 301
+
+# WordPress common paths
+/wp-content/* https://blog.opillia.com.ua/wp-content/:splat 301
+/wp-admin/* https://blog.opillia.com.ua/wp-admin/:splat 301
+/wp-includes/* https://blog.opillia.com.ua/wp-includes/:splat 301
+
+# Feed redirects
+/feed/ https://blog.opillia.com.ua/feed/ 301
+/rss/ https://blog.opillia.com.ua/rss/ 301
+/sitemap.xml https://blog.opillia.com.ua/sitemap.xml 301
+
+# PWA routes - these should NOT be redirected (keep them on opillia.com.ua)
+# All other routes will be handled by the Vue.js router
+/* /index.html 200

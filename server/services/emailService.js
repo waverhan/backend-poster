@@ -1,4 +1,8 @@
 import nodemailer from 'nodemailer'
+import dotenv from 'dotenv'
+
+// Load environment variables
+dotenv.config()
 
 class EmailService {
   constructor() {
@@ -14,9 +18,13 @@ class EmailService {
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+        requireTLS: true, // Force TLS for port 587
         auth: {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS
+        },
+        tls: {
+          rejectUnauthorized: false // Allow self-signed certificates
         }
       }
 
@@ -24,10 +32,9 @@ class EmailService {
       if (emailConfig.auth.user && emailConfig.auth.pass) {
         this.transporter = nodemailer.createTransport(emailConfig)
         this.isConfigured = true
-        
+        console.log('✅ Email service configured successfully')
       } else {
-        
-        
+        console.log('❌ Email credentials not provided')
       }
     } catch (error) {
       console.error('❌ Failed to configure email service:', error)
@@ -41,8 +48,11 @@ class EmailService {
     }
 
     try {
-      const emailContent = this.generateOrderConfirmationEmail(order)
       
+      
+
+      const emailContent = this.generateOrderConfirmationEmail(order)
+
       const mailOptions = {
         from: `"${process.env.SHOP_NAME || 'Opillia Shop'}" <${process.env.SMTP_USER}>`,
         to: order.customer?.email,
@@ -52,12 +62,18 @@ class EmailService {
       }
 
       
+
       const result = await this.transporter.sendMail(mailOptions)
       
-      
+
       return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('❌ Failed to send order confirmation email:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        command: error.command
+      })
       return { success: false, error: error.message }
     }
   }
@@ -76,9 +92,20 @@ class EmailService {
       : `Самовивіз з магазину: ${order.branch?.name || 'Не вказано'}`
 
     // Format items list
-    const itemsList = order.items.map(item =>
-      `• ${item.product?.name || 'Товар'} - ${item.quantity} шт. × ${item.unit_price.toFixed(2)} ₴ = ${item.total_price.toFixed(2)} ₴`
-    ).join('\n')
+    const itemsList = order.items.map(item => {
+      // Get product name from the item or related product
+      const productName = item.product?.name || item.name || 'Товар'
+
+      // For weight-based products, display as pieces with weight info
+      if (item.custom_quantity && item.custom_unit) {
+        const weightPerPiece = item.custom_quantity * 1000 // Convert kg to grams
+        const totalWeight = item.quantity * weightPerPiece
+        return `• ${productName} - ${item.quantity} шт. (${weightPerPiece}г кожна, всього ${totalWeight}г) × ${item.unit_price.toFixed(2)} ₴ = ${item.total_price.toFixed(2)} ₴`
+      }
+
+      // For regular products
+      return `• ${productName} - ${item.quantity} шт. × ${item.unit_price.toFixed(2)} ₴ = ${item.total_price.toFixed(2)} ₴`
+    }).join('\n')
 
     // Format estimated time
     const estimatedTime = order.estimated_delivery

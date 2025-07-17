@@ -23,9 +23,6 @@ async function listProducts() {
 
     // Weight-based products that need price conversion (from screenshots)
     const weightBasedProductNames = [
-      'ікра судака',
-      'ікра тарані',
-      'Ікряники',
       'анчоус ваг.'
     ]
 
@@ -50,11 +47,8 @@ async function listProducts() {
     const candidates = await prisma.product.findMany({
       where: {
         OR: [
-          { name: { contains: 'кра' } },
           { name: { contains: 'анчоус' } },
-          { name: { contains: 'Арахіс' } },
-          { name: { contains: 'ікра' } },
-          { name: { contains: 'Ікра' } }
+          { name: { contains: 'Арахіс' } }
         ]
       },
       select: {

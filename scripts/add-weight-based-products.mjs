@@ -37,16 +37,6 @@ async function addWeightBasedProducts() {
     // Weight-based products to create
     const weightBasedProducts = [
       {
-        name: 'Ікряники',
-        display_name: 'Ікряники',
-        description: 'Delicious caviar snacks',
-        price: 800, // 800 UAH per kg
-        custom_quantity: 0.05, // 50g portions
-        custom_unit: 'г',
-        quantity_step: 1,
-        inventory_kg: 0.1 // Only 100g available (2 pieces of 50g)
-      },
-      {
         name: 'Павутинка кальмара',
         display_name: 'Павутинка кальмара',
         description: 'Squid web snacks',
@@ -121,11 +111,9 @@ async function addWeightBasedProducts() {
 
     console.log('\n🎉 Weight-based test products added successfully!')
     console.log('\n🧪 Test scenarios:')
-    console.log('• Ікряники: 800 UAH/kg, 0.1kg available (2 pieces of 50g max)')
     console.log('• Павутинка кальмара: 1200 UAH/kg, 0.15kg available (3 pieces of 50g max)')
     console.log('• Креветка сушена: 1400 UAH/kg, 0.25kg available (5 pieces of 50g max)')
     console.log('• пласт кальмара: 1100 UAH/kg, 0.2kg available (4 pieces of 50g max)')
-    console.log('\n🎯 Now try adding 5 pieces of Ікряники to test inventory validation!')
 
   } catch (error) {
     console.error('❌ Failed to add weight-based products:', error)

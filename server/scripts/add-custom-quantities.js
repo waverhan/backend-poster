@@ -8,23 +8,6 @@ async function addCustomQuantities() {
   try {
     // Define custom quantities for different product types
     const productUpdates = [
-      // Snacks - typically sold in small portions (50g, 100g)
-      {
-        namePattern: 'ікряник',
-        custom_quantity: 0.05, // 50g
-        custom_unit: 'г',
-        quantity_step: 0.05,
-        min_quantity: 0.05,
-        max_quantity: 0.5
-      },
-      {
-        namePattern: 'ікра',
-        custom_quantity: 0.1, // 100g
-        custom_unit: 'г',
-        quantity_step: 0.05,
-        min_quantity: 0.05,
-        max_quantity: 1.0
-      },
       // Beer and beverages - typically sold in 0.5L portions
       {
         namePattern: 'пиво',

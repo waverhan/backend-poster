@@ -6,7 +6,8 @@ const router = express.Router()
 // GET /api/branches
 router.get('/', async (req, res) => {
   try {
-    const branches = await getBranches()
+    const includeInactive = req.query.includeInactive === 'true'
+    const branches = await getBranches(includeInactive)
     res.json(branches)
   } catch (error) {
     console.error('Error fetching branches:', error)

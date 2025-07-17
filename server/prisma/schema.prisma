@@ -49,6 +49,7 @@ model Product {
   updated_at        DateTime           @updatedAt
   cart_items        CartItem[]
   inventory         ProductInventory[]
+  order_items       OrderItem[]
   category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
   @@map("products")
@@ -56,7 +57,8 @@ model Product {
 
 model Branch {
   id                 String             @id @default(cuid())
-  poster_id          String?            @unique
+  poster_id          String?            @unique // Warehouse ID for inventory
+  shop_id            String?            @unique // Shop ID for orders
   name               String
   address            String?
   phone              String?
@@ -110,37 +112,41 @@ model Customer {
 }
 
 model Order {
-  id               String      @id @default(cuid())
-  customer_id      String?
-  branch_id        String
-  order_number     String      @unique
-  status           String      @default("PENDING")
-  fulfillment      String
-  total_amount     Float
-  delivery_fee     Float       @default(0)
-  delivery_address String?
-  delivery_lat     Float?
-  delivery_lng     Float?
-  notes            String?
-  poster_order_id  String?
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
-  items            OrderItem[]
-  branch           Branch      @relation(fields: [branch_id], references: [id])
-  customer         Customer?   @relation(fields: [customer_id], references: [id])
+  id                      String      @id @default(cuid())
+  customer_id             String?
+  branch_id               String
+  order_number            String      @unique
+  status                  String      @default("PENDING")
+  fulfillment             String
+  total_amount            Float
+  delivery_fee            Float       @default(0)
+  delivery_address        String?
+  delivery_lat            Float?
+  delivery_lng            Float?
+  notes                   String?
+  no_callback_confirmation Boolean?    @default(true)
+  poster_order_id         String?
+  created_at              DateTime    @default(now())
+  updated_at              DateTime    @updatedAt
+  items                   OrderItem[]
+  branch                  Branch      @relation(fields: [branch_id], references: [id])
+  customer                Customer?   @relation(fields: [customer_id], references: [id])
 
   @@map("orders")
 }
 
 model OrderItem {
-  id          String   @id @default(cuid())
-  order_id    String
-  product_id  String
-  quantity    Int
-  unit_price  Float
-  total_price Float
-  created_at  DateTime @default(now())
-  order       Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  order_id        String
+  product_id      String
+  quantity        Int
+  unit_price      Float
+  total_price     Float
+  custom_quantity Float?   // For weight-based products (kg)
+  custom_unit     String?  // Display unit (г, мл, etc.)
+  created_at      DateTime @default(now())
+  order           Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [product_id], references: [id])
 
   @@map("order_items")
 }

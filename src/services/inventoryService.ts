@@ -41,8 +41,7 @@ class InventoryService {
     }
 
     try {
-      const response = await backendApi.get(`/inventory/branch/${branchId}`)
-      const inventory: InventoryStatus[] = response.data
+      const inventory: InventoryStatus[] = await backendApi.getBranchInventory(branchId)
 
       // Update cache
       this.inventoryCache.set(cacheKey, inventory)
@@ -51,12 +50,12 @@ class InventoryService {
       return inventory
     } catch (error) {
       console.error('Failed to fetch branch inventory:', error)
-      
+
       // Return cached data if available, even if expired
       if (this.inventoryCache.has(cacheKey)) {
         return this.inventoryCache.get(cacheKey)!
       }
-      
+
       throw error
     }
   }
@@ -66,12 +65,9 @@ class InventoryService {
    */
   async getProductsInventory(productIds: string[], branchId: string): Promise<InventoryStatus[]> {
     try {
-      const response = await backendApi.post('/inventory/products', {
-        product_ids: productIds,
-        branch_id: branchId
-      })
-      
-      return response.data
+      const inventory = await backendApi.getProductsInventory(productIds, branchId)
+
+      return inventory
     } catch (error) {
       console.error('Failed to fetch products inventory:', error)
       throw error
@@ -82,16 +78,14 @@ class InventoryService {
    * Check if a product is available in sufficient quantity
    */
   async checkProductAvailability(
-    productId: string, 
-    branchId: string, 
+    productId: string,
+    branchId: string,
     requiredQuantity: number = 1
   ): Promise<{ available: boolean; stock_level: number; last_updated: string }> {
     try {
-      const response = await backendApi.get(
-        `/inventory/check/${productId}/${branchId}?quantity=${requiredQuantity}`
-      )
-      
-      return response.data
+      const result = await backendApi.checkProductAvailability(productId, branchId, requiredQuantity)
+
+      return result
     } catch (error) {
       console.error('Failed to check product availability:', error)
       throw error
@@ -103,8 +97,8 @@ class InventoryService {
    */
   async triggerInventorySync(): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await backendApi.post('/sync/inventory/trigger')
-      return response.data
+      const result = await backendApi.triggerInventorySync()
+      return result
     } catch (error) {
       console.error('Failed to trigger inventory sync:', error)
       throw error
@@ -116,9 +110,9 @@ class InventoryService {
    */
   async getSyncStatus(): Promise<SyncStatus | null> {
     try {
-      const response = await backendApi.get('/sync/status/latest')
-      this.syncStatusCache = response.data
-      return response.data
+      const result = await backendApi.getSyncStatus()
+      this.syncStatusCache = result
+      return result
     } catch (error) {
       console.error('Failed to fetch sync status:', error)
       return this.syncStatusCache // Return cached status if available
@@ -130,8 +124,8 @@ class InventoryService {
    */
   async getSyncHistory(limit: number = 10): Promise<SyncStatus[]> {
     try {
-      const response = await backendApi.get(`/sync/history?limit=${limit}`)
-      return response.data
+      const result = await backendApi.getSyncHistory(limit)
+      return result
     } catch (error) {
       console.error('Failed to fetch sync history:', error)
       throw error

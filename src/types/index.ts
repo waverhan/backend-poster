@@ -123,6 +123,7 @@ export interface BottleSelection {
 
 // Cart Types
 export interface CartItem {
+  cart_item_id?: string // Unique identifier for cart item (for items with same product_id but different bottles)
   product_id: string
   poster_product_id?: string
   name: string

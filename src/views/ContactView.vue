@@ -143,11 +143,10 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   Телефон
                 </label>
-                <input
+                <UkrainianPhoneInput
                   v-model="form.phone"
-                  type="tel"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="+38 (0XX) XXX-XX-XX"
+                  placeholder="+38 (0__) ___-__-__"
+                  input-class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -244,6 +243,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
 
 // Form state
 const form = ref({

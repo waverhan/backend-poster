@@ -3,8 +3,8 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Checkout</h1>
-        <p class="text-gray-600">Complete your order</p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $t('checkout.title') }}</h1>
+        <p class="text-gray-600">{{ $t('checkout.completeOrder') }}</p>
       </div>
 
       <!-- Checkout Steps -->
@@ -16,7 +16,7 @@
               <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span class="text-blue-600 font-semibold text-sm">1</span>
               </div>
-              <h2 class="text-xl font-semibold text-gray-900">Delivery Method</h2>
+              <h2 class="text-xl font-semibold text-gray-900">{{ $t('checkout.deliveryMethod') }}</h2>
             </div>
 
             <!-- Selected Delivery Method Display -->
@@ -92,45 +92,48 @@
               <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span class="text-blue-600 font-semibold text-sm">2</span>
               </div>
-              <h2 class="text-xl font-semibold text-gray-900">Контактна інформація</h2>
+              <h2 class="text-xl font-semibold text-gray-900">{{ $t('checkout.contactInfo') }}</h2>
             </div>
 
-            <form @submit.prevent="placeOrder" class="space-y-4">
+            <form @submit.prevent="placeOrder" class="space-y-4" autocomplete="off">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Ім'я *
+                    {{ $t('checkout.name') }} *
                   </label>
                   <input
                     v-model="customerForm.customer_name"
                     type="text"
                     required
+                    autocomplete="off"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Ваше ім'я"
                   />
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Телефон *
+                    {{ $t('checkout.phone') }} *
                   </label>
-                  <input
+                  <UkrainianPhoneInput
                     v-model="customerForm.customer_phone"
-                    type="tel"
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="+38 (0XX) XXX-XX-XX"
+                    placeholder="+38(0___) ___-__-__"
                   />
+                  <div v-if="customerForm.customer_phone && (!customerForm.customer_phone.startsWith('380') || customerForm.customer_phone.length !== 12)" class="text-red-500 text-sm mt-1">
+                    Номер телефону повинен містити 9 цифр
+                  </div>
                 </div>
               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
+                  {{ $t('checkout.email') }} *
                 </label>
                 <input
                   v-model="customerForm.customer_email"
                   type="email"
                   required
+                  autocomplete="off"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="your@email.com"
                 />
@@ -138,14 +141,27 @@
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Коментар до замовлення
+                  {{ $t('checkout.orderComment') }}
                 </label>
                 <textarea
                   v-model="customerForm.notes"
                   rows="3"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Додаткові побажання або коментарі..."
+                  :placeholder="$t('checkout.orderCommentPlaceholder')"
                 ></textarea>
+              </div>
+
+              <!-- No Callback Confirmation Checkbox -->
+              <div class="flex items-start space-x-3">
+                <input
+                  id="no-callback"
+                  v-model="customerForm.no_callback_confirmation"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label for="no-callback" class="text-sm text-gray-700">
+                  {{ $t('checkout.noCallbackConfirmation') }}
+                </label>
               </div>
             </form>
           </div>
@@ -176,7 +192,7 @@
         <!-- Order Summary -->
         <div class="lg:col-span-1">
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ $t('checkout.orderSummary') }}</h2>
 
             <!-- Inventory Validation Status -->
             <div v-if="isValidatingInventory" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -233,13 +249,13 @@
                     <div class="text-xs text-gray-500 mt-1">
                       <!-- Show quantity adjustments -->
                       <span v-if="getItemInventoryStatus(item) === 'unavailable'" class="text-red-600">
-                        Недоступно ({{ item.quantity }} {{ item.unit || 'шт.' }})
+                        Недоступно ({{ formatItemQuantity(item) }})
                       </span>
                       <span v-else-if="getItemInventoryStatus(item) === 'adjusted'" class="text-yellow-600">
-                        {{ getAdjustedQuantity(item) }} з {{ item.quantity }} {{ item.unit || 'шт.' }} доступно
+                        {{ getAdjustedQuantity(item) }} з {{ formatItemQuantity(item) }} доступно
                       </span>
                       <span v-else>
-                        {{ item.quantity }} {{ item.unit || 'шт.' }}
+                        {{ formatItemQuantity(item) }}
                       </span>
                     </div>
                   </div>
@@ -291,16 +307,16 @@
               </div>
 
               <div class="flex justify-between">
-                <span>Subtotal:</span>
+                <span>{{ $t('cart.subtotal') }}:</span>
                 <span class="font-medium">{{ cartSubtotal.toFixed(2) }} ₴</span>
               </div>
               <div class="flex justify-between">
-                <span>Delivery Fee:</span>
+                <span>{{ $t('cart.deliveryFee') }}:</span>
                 <span>{{ deliveryFee.toFixed(2) }} ₴</span>
               </div>
               <hr class="my-2">
               <div class="flex justify-between font-semibold text-lg">
-                <span>Total:</span>
+                <span>{{ $t('cart.total') }}:</span>
                 <span class="text-green-600">{{ orderTotal.toFixed(2) }} ₴</span>
               </div>
 
@@ -328,16 +344,16 @@
                 </div>
                 <div v-if="selectedMethod.method === 'pickup'">
                   <div v-if="selectedMethod.branch" class="flex justify-between">
-                    <span class="text-gray-600">Філія:</span>
+                    <span class="text-gray-600">{{ $t('checkout.branch') }}:</span>
                     <span class="text-right">{{ selectedMethod.branch.name }}</span>
                   </div>
                   <div v-if="selectedMethod.branch?.address" class="flex justify-between">
-                    <span class="text-gray-600">Адреса:</span>
+                    <span class="text-gray-600">{{ $t('checkout.address') }}:</span>
                     <span class="text-right text-xs">{{ selectedMethod.branch.address }}</span>
                   </div>
                 </div>
                 <div class="flex justify-between font-medium">
-                  <span class="text-gray-600">Вартість:</span>
+                  <span class="text-gray-600">{{ $t('checkout.cost') }}:</span>
                   <span class="text-green-600">{{ selectedMethod.fee.toFixed(2) }} UAH</span>
                 </div>
               </div>
@@ -353,7 +369,7 @@
                 isPlacingOrder ? 'Оформлення...' :
                 isValidatingInventory ? 'Перевірка наявності...' :
                 !selectedMethod ? 'Оберіть спосіб доставки' :
-                !isCustomerFormValid ? 'Заповніть всі поля' :
+                !isCustomerFormValid ? $t('checkout.fillAllFields') :
                 cartSubtotal < MINIMUM_ORDER_AMOUNT ? `Мінімум ${MINIMUM_ORDER_AMOUNT} ₴` :
                 hasInventoryIssues && canPlaceOrder ? 'Оформити доступні товари' :
                 hasInventoryIssues && !canPlaceOrder ? 'Недостатньо товарів для замовлення' :
@@ -365,7 +381,7 @@
               to="/cart"
               class="block w-full mt-3 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
             >
-              Back to Cart
+              {{ $t('checkout.backToCart') }}
             </router-link>
           </div>
         </div>
@@ -428,6 +444,7 @@ import { capacitorService } from '@/services/capacitor'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
+import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
 import type { Branch, LocationData, Product } from '@/types'
 import type { OrderFormData } from '@/stores/orders'
 
@@ -457,7 +474,8 @@ const customerForm = ref<OrderFormData>({
   delivery_method: 'pickup',
   delivery_address: '',
   pickup_branch: undefined,
-  notes: ''
+  notes: '',
+  no_callback_confirmation: true
 })
 
 const isPlacingOrder = ref(false)
@@ -514,9 +532,12 @@ const deliveryFee = computed(() => selectedMethod.value?.fee || 0)
 const orderTotal = computed(() => cartSubtotal.value + deliveryFee.value)
 
 const isCustomerFormValid = computed(() => {
+  const phone = customerForm.value.customer_phone
+  const isPhoneValid = phone.startsWith('380') && phone.length === 12
   return customerForm.value.customer_name.trim() !== '' &&
          customerForm.value.customer_email.trim() !== '' &&
-         customerForm.value.customer_phone.trim() !== ''
+         customerForm.value.customer_phone.trim() !== '' &&
+         isPhoneValid
 })
 
 const hasInventoryIssues = computed(() => {
@@ -654,6 +675,19 @@ const calculateItemTotal = (item, quantity = null) => {
   return item.price * qty
 }
 
+// Helper function to format item quantity display
+const formatItemQuantity = (item) => {
+  if (item.custom_quantity && item.custom_unit) {
+    // For weight-based products, show pieces with weight info
+    const weightPerPiece = item.custom_quantity * 1000 // Convert kg to grams
+    return `${item.quantity} шт. (${weightPerPiece}г кожна)`
+  }
+
+  // For regular products, always use "шт." instead of "p" or other units
+  const unit = (item.unit === 'p' || item.unit === 'pcs') ? 'шт.' : (item.unit || 'шт.')
+  return `${item.quantity} ${unit}`
+}
+
 const handleMethodSelected = (data: any) => {
   selectedMethod.value = data
   
@@ -777,15 +811,22 @@ const placeOrder = async () => {
 
     
 
-    // Convert cart items to order items format
-    const orderItems = cartItems.value.map(item => ({
-      product_id: item.product_id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      unit: item.unit,
-      image_url: item.image_url
-    }))
+    // Convert cart items to order items format - use cart's correct calculations
+    const orderItems = cartItems.value.map(item => {
+      // Use the cart's already correct calculations
+      const unitPrice = item.subtotal / item.quantity // This gives us the correct price per unit
+
+      return {
+        product_id: item.product_id,
+        name: item.name,
+        price: unitPrice, // Use calculated unit price from cart
+        quantity: item.quantity,
+        unit: item.unit,
+        image_url: item.image_url,
+        custom_quantity: item.custom_quantity,
+        custom_unit: item.custom_unit
+      }
+    })
 
     // Create the order
     const order = await ordersStore.createOrder(

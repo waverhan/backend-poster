@@ -66,7 +66,14 @@
             >
               <div class="flex-1">
                 <h4 class="text-sm font-medium text-gray-900">{{ item.name }}</h4>
-                <p class="text-xs text-gray-600">{{ item.quantity }} × {{ item.price.toFixed(2) }} ₴</p>
+                <p class="text-xs text-gray-600">
+                  <template v-if="item.custom_quantity && item.custom_unit">
+                    {{ item.quantity }} шт. ({{ (item.custom_quantity * 1000).toFixed(0) }}г кожна) × {{ item.price.toFixed(2) }} ₴
+                  </template>
+                  <template v-else>
+                    {{ item.quantity }} × {{ item.price.toFixed(2) }} ₴
+                  </template>
+                </p>
               </div>
               <span class="text-sm font-medium text-gray-900">
                 {{ (item.quantity * item.price).toFixed(2) }} ₴
@@ -133,21 +140,7 @@
         </router-link>
       </div>
 
-      <!-- Support Contact -->
-      <div class="text-center mt-8 p-4 bg-white rounded-lg border border-gray-200">
-        <h3 class="text-sm font-medium text-gray-900 mb-2">Потрібна допомога?</h3>
-        <p class="text-sm text-gray-600 mb-3">
-          Якщо у вас є питання щодо замовлення, зв'яжіться з нами
-        </p>
-        <div class="flex justify-center space-x-4 text-sm">
-          <a href="tel:+380441234567" class="text-blue-600 hover:text-blue-700">
-            📞 +38 (044) 123-45-67
-          </a>
-          <a href="mailto:support@shop.com.ua" class="text-blue-600 hover:text-blue-700">
-            ✉️ support@shop.com.ua
-          </a>
-        </div>
-      </div>
+
     </div>
   </div>
 </template>

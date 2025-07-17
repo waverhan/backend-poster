@@ -33,9 +33,6 @@ async function testWeightPriceConversion() {
 
     // Test cases based on the screenshots
     const testProducts = [
-      { name: 'ікра судака', price: 170 },
-      { name: 'ікра тарані', price: 174 },
-      { name: 'Ікряники', price: 80 },
       { name: 'анчоус ваг.', price: 78 },
       { name: 'Арахіс бекон', price: 45 },
       { name: 'Арахіс сир', price: 50 },
@@ -66,7 +63,7 @@ async function testWeightPriceConversion() {
 
     console.log('✅ Price conversion logic test completed!')
     console.log('\n🎯 Expected behavior:')
-    console.log('• Weight-based products (ікра, анчоус, арахіс) should show prices multiplied by 10')
+    console.log('• Weight-based products (анчоус, арахіс) should show prices multiplied by 10')
     console.log('• Regular products (пиво, вино) should show original prices')
     console.log('• Weight-based products should display "per kg" instead of "per 100g"')
     console.log('• 50g portions should be calculated as (price_per_kg * 0.05)')

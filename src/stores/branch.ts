@@ -54,28 +54,31 @@ export const useBranchStore = defineStore('branch', () => {
   })
 
   // Actions
-  const fetchBranches = async (force = false, useDatabase = true) => {
+  const fetchBranches = async (force = false, useDatabase = true, includeInactive = false) => {
     if (isLoading.value) return
-    if (!force && branches.value.length > 0 && !isDataStale.value) return
+    if (!force && branches.value.length > 0 && !isDataStale.value && !includeInactive) return
 
     isLoading.value = true
     error.value = null
 
     try {
       if (useDatabase) {
-        
-        const fetchedBranches = await backendApi.getBranches()
+
+        const fetchedBranches = await backendApi.getBranches(includeInactive)
         branches.value = fetchedBranches
-        
+
       } else {
-        
+
         const fetchedBranches = await posterApi.getBranches()
         branches.value = fetchedBranches
-        
+
       }
 
       lastFetched.value = new Date()
-      saveToStorage()
+      // Only save to storage if not including inactive items (for normal app usage)
+      if (!includeInactive) {
+        saveToStorage()
+      }
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch branches'
       console.error('❌ Failed to fetch branches:', err)

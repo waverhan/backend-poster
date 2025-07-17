@@ -11,6 +11,45 @@ const prisma = new PrismaClient()
 const POSTER_API_BASE = 'https://joinposter.com/api'
 const POSTER_TOKEN = '218047:05891220e474bad7f26b6eaa0be3f344'
 
+// Helper function to map frontend shop IDs to backend branch poster_ids
+const mapShopIdToPosterBranchId = (shopId) => {
+  const mapping = {
+    '1': '7',  // Братиславська 14Б
+    '2': '6',  // Ованеса Туманяна 1А
+    '3': '4',  // Голосіївський проспект 5
+    '4': '5',  // Голосіївський проспект 100/2
+    '5': '9',  // Гетьмана 40А
+    '6': '8'   // Данькевича 10
+  }
+  return mapping[String(shopId)] || shopId
+}
+
+// Helper function to format phone number for Poster POS API
+const formatPhoneForPoster = (phone) => {
+  if (!phone) return '380000000000'
+
+  // Remove all non-digit characters
+  const digits = phone.replace(/\D/g, '')
+
+  // If it's already in the correct format (starts with 380 and 12 digits)
+  if (digits.startsWith('380') && digits.length === 12) {
+    return digits // Return without + sign as Poster API expects 380XXXXXXXXX format
+  }
+
+  // If it starts with 0 (Ukrainian format), replace with 380
+  if (digits.startsWith('0') && digits.length === 10) {
+    return '380' + digits.substring(1) // Remove the 0 and add 380 prefix
+  }
+
+  // If it's just 9 digits, add 380 prefix
+  if (digits.length === 9) {
+    return '380' + digits
+  }
+
+  // Default fallback for invalid numbers
+  return '380671234567'
+}
+
 // Helper function to generate order number
 function generateOrderNumber() {
   const date = new Date()
@@ -30,23 +69,24 @@ function calculateEstimatedDelivery(deliveryMethod) {
   // Calculate initial estimated time
   let estimatedTime = new Date(now.getTime() + minutes * 60000)
 
-  // Business hours: 10:00 - 22:00
-  const BUSINESS_START = 10 // 10:00
-  const BUSINESS_END = 22   // 22:00
+  // Business hours: 10:30 - 22:00
+  const BUSINESS_START_HOUR = 10
+  const BUSINESS_START_MINUTE = 30
+  const BUSINESS_END_HOUR = 22   // 22:00
 
   const currentHour = estimatedTime.getHours()
   const currentMinutes = estimatedTime.getMinutes()
 
   // If estimated time is outside business hours, adjust it
-  if (currentHour < BUSINESS_START) {
-    // Too early - set to business start time
-    estimatedTime.setHours(BUSINESS_START, 0, 0, 0)
-  } else if (currentHour >= BUSINESS_END) {
-    // Too late - set to next day business start
+  if (currentHour < BUSINESS_START_HOUR || (currentHour === BUSINESS_START_HOUR && currentMinutes < BUSINESS_START_MINUTE)) {
+    // Too early - set to business start time (10:30)
+    estimatedTime.setHours(BUSINESS_START_HOUR, BUSINESS_START_MINUTE, 0, 0)
+  } else if (currentHour >= BUSINESS_END_HOUR) {
+    // Too late - set to next day business start (10:30)
     estimatedTime.setDate(estimatedTime.getDate() + 1)
-    estimatedTime.setHours(BUSINESS_START, 0, 0, 0)
+    estimatedTime.setHours(BUSINESS_START_HOUR, BUSINESS_START_MINUTE, 0, 0)
   }
-  // If between 10:00-22:00, keep the calculated time
+  // If between 10:30-22:00, keep the calculated time
 
   return estimatedTime.toISOString()
 }
@@ -94,6 +134,7 @@ router.get('/', async (req, res) => {
       payment_method: 'cash_on_delivery',
       payment_status: 'pending',
       notes: order.notes,
+      no_callback_confirmation: order.no_callback_confirmation,
       created_at: order.created_at.toISOString(),
       updated_at: order.updated_at.toISOString(),
       estimated_delivery: calculateEstimatedDelivery(order.fulfillment.toLowerCase())
@@ -104,6 +145,79 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching orders:', error)
     res.status(500).json({ error: 'Failed to fetch orders' })
+  }
+})
+
+// Test endpoint for email functionality
+router.get('/test-email', async (req, res) => {
+  try {
+    console.log('🧪 Testing email functionality...')
+
+    // Create a test order object
+    const testOrder = {
+      id: 'test-order-123',
+      order_number: 'TEST-' + Date.now(),
+      customer: {
+        name: 'Test Customer',
+        email: 'info@opillia.com.ua',
+        phone: '+380671234567'
+      },
+      items: [
+        {
+          product: { name: 'Test Beer' },
+          quantity: 2,
+          unit_price: 50.00,
+          total_price: 100.00
+        }
+      ],
+      total_amount: 199.00,
+      delivery_fee: 99.00,
+      fulfillment: 'DELIVERY',
+      delivery_address: 'вул. Тестова, 123, Київ',
+      branch: { name: 'Test Branch Kyiv' },
+      notes: 'Test order for email functionality',
+      estimated_delivery: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      created_at: new Date(),
+      updated_at: new Date()
+    }
+
+    console.log(`📧 Sending test email to: ${testOrder.customer.email}`)
+
+    // Send the email
+    const result = await emailService.sendOrderConfirmationEmail(testOrder)
+
+    if (result.success) {
+      console.log(`✅ Test email sent successfully!`)
+      console.log(`📧 Message ID: ${result.messageId}`)
+
+      res.json({
+        success: true,
+        message: 'Test email sent successfully',
+        messageId: result.messageId,
+        sentTo: testOrder.customer.email,
+        orderNumber: testOrder.order_number,
+        emailConfigured: emailService.isConfigured
+      })
+    } else {
+      console.log(`❌ Failed to send test email`)
+      console.log(`❌ Error: ${result.error}`)
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send test email',
+        error: result.error,
+        emailConfigured: emailService.isConfigured
+      })
+    }
+
+  } catch (error) {
+    console.error('💥 Error in test email:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Server error during email test',
+      error: error.message,
+      emailConfigured: emailService.isConfigured
+    })
   }
 })
 
@@ -169,6 +283,8 @@ router.get('/:id', async (req, res) => {
 // POST /api/orders - Create new order
 router.post('/', async (req, res) => {
   try {
+    console.log('📦 Incoming order request body:', JSON.stringify(req.body, null, 2))
+
     const {
       customer_name,
       customer_email,
@@ -178,8 +294,13 @@ router.post('/', async (req, res) => {
       pickup_branch,
       items,
       delivery_fee,
-      notes
+      notes,
+      no_callback_confirmation
     } = req.body
+
+
+
+    console.log(`🚚 Order details: method=${delivery_method}, pickup_branch=`, pickup_branch)
 
     
     
@@ -205,15 +326,28 @@ router.post('/', async (req, res) => {
       }
 
       if (customer) {
-        // Update existing customer
-        customer = await prisma.customer.update({
-          where: { id: customer.id },
-          data: {
-            name: customer_name,
-            email: customer_email,
-            phone: customer_phone
+
+        // Update existing customer (only update fields that have changed)
+        const updateData = {}
+        if (customer.name !== customer_name) updateData.name = customer_name
+        if (customer.email !== customer_email) updateData.email = customer_email
+        // Only update phone if it's the same customer or if phone is different
+        if (customer.phone !== customer_phone) {
+          // Check if another customer already has this phone
+          const existingPhoneCustomer = await prisma.customer.findUnique({
+            where: { phone: customer_phone }
+          })
+          if (!existingPhoneCustomer || existingPhoneCustomer.id === customer.id) {
+            updateData.phone = customer_phone
           }
-        })
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          customer = await prisma.customer.update({
+            where: { id: customer.id },
+            data: updateData
+          })
+        }
       } else {
         // Create new customer
         customer = await prisma.customer.create({
@@ -223,15 +357,38 @@ router.post('/', async (req, res) => {
             phone: customer_phone
           }
         })
+
       }
     }
 
     // Find branch (use pickup branch or default to first branch for delivery)
     let branch
     if (delivery_method === 'pickup' && pickup_branch) {
+      console.log(`🏪 Looking for pickup branch with ID: ${pickup_branch.id}`)
+
+      // First try to find by the provided ID (which should be the database UUID)
       branch = await prisma.branch.findUnique({
-        where: { id: pickup_branch.id }
+        where: {
+          id: pickup_branch.id,
+          is_active: true
+        }
       })
+
+      if (!branch) {
+        console.warn(`⚠️ No branch found with ID ${pickup_branch.id}, trying poster_id lookup`)
+        // Fallback: try to map as if it's a simple numeric ID
+        const posterBranchId = mapShopIdToPosterBranchId(pickup_branch.id)
+        branch = await prisma.branch.findFirst({
+          where: {
+            poster_id: posterBranchId,
+            is_active: true
+          }
+        })
+      }
+
+      if (branch) {
+        console.log(`✅ Found branch: ${branch.name} (poster_id: ${branch.poster_id})`)
+      }
     } else {
       // For delivery, use the first available branch
       branch = await prisma.branch.findFirst({
@@ -240,8 +397,11 @@ router.post('/', async (req, res) => {
     }
 
     if (!branch) {
+      console.error(`❌ No branch found for pickup_branch:`, pickup_branch)
       return res.status(400).json({ error: 'No available branch found' })
     }
+
+    console.log(`📍 Using branch for order: ${branch.name} (ID: ${branch.id}, poster_id: ${branch.poster_id})`)
 
     // Create order
     const order = await prisma.order.create({
@@ -255,23 +415,31 @@ router.post('/', async (req, res) => {
         delivery_fee: delivery_fee || 0,
         delivery_address,
         notes,
+        no_callback_confirmation: no_callback_confirmation !== undefined ? no_callback_confirmation : true,
         items: {
           create: items.map(item => ({
             product_id: item.product_id,
             quantity: item.quantity,
             unit_price: item.price,
-            total_price: item.price * item.quantity
+            total_price: item.price * item.quantity,
+            custom_quantity: item.custom_quantity || null,
+            custom_unit: item.custom_unit || null
           }))
         }
       },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: true
+          }
+        },
         customer: true,
         branch: true
       }
     })
 
     // Transform to match frontend interface
+
     const transformedOrder = {
       id: order.id,
       order_number: order.order_number,
@@ -287,9 +455,11 @@ router.post('/', async (req, res) => {
       } : undefined,
       items: order.items.map(item => ({
         product_id: item.product_id,
-        name: items.find(i => i.product_id === item.product_id)?.name || `Product ${item.product_id}`,
+        name: item.product?.name || items.find(i => i.product_id === item.product_id)?.name || `Product ${item.product_id}`,
         price: item.unit_price,
-        quantity: item.quantity
+        quantity: item.quantity,
+        custom_quantity: item.custom_quantity,
+        custom_unit: item.custom_unit
       })),
       subtotal,
       delivery_fee: order.delivery_fee,
@@ -298,6 +468,7 @@ router.post('/', async (req, res) => {
       payment_method: 'cash_on_delivery',
       payment_status: 'pending',
       notes: order.notes,
+      no_callback_confirmation: order.no_callback_confirmation,
       created_at: order.created_at.toISOString(),
       updated_at: order.updated_at.toISOString(),
       estimated_delivery: calculateEstimatedDelivery(order.fulfillment.toLowerCase())
@@ -307,17 +478,22 @@ router.post('/', async (req, res) => {
 
     // Send email notification to customer (async, don't wait for it)
     if (transformedOrder.customer_email) {
+      console.log(`📧 Sending order confirmation email to: ${transformedOrder.customer_email}`)
       emailService.sendOrderConfirmationEmail(order)
         .then(result => {
           if (result.success) {
-            
+            console.log(`✅ Order confirmation email sent successfully to ${transformedOrder.customer_email}`)
+            console.log(`📧 Message ID: ${result.messageId}`)
           } else {
-            
+            console.log(`❌ Failed to send order confirmation email to ${transformedOrder.customer_email}`)
+            console.log(`❌ Error: ${result.error}`)
           }
         })
         .catch(error => {
           console.error(`❌ Error sending email confirmation:`, error)
         })
+    } else {
+      console.log('⚠️ No customer email provided, skipping email notification')
     }
 
     // Send Viber notification to customer (async, don't wait for it)
@@ -354,10 +530,13 @@ router.post('/', async (req, res) => {
         // Calculate the correct quantity for Poster POS
         let posterQuantity = item.quantity
 
-        // If product has custom quantity system, convert to kg for Poster
-        if (product?.custom_quantity) {
-          posterQuantity = item.quantity * product.custom_quantity
-          
+        // If item has custom quantity system (weight-based), convert to grams for Poster
+        if (item.custom_quantity && item.custom_unit) {
+          // item.quantity is the number of units ordered
+          // item.custom_quantity is the weight per unit in kg
+          // Poster expects quantity in grams, so multiply by 1000
+          posterQuantity = (item.quantity * item.custom_quantity) * 1000
+          console.log(`🔄 Weight conversion: ${item.quantity} units × ${item.custom_quantity}kg = ${item.quantity * item.custom_quantity}kg = ${posterQuantity}g`)
         }
 
         return {
@@ -368,18 +547,24 @@ router.post('/', async (req, res) => {
 
       if (posterProducts.length > 0) {
         // Prepare Poster API request according to documentation
+        const spotId = parseInt(order.branch.shop_id) || parseInt(order.branch.poster_id) || 1
+        console.log(`📍 Using spot_id ${spotId} for branch ${order.branch.name} (shop_id: ${order.branch.shop_id}, poster_id: ${order.branch.poster_id})`)
+
         const posterOrderData = {
-          spot_id: parseInt(order.branch.poster_id) || 1, // Use branch's Poster ID or default to 1
-          phone: order.customer?.phone || '+380000000000',
+          spot_id: spotId,
+          phone: formatPhoneForPoster(order.customer?.phone),
           products: posterProducts
         }
 
-        // Add delivery address if it's a delivery order
-        if (order.fulfillment === 'DELIVERY' && order.delivery_address) {
-          posterOrderData.address = order.delivery_address
+        // Add fulfillment type to comment and address for delivery
+        if (order.fulfillment === 'DELIVERY') {
+          posterOrderData.comment = 'delivery'
+          if (order.delivery_address) {
+            posterOrderData.address = order.delivery_address
+          }
+        } else {
+          posterOrderData.comment = 'takeaway'
         }
-
-        )
 
         // Send to Poster POS API
         const posterResponse = await axios.post(
@@ -547,27 +732,51 @@ router.post('/:id/send-to-poster', async (req, res) => {
       }
     })
 
-    // Map order items to Poster format with proper quantity handling
-    const posterProducts = order.items.map(item => {
+    // Map order items to Poster format and combine duplicates
+    const productMap = new Map()
+
+    order.items.forEach(item => {
       const product = products.find(p => p.id === item.product_id)
+      const posterProductId = parseInt(product?.poster_product_id) || parseInt(item.product_id)
+
+      console.log(`🔍 Processing item: ${item.product_id}, poster_product_id: ${product?.poster_product_id}, final posterProductId: ${posterProductId}`)
+
+      if (!posterProductId || isNaN(posterProductId)) {
+        console.log(`❌ Skipping invalid product ID: ${posterProductId}`)
+        return // Skip invalid product IDs
+      }
 
       // Calculate the correct quantity for Poster POS
       let posterQuantity = item.quantity
 
-      // If product has custom quantity system, convert to kg for Poster
-      if (product?.custom_quantity) {
+      // If item has custom quantity system (weight-based), convert to grams for Poster
+      if (item.custom_quantity && item.custom_unit) {
         // item.quantity is the number of units ordered (e.g., 2 units of 50g snacks)
-        // custom_quantity is the weight per unit in kg (e.g., 0.05 for 50g)
-        // So total weight = item.quantity * custom_quantity
-        posterQuantity = item.quantity * product.custom_quantity
-        
+        // item.custom_quantity is the weight per unit in kg (e.g., 0.05 for 50g)
+        // Poster expects quantity in grams, so multiply by 1000
+        posterQuantity = (item.quantity * item.custom_quantity) * 1000
+        console.log(`🔄 Weight conversion: ${item.quantity} units × ${item.custom_quantity}kg = ${item.quantity * item.custom_quantity}kg = ${posterQuantity}g`)
       }
 
-      return {
-        product_id: parseInt(product?.poster_product_id) || parseInt(item.product_id),
-        count: posterQuantity
+      // Combine quantities for duplicate products
+      if (productMap.has(posterProductId)) {
+        const oldQuantity = productMap.get(posterProductId)
+        const newQuantity = oldQuantity + posterQuantity
+        productMap.set(posterProductId, newQuantity)
+        console.log(`🔄 Combined duplicate product ${posterProductId}: ${oldQuantity} + ${posterQuantity} = ${newQuantity}`)
+      } else {
+        productMap.set(posterProductId, posterQuantity)
+        console.log(`➕ Added new product ${posterProductId}: ${posterQuantity}`)
       }
-    }).filter(item => item.product_id && !isNaN(item.product_id)) // Only include items with valid Poster product IDs
+    })
+
+    // Convert map to array format expected by Poster
+    const posterProducts = Array.from(productMap.entries()).map(([product_id, count]) => ({
+      product_id,
+      count
+    }))
+
+    console.log(`📦 Final products for Poster:`, JSON.stringify(posterProducts, null, 2))
 
     if (posterProducts.length === 0) {
       return res.status(400).json({
@@ -577,20 +786,29 @@ router.post('/:id/send-to-poster', async (req, res) => {
     }
 
     // Prepare Poster API request according to documentation
+    const spotId = parseInt(order.branch.shop_id) || parseInt(order.branch.poster_id) || 1
+    console.log(`📍 Using spot_id ${spotId} for branch ${order.branch.name} (shop_id: ${order.branch.shop_id}, poster_id: ${order.branch.poster_id})`)
+
+
+
     const posterOrderData = {
-      spot_id: parseInt(order.branch.poster_id) || 1, // Use branch's Poster ID or default to 1
-      phone: order.customer?.phone || '+380000000000',
+      spot_id: spotId,
+      phone: formatPhoneForPoster(order.customer?.phone),
       products: posterProducts
     }
 
-    // Add delivery address if it's a delivery order
-    if (order.fulfillment === 'DELIVERY' && order.delivery_address) {
-      posterOrderData.address = order.delivery_address
+    // Add fulfillment type to comment and address for delivery
+    if (order.fulfillment === 'DELIVERY') {
+      posterOrderData.comment = 'delivery'
+      if (order.delivery_address) {
+        posterOrderData.address = order.delivery_address
+      }
+    } else {
+      posterOrderData.comment = 'takeaway'
     }
 
-    )
-
     // Send to Poster POS API
+    
     const posterResponse = await axios.post(
       `${POSTER_API_BASE}/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`,
       posterOrderData,
@@ -603,9 +821,11 @@ router.post('/:id/send-to-poster', async (req, res) => {
     )
 
     
+    
 
     // Update order with Poster order ID
     if (posterResponse.data && posterResponse.data.response) {
+      
       await prisma.order.update({
         where: { id },
         data: {
@@ -613,6 +833,9 @@ router.post('/:id/send-to-poster', async (req, res) => {
           status: 'CONFIRMED' // Update status to confirmed after successful Poster integration
         }
       })
+      
+    } else {
+      console.warn('⚠️ No Poster order ID in response:', posterResponse.data)
     }
 
     res.json({
@@ -746,8 +969,6 @@ router.post('/debug/test-poster', async (req, res) => {
         }
       ]
     }
-
-    )
 
     // Send to Poster POS API
     const posterResponse = await axios.post(

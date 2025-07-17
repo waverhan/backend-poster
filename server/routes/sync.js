@@ -17,10 +17,10 @@ const POSTER_TOKEN = '218047:05891220e474bad7f26b6eaa0be3f344'
 // POST /api/sync/full - Full sync from Poster API
 router.post('/full', async (req, res) => {
   try {
-    
+
 
     // 1. Sync branches from warehouses/storages
-    
+
     const branchesResponse = await axios.get(`${POSTER_API_BASE}/storage.getStorages`, {
       params: { token: POSTER_TOKEN }
     })
@@ -60,7 +60,7 @@ router.post('/full', async (req, res) => {
     }
 
     // 2. Sync categories
-    
+
     const categoriesResponse = await axios.get(`${POSTER_API_BASE}/menu.getCategories`, {
       params: { token: POSTER_TOKEN }
     })
@@ -96,7 +96,7 @@ router.post('/full', async (req, res) => {
     }
 
     // 3. Sync products - get all products at once
-    
+
     const allProducts = []
 
     // Get all products from Poster API without category filtering
@@ -107,18 +107,18 @@ router.post('/full', async (req, res) => {
     })
 
     const posterProducts = productsResponse.data.response || []
-    
+
 
     for (const posterProduct of posterProducts) {
       // Debug: Log every product being processed
       if (posterProduct.product_id === '267' || posterProduct.product_id === '411' || posterProduct.product_id === '13') {
-        
+
       }
 
       // Find the category for this product using menu_category_id
       const category = syncedCategories.find(cat => cat.poster_category_id === posterProduct.menu_category_id)
       if (!category) {
-        
+
         continue
       }
 
@@ -149,7 +149,7 @@ router.post('/full', async (req, res) => {
       }
 
       // Process product image - find correct URL and download locally
-      
+
       const localImagePath = await imageService.processProductImage(
         posterProduct.product_id,
         !!(posterProduct.photo && posterProduct.photo !== '0'),
@@ -166,7 +166,8 @@ router.post('/full', async (req, res) => {
                         productName.includes('tea') || productName.includes('чай') || productName.includes('coffee') ||
                         productName.includes('кава')
 
-      const isWeightBased = posterProduct.ingredient_unit === 'kg' && !isBeverage
+      // Note: Disabled automatic weight-based detection to prevent targeting "ікр" products
+      const isWeightBased = false // Disabled automatic weight-based detection
       const isBeverageWithKgUnit = posterProduct.ingredient_unit === 'kg' && isBeverage
       let adjustedPrice = isNaN(priceInUAH) ? 0 : priceInUAH
 
@@ -209,7 +210,7 @@ router.post('/full', async (req, res) => {
 
       // Debug logging for ingredient_id - specific products
       if (posterProduct.product_id === '267' || posterProduct.product_id === '397' || posterProduct.product_id === '13') {
-        
+
       }
 
       // Upsert product
@@ -246,14 +247,14 @@ router.post('/full', async (req, res) => {
 
       // Debug logging after database save
       if (posterProduct.product_id === '267' || posterProduct.product_id === '397' || posterProduct.product_id === '13') {
-        
+
       }
 
       allProducts.push(product)
     }
 
     // 4. Sync inventory for each branch
-    
+
     let totalInventoryRecords = 0
 
     for (const branch of syncedBranches) {
@@ -266,11 +267,11 @@ router.post('/full', async (req, res) => {
         })
 
         const inventoryData = inventoryResponse.data.response || []
-        
+
 
         // Debug: Log sample inventory item to verify field names
         if (inventoryData.length > 0) {
-          )
+
         }
 
         // Create inventory map
@@ -324,7 +325,7 @@ router.post('/full', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -340,8 +341,8 @@ router.post('/full', async (req, res) => {
 // POST /api/sync/inventory - Quick inventory sync
 router.post('/inventory', async (req, res) => {
   try {
-    
-    
+
+
 
     const branches = await prisma.branch.findMany({ where: { is_active: true } })
     const products = await prisma.product.findMany({ where: { is_active: true } })
@@ -358,11 +359,11 @@ router.post('/inventory', async (req, res) => {
         })
 
         const inventoryData = inventoryResponse.data.response || []
-        
+
 
         // Debug: Log sample inventory item to verify field names
         if (inventoryData.length > 0) {
-          )
+
         }
 
         // Create inventory map
@@ -378,7 +379,7 @@ router.post('/inventory', async (req, res) => {
 
             // Log first processed item for debugging
             if (!sampleProcessed) {
-              
+
               sampleProcessed = true
             }
           }
@@ -415,7 +416,7 @@ router.post('/inventory', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -431,14 +432,14 @@ router.post('/inventory', async (req, res) => {
 // POST /api/sync/images - Sync images for existing products
 router.post('/images', async (req, res) => {
   try {
-    
+
 
     // Get all products from database
     const products = await prisma.product.findMany({
       where: { is_active: true }
     })
 
-    
+
 
     // Process images in batches
     const imageResults = await imageService.processProductImages(
@@ -474,7 +475,7 @@ router.post('/images', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -490,7 +491,7 @@ router.post('/images', async (req, res) => {
 // POST /api/sync/fix-images - Fix broken local image URLs
 router.post('/fix-images', async (req, res) => {
   try {
-    
+
 
     // Get all products with local image URLs
     const products = await prisma.product.findMany({
@@ -503,7 +504,7 @@ router.post('/fix-images', async (req, res) => {
       }
     })
 
-    
+
 
     let fixedCount = 0
 
@@ -522,7 +523,7 @@ router.post('/fix-images', async (req, res) => {
           const posterUrl = await imageService.findCorrectImageUrl(product.poster_product_id, true)
           updateData.image_url = posterUrl || ''
           needsUpdate = true
-          
+
         }
       }
 
@@ -533,7 +534,7 @@ router.post('/fix-images', async (req, res) => {
           const posterUrl = await imageService.findCorrectImageUrl(product.poster_product_id, true)
           updateData.display_image_url = posterUrl || ''
           needsUpdate = true
-          
+
         }
       }
 
@@ -555,7 +556,7 @@ router.post('/fix-images', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -571,11 +572,11 @@ router.post('/fix-images', async (req, res) => {
 // POST /api/sync/download-images - Download all product images from Poster API and store locally
 router.post('/download-images', async (req, res) => {
   try {
-    
+
 
     // Get all categories to fetch products by category
     const categories = await prisma.category.findMany({ where: { is_active: true } })
-    
+
 
     let downloadedCount = 0
     let updatedCount = 0
@@ -628,7 +629,7 @@ router.post('/download-images', async (req, res) => {
 
               if (updateResult.count > 0) {
                 updatedCount++
-                
+
               }
             }
           }
@@ -649,7 +650,7 @@ router.post('/download-images', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -665,11 +666,11 @@ router.post('/download-images', async (req, res) => {
 // POST /api/sync/fix-images-from-api - Fix product images using actual API URLs
 router.post('/fix-images-from-api', async (req, res) => {
   try {
-    
+
 
     // Get all categories to fetch products by category
     const categories = await prisma.category.findMany({ where: { is_active: true } })
-    
+
 
     let updatedCount = 0
     let totalProducts = 0
@@ -711,7 +712,7 @@ router.post('/fix-images-from-api', async (req, res) => {
 
             if (updateResult.count > 0) {
               updatedCount++
-              
+
             }
           }
         }
@@ -730,7 +731,7 @@ router.post('/fix-images-from-api', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -746,11 +747,11 @@ router.post('/fix-images-from-api', async (req, res) => {
 // POST /api/sync/fix-prices - Fix product prices from Poster API
 router.post('/fix-prices', async (req, res) => {
   try {
-    
+
 
     // Get all categories to fetch products by category
     const categories = await prisma.category.findMany({ where: { is_active: true } })
-    
+
 
     let updatedCount = 0
     let totalProducts = 0
@@ -795,7 +796,7 @@ router.post('/fix-prices', async (req, res) => {
 
           if (updateResult.count > 0) {
             updatedCount++
-            
+
           }
         }
 
@@ -813,7 +814,7 @@ router.post('/fix-prices', async (req, res) => {
       }
     }
 
-    
+
     res.json(result)
 
   } catch (error) {
@@ -821,6 +822,578 @@ router.post('/fix-prices', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Price fix failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/products-only - Sync only products, preserve existing categories
+router.post('/products-only', async (req, res) => {
+  let syncLog = null
+
+  try {
+
+
+    syncLog = await createSyncLog('products-only', 'in_progress')
+
+    // Get existing categories from database (don't sync categories)
+    const existingCategories = await prisma.category.findMany({
+      where: { is_active: true }
+    })
+
+    // Create a map for quick category lookup by poster_category_id
+    const categoryMap = new Map()
+    existingCategories.forEach(cat => {
+      if (cat.poster_category_id) {
+        categoryMap.set(cat.poster_category_id, cat)
+      }
+    })
+
+    // Sync products - get all products from Poster API
+
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+
+
+    const allProducts = []
+    let syncedProductsCount = 0
+    let skippedProductsCount = 0
+
+    for (const posterProduct of posterProducts) {
+      // Find the category for this product using menu_category_id
+      const category = categoryMap.get(posterProduct.menu_category_id)
+      if (!category) {
+
+        skippedProductsCount++
+        continue
+      }
+
+      // Parse price - handle both object and string formats
+      let price = 0
+      if (posterProduct.price) {
+        if (typeof posterProduct.price === 'object') {
+          const firstPriceKey = Object.keys(posterProduct.price)[0]
+          price = parseFloat(posterProduct.price[firstPriceKey] || 0)
+        } else {
+          price = parseFloat(posterProduct.price || 0)
+        }
+      }
+
+      // Convert from kopecks to UAH if needed
+      const adjustedPrice = price > 1000 ? price / 100 : price
+
+      // Determine if product is weight-based or beverage with kg unit
+      // Note: Removed automatic targeting of "ікр" products - they should be piece-based unless manually configured
+      const isWeightBased = false // Disabled automatic weight-based detection
+
+      const isBeverageWithKgUnit = posterProduct.unit === 'kg' &&
+        (posterProduct.product_name.toLowerCase().includes('пиво') ||
+         posterProduct.product_name.toLowerCase().includes('beer') ||
+         posterProduct.product_name.toLowerCase().includes('квас') ||
+         posterProduct.product_name.toLowerCase().includes('лимонад'))
+
+      // Handle image URL
+      let posterImageUrl = ''
+      if (posterProduct.photo_origin) {
+        posterImageUrl = posterProduct.photo_origin
+      } else if (posterProduct.photo) {
+        posterImageUrl = posterProduct.photo
+      }
+
+      // Check if we have a local image
+      let localImagePath = ''
+      if (posterProduct.product_id) {
+        const possibleExtensions = ['.png', '.jpg', '.jpeg']
+        for (const ext of possibleExtensions) {
+          const imagePath = `/images/products/product_${posterProduct.product_id}${ext}`
+          const fullPath = path.join(__dirname, '..', 'public', imagePath)
+          if (fs.existsSync(fullPath)) {
+            localImagePath = imagePath
+            break
+          }
+        }
+      }
+
+      // Parse attributes
+      let attributes = null
+      if (posterProduct.ingredients) {
+        const ingredientsText = posterProduct.ingredients.toLowerCase()
+        const alcoholMatch = ingredientsText.match(/(\d+(?:\.\d+)?)\s*%/)
+        const alcohol = alcoholMatch ? parseFloat(alcoholMatch[1]) : null
+
+        if (alcohol !== null) {
+          attributes = { alcohol_content: alcohol }
+        }
+      }
+
+      const productData = {
+        poster_product_id: posterProduct.product_id,
+        ingredient_id: posterProduct.ingredient_id || null,
+        category_id: category.id, // Use existing category
+        name: posterProduct.product_name,
+        display_name: posterProduct.product_name,
+        description: posterProduct.ingredients || '',
+        price: adjustedPrice,
+        original_price: adjustedPrice,
+        image_url: localImagePath || posterImageUrl || '',
+        display_image_url: localImagePath || posterImageUrl || '',
+        is_active: posterProduct.out !== '1',
+        attributes: attributes,
+        custom_quantity: isWeightBased ? 0.05 : (isBeverageWithKgUnit ? 0.5 : null),
+        custom_unit: isWeightBased ? 'г' : (isBeverageWithKgUnit ? 'л' : null),
+        quantity_step: (isWeightBased || isBeverageWithKgUnit) ? 1 : null
+      }
+
+      // Upsert product (update if exists, create if not)
+      const product = await prisma.product.upsert({
+        where: { poster_product_id: posterProduct.product_id },
+        update: {
+          // Update product data but preserve category assignment
+          name: productData.name,
+          display_name: productData.display_name,
+          description: productData.description,
+          price: productData.price,
+          original_price: productData.original_price,
+          image_url: productData.image_url,
+          display_image_url: productData.display_image_url,
+          is_active: productData.is_active,
+          attributes: productData.attributes ? JSON.stringify(productData.attributes) : null,
+          // Only update custom quantity fields if they don't exist
+          custom_quantity: productData.custom_quantity,
+          custom_unit: productData.custom_unit,
+          quantity_step: productData.quantity_step
+        },
+        create: {
+          ...productData,
+          attributes: productData.attributes ? JSON.stringify(productData.attributes) : null
+        }
+      })
+
+      allProducts.push(product)
+      syncedProductsCount++
+
+      if (syncedProductsCount % 50 === 0) {
+
+      }
+    }
+
+    // Update sync log
+    await updateSyncLog(
+      syncLog.id,
+      'completed',
+      syncedProductsCount, // total_records as integer
+      null, // no error message
+      JSON.stringify({ // details as JSON string
+        synced_products: syncedProductsCount,
+        skipped_products: skippedProductsCount,
+        total_poster_products: posterProducts.length,
+        preserved_categories: existingCategories.length
+      })
+    )
+
+
+
+
+
+
+
+    res.json({
+      success: true,
+      message: `Products-only sync completed! Synced ${syncedProductsCount} products while preserving ${existingCategories.length} existing categories.`,
+      stats: {
+        synced_products: syncedProductsCount,
+        skipped_products: skippedProductsCount,
+        total_poster_products: posterProducts.length,
+        preserved_categories: existingCategories.length,
+        sync_type: 'products-only'
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Products-only sync failed:', error)
+
+    // Update sync log with error
+    if (syncLog) {
+      await updateSyncLog(syncLog.id, 'failed', null, error.message)
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Products-only sync failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/prices-only - Sync only product prices from Poster POS
+router.post('/prices-only', async (req, res) => {
+  let syncLog = null
+
+  try {
+
+
+    syncLog = await createSyncLog('prices-only', 'in_progress')
+
+    // Get all products from Poster API
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+
+    let updatedProductsCount = 0
+    let skippedProductsCount = 0
+
+    for (const posterProduct of posterProducts) {
+      try {
+        // Find existing product by poster_product_id
+        const existingProduct = await prisma.product.findFirst({
+          where: { poster_product_id: posterProduct.product_id }
+        })
+
+        if (existingProduct) {
+          // Use price_1 for price sync (instead of cost)
+          let newPrice = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+
+          // For weight-based products (weight_flag = 1), divide by 10
+          // to convert from 100g price to 1kg price for display
+          if (posterProduct.weight_flag === 1) {
+            newPrice = newPrice / 10
+          }
+
+          // Only update if price has changed
+          if (existingProduct.price !== newPrice) {
+            await prisma.product.update({
+              where: { id: existingProduct.id },
+              data: {
+                price: newPrice,
+                updated_at: new Date()
+              }
+            })
+            updatedProductsCount++
+
+          } else {
+            skippedProductsCount++
+          }
+        } else {
+          skippedProductsCount++
+
+        }
+      } catch (productError) {
+        console.error(`❌ Error updating price for product ${posterProduct.product_id}:`, productError)
+        skippedProductsCount++
+      }
+    }
+
+    // Update sync log with success
+    await updateSyncLog(syncLog.id, 'completed', updatedProductsCount, null, {
+      updated_products: updatedProductsCount,
+      skipped_products: skippedProductsCount,
+      total_poster_products: posterProducts.length,
+      sync_type: 'prices-only'
+    })
+
+
+
+    res.json({
+      success: true,
+      message: `Price sync completed! Updated prices for ${updatedProductsCount} products from Poster POS.`,
+      stats: {
+        updated_products: updatedProductsCount,
+        skipped_products: skippedProductsCount,
+        total_poster_products: posterProducts.length,
+        sync_type: 'prices-only'
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Price sync failed:', error)
+
+    // Update sync log with error
+    if (syncLog) {
+      await updateSyncLog(syncLog.id, 'failed', null, error.message)
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Price sync failed',
+      message: error.message
+    })
+  }
+})
+
+
+
+
+// GET /api/sync/check-images - Check image URLs in database
+router.get('/check-images', async (req, res) => {
+  try {
+    // Check products with joinposter URLs
+    const posterUrls = await prisma.product.findMany({
+      where: {
+        OR: [
+          { image_url: { contains: 'joinposter.com' } },
+          { display_image_url: { contains: 'joinposter.com' } }
+        ]
+      },
+      select: { id: true, name: true, image_url: true, display_image_url: true, poster_product_id: true }
+    })
+
+    // Check products with Railway URLs
+    const railwayUrls = await prisma.product.findMany({
+      where: {
+        OR: [
+          { image_url: { contains: 'railway.app' } },
+          { display_image_url: { contains: 'railway.app' } }
+        ]
+      },
+      select: { id: true, name: true, image_url: true, display_image_url: true, poster_product_id: true }
+    })
+
+    // Check products with placeholder images
+    const placeholderUrls = await prisma.product.findMany({
+      where: {
+        OR: [
+          { image_url: { contains: 'placeholder' } },
+          { display_image_url: { contains: 'placeholder' } }
+        ]
+      },
+      select: { id: true, name: true, image_url: true, display_image_url: true, poster_product_id: true }
+    })
+
+    res.json({
+      poster_urls: posterUrls.length,
+      railway_urls: railwayUrls.length,
+      placeholder_urls: placeholderUrls.length,
+      examples: {
+        poster: posterUrls.slice(0, 3),
+        railway: railwayUrls.slice(0, 3),
+        placeholder: placeholderUrls.slice(0, 3)
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Check images failed:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message
+    })
+  }
+})
+
+// POST /api/sync/fix-image-urls - Force update all image URLs to Railway
+router.post('/fix-image-urls', async (req, res) => {
+  try {
+
+
+    // Get all products that have poster_product_id
+    const products = await prisma.product.findMany({
+      where: {
+        poster_product_id: { not: null }
+      },
+      select: { id: true, name: true, poster_product_id: true, image_url: true, display_image_url: true }
+    })
+
+
+
+    let updatedCount = 0
+    let skippedCount = 0
+
+    for (const product of products) {
+      try {
+        // Check if local image files exist
+        const expectedImagePath = path.join(__dirname, '..', 'public', 'images', 'products', `product_${product.poster_product_id}.png`)
+        const expectedImagePathJpeg = path.join(__dirname, '..', 'public', 'images', 'products', `product_${product.poster_product_id}.jpeg`)
+
+        let localImagePath = null
+        if (fs.existsSync(expectedImagePath)) {
+          localImagePath = `/images/products/product_${product.poster_product_id}.png`
+        } else if (fs.existsSync(expectedImagePathJpeg)) {
+          localImagePath = `/images/products/product_${product.poster_product_id}.jpeg`
+        }
+
+        if (localImagePath) {
+          // Update both image_url and display_image_url to local Railway path
+          await prisma.product.update({
+            where: { id: product.id },
+            data: {
+              image_url: localImagePath,
+              display_image_url: localImagePath
+            }
+          })
+
+          updatedCount++
+        } else {
+
+          skippedCount++
+        }
+
+      } catch (error) {
+        console.error(`❌ Error updating ${product.name}:`, error)
+      }
+    }
+
+    const result = {
+      total_products: products.length,
+      updated: updatedCount,
+      skipped: skippedCount
+    }
+
+
+    res.json({ success: true, ...result })
+
+  } catch (error) {
+    console.error('❌ Image URL fix failed:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message
+    })
+  }
+})
+
+// POST /api/sync/images-only - Sync only images from Poster API
+router.post('/images-only', async (req, res) => {
+  try {
+
+
+    // Get all products from database (not from API)
+    const existingProducts = await prisma.product.findMany({
+      select: {
+        id: true,
+        poster_product_id: true,
+        name: true,
+        image_url: true
+      }
+    })
+
+
+
+    // Get fresh product data from Poster API to get latest image URLs
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+
+
+    let downloadedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+
+    // Process each existing product
+    for (const dbProduct of existingProducts) {
+      try {
+        // Find corresponding product in Poster API data
+        const posterProduct = posterProducts.find(p => p.product_id === dbProduct.poster_product_id)
+
+        if (!posterProduct) {
+
+          skippedCount++
+          continue
+        }
+
+        // Get image URL from Poster API
+        let posterImageUrl = ''
+        if (posterProduct.photo_origin) {
+          posterImageUrl = posterProduct.photo_origin
+        } else if (posterProduct.photo) {
+          posterImageUrl = posterProduct.photo
+        }
+
+        if (!posterImageUrl) {
+
+          skippedCount++
+          continue
+        }
+
+        // Check if the image file exists locally first
+        const expectedImagePath = path.join(__dirname, '..', 'public', 'images', 'products', `product_${dbProduct.poster_product_id}.png`)
+        const expectedImagePathJpeg = path.join(__dirname, '..', 'public', 'images', 'products', `product_${dbProduct.poster_product_id}.jpeg`)
+        const imageExists = fs.existsSync(expectedImagePath) || fs.existsSync(expectedImagePathJpeg)
+
+        if (imageExists) {
+          // Image exists locally - make sure database URL is correct
+          const localImagePath = fs.existsSync(expectedImagePath)
+            ? `/images/products/product_${dbProduct.poster_product_id}.png`
+            : `/images/products/product_${dbProduct.poster_product_id}.jpeg`
+
+          // Always update the database URL to ensure it's correct
+          await prisma.product.update({
+            where: { id: dbProduct.id },
+            data: {
+              image_url: localImagePath,
+              display_image_url: localImagePath
+            }
+          })
+
+          skippedCount++
+          continue
+        }
+
+        // If image doesn't exist locally, we need to download it
+
+
+
+
+        // Download and save the image using imageService
+        const localImagePath = await imageService.downloadAndSaveImage(
+          posterImageUrl,
+          `product_${dbProduct.poster_product_id}`,
+          'products'
+        )
+
+        if (localImagePath) {
+          // Update product with new local image path
+          await prisma.product.update({
+            where: { id: dbProduct.id },
+            data: {
+              image_url: localImagePath,
+              display_image_url: localImagePath
+            }
+          })
+
+
+          downloadedCount++
+        } else {
+
+          errorCount++
+        }
+
+      } catch (error) {
+        console.error(`❌ Error processing ${dbProduct.name}:`, error)
+        errorCount++
+      }
+    }
+
+    const summary = {
+      total_products: existingProducts.length,
+      images_downloaded: downloadedCount,
+      images_skipped: skippedCount,
+      errors: errorCount
+    }
+
+
+
+    res.json({
+      success: true,
+      message: 'Image sync completed successfully',
+      summary
+    })
+
+  } catch (error) {
+    console.error('❌ Image sync failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Image sync failed',
       message: error.message
     })
   }

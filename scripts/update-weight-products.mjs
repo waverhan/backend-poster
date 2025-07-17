@@ -9,13 +9,6 @@ async function updateWeightBasedProducts() {
     // Define weight-based products with their custom quantities
     const weightBasedProducts = [
       {
-        name: 'Ікряники',
-        price: 800, // 800 UAH per kg
-        custom_quantity: 0.05, // 50g portions
-        custom_unit: 'г',
-        quantity_step: 1
-      },
-      {
         name: 'анчоус ваг.',
         price: 1560, // 1560 UAH per kg (current 78 UAH for 50g)
         custom_quantity: 0.05, // 50g portions

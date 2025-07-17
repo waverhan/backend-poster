@@ -22,6 +22,11 @@
                 Зв'язатися з нами
               </router-link>
             </li>
+            <li>
+              <a href="https://blog.opillia.com.ua" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                📝 Блог
+              </a>
+            </li>
           </ul>
         </div>
 

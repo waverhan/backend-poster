@@ -54,6 +54,59 @@ const messages = {
       delivery: 'Доставка',
       pickup: 'Самовивіз'
     },
+    // Cart related
+    cart: {
+      title: 'Кошик покупок',
+      items: 'Товари',
+      empty: 'Ваш кошик порожній',
+      emptyDescription: 'Додайте товари, щоб почати',
+      continueShopping: 'Продовжити покупки',
+      clearCart: 'Очистити кошик',
+      subtotal: 'Проміжний підсумок',
+      deliveryFee: 'Вартість доставки',
+      total: 'Всього',
+      each: 'шт',
+      per: 'за',
+      addedToCart: 'Додано в кошик'
+    },
+    // Checkout related
+    checkout: {
+      title: 'Оформлення замовлення',
+      completeOrder: 'Завершити замовлення',
+      deliveryMethod: 'Спосіб доставки',
+      chooseDeliveryMethod: 'Оберіть спосіб доставки',
+      selectMethod: 'Обрати спосіб',
+      selectHowReceive: 'Оберіть, як ви хочете отримати замовлення',
+      delivery: 'Доставка',
+      deliveryDescription: 'Ми доставимо за вашою адресою',
+      pickup: 'Самовивіз',
+      pickupDescription: 'Заберіть з нашого магазину',
+      free: 'Безкоштовно',
+      contactInfo: 'Контактна інформація',
+      name: 'Ім\'я',
+      phone: 'Телефон',
+      email: 'Email',
+      orderComment: 'Коментар до замовлення',
+      orderCommentPlaceholder: 'Додаткові побажання або коментарі...',
+      noCallbackConfirmation: 'Ми не будемо передзвонювати Вам для підтвердження. Замовлення буде оброблено автоматично',
+      orderSummary: 'Підсумок замовлення',
+      branch: 'Філія',
+      address: 'Адреса',
+      cost: 'Вартість',
+      fillAllFields: 'Заповніть всі поля',
+      backToCart: 'Повернутися до кошика',
+      pickupSelected: 'Самовивіз обраний',
+      pickupLocation: 'Місце самовивозу',
+      edit: 'Редагувати',
+      proceedToCheckout: 'Перейти до оформлення',
+      method: 'Спосіб',
+      location: 'Місце',
+      fee: 'Вартість',
+      from: 'З',
+      loadingDeliveryOptions: 'Завантаження варіантів доставки...',
+      noDeliveryOptions: 'Варіанти доставки недоступні',
+      retry: 'Спробувати знову'
+    },
     // Units
     units: {
       piece: 'шт',
@@ -81,6 +134,14 @@ const messages = {
       categories: 'Категорії',
       contactUs: 'Контакти',
       aiAssistant: 'AI Помічник'
+    },
+    // Daily Deals
+    deals: {
+      title: 'Акції',
+      salePrice: 'Акційна ціна',
+      originalPrice: 'Звичайна ціна',
+      save: 'Економія',
+      discount: 'Знижка'
     },
     // Order related
     order: {
@@ -173,6 +234,59 @@ const messages = {
       delivery: 'Delivery',
       pickup: 'Pickup'
     },
+    // Cart related
+    cart: {
+      title: 'Shopping Cart',
+      items: 'Items',
+      empty: 'Your cart is empty',
+      emptyDescription: 'Add some products to get started',
+      continueShopping: 'Continue Shopping',
+      clearCart: 'Clear Cart',
+      subtotal: 'Subtotal',
+      deliveryFee: 'Delivery Fee',
+      total: 'Total',
+      each: 'each',
+      per: 'per',
+      addedToCart: 'Added to cart'
+    },
+    // Checkout related
+    checkout: {
+      title: 'Checkout',
+      completeOrder: 'Complete your order',
+      deliveryMethod: 'Delivery Method',
+      chooseDeliveryMethod: 'Choose Delivery Method',
+      selectMethod: 'Select Method',
+      selectHowReceive: 'Select how you\'d like to receive your order',
+      delivery: 'Delivery',
+      deliveryDescription: 'We\'ll deliver to your address',
+      pickup: 'Pickup',
+      pickupDescription: 'Pick up from our store',
+      free: 'Free',
+      contactInfo: 'Contact Information',
+      name: 'Name',
+      phone: 'Phone',
+      email: 'Email',
+      orderComment: 'Order Comment',
+      orderCommentPlaceholder: 'Additional wishes or comments...',
+      noCallbackConfirmation: 'We will not call you for confirmation. The order will be processed automatically',
+      orderSummary: 'Order Summary',
+      branch: 'Branch',
+      address: 'Address',
+      cost: 'Cost',
+      fillAllFields: 'Fill all fields',
+      backToCart: 'Back to Cart',
+      pickupSelected: 'Pickup selected',
+      pickupLocation: 'Pickup location',
+      edit: 'Edit',
+      proceedToCheckout: 'Proceed to Checkout',
+      method: 'Method',
+      location: 'Location',
+      fee: 'Fee',
+      from: 'From',
+      loadingDeliveryOptions: 'Loading delivery options...',
+      noDeliveryOptions: 'No delivery options available',
+      retry: 'Retry'
+    },
     // Units
     units: {
       piece: 'pc',
@@ -199,6 +313,14 @@ const messages = {
       categories: 'Categories',
       contactUs: 'Contact Us',
       aiAssistant: 'AI Assistant'
+    },
+    // Daily Deals
+    deals: {
+      title: 'Daily Deals',
+      salePrice: 'Sale Price',
+      originalPrice: 'Original Price',
+      save: 'Save',
+      discount: 'Discount'
     },
     // Order related
     order: {

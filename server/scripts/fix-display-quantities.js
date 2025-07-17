@@ -8,15 +8,6 @@ async function fixDisplayQuantities() {
     
     // Update products to show proper display quantities
     const updates = [
-      // Snacks - show in grams (50г, 100г, etc.)
-      {
-        namePattern: 'ікряник',
-        custom_quantity: 50, // 50г
-        custom_unit: 'г',
-        quantity_step: 50,
-        min_quantity: 50,
-        max_quantity: 500
-      },
       {
         namePattern: 'Анчоус',
         custom_quantity: 50, // 50г
@@ -24,14 +15,6 @@ async function fixDisplayQuantities() {
         quantity_step: 50,
         min_quantity: 50,
         max_quantity: 500
-      },
-      {
-        namePattern: 'ікра',
-        custom_quantity: 100, // 100г
-        custom_unit: 'г',
-        quantity_step: 50,
-        min_quantity: 50,
-        max_quantity: 1000
       },
       // Beer and beverages - show in liters (0.5L, 1L, 1.5L, 2L, etc.)
       {

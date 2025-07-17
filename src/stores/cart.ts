@@ -16,12 +16,16 @@ export const useCartStore = defineStore('cart', () => {
 
   const subtotal = computed(() => {
     return items.value.reduce((total, item) => {
+      // For draft beverages with bottle cost (fallback mode)
+      if (item.is_draft_beverage && item.bottle_cost) {
+        return total + (item.price * item.quantity) + item.bottle_cost
+      }
       // For weight-based products, calculate price per custom unit
       if (item.custom_quantity && item.custom_unit) {
         const pricePerCustomUnit = item.price * item.custom_quantity
         return total + (pricePerCustomUnit * item.quantity)
       }
-      // For regular products, use price as is
+      // For all other products (including separate bottle products), use simple price * quantity
       return total + (item.price * item.quantity)
     }, 0)
   })
@@ -48,47 +52,65 @@ export const useCartStore = defineStore('cart', () => {
 
   // Actions
   const addItem = (item: CartItem) => {
-    const existingItem = items.value.find(i => i.product_id === item.product_id)
+    // Find existing item to combine with
+    let existingItem: CartItem | undefined
+
+    if (item.is_bottle_product) {
+      // For bottle products, check poster_product_id (since they're real products)
+      existingItem = items.value.find(i =>
+        i.poster_product_id === item.poster_product_id &&
+        i.is_bottle_product
+      )
+    } else {
+      // For all other products (including draft beverages), just check product_id
+      // This ensures draft beverages with the same product_id are always combined
+      existingItem = items.value.find(i =>
+        i.product_id === item.product_id &&
+        !i.is_bottle_product
+      )
+    }
 
     if (existingItem) {
-      // For draft beverages, don't merge - add as separate item
-      if (item.is_draft_beverage) {
-        items.value.push({
-          ...item,
-          subtotal: (item.price * item.quantity) + (item.bottle_cost || 0)
-        })
+      // Update quantity if item already exists (same product + same bottle selection)
+      existingItem.quantity += item.quantity
+
+      // Check max quantity if specified
+      if (item.max_quantity && existingItem.quantity > item.max_quantity) {
+        existingItem.quantity = item.max_quantity
+      }
+
+      // Calculate subtotal correctly
+      if (existingItem.is_draft_beverage && existingItem.bottle_cost) {
+        // Fallback: draft beverage with bottle cost included (when bottle products are not available)
+        existingItem.subtotal = (existingItem.price * existingItem.quantity) + existingItem.bottle_cost
+      } else if (existingItem.custom_quantity && existingItem.custom_unit) {
+        const pricePerCustomUnit = existingItem.price * existingItem.custom_quantity
+        existingItem.subtotal = pricePerCustomUnit * existingItem.quantity
       } else {
-        // Update quantity if item already exists
-        existingItem.quantity += item.quantity
-
-        // Check max quantity if specified
-        if (item.max_quantity && existingItem.quantity > item.max_quantity) {
-          existingItem.quantity = item.max_quantity
-        }
-
-        // Calculate subtotal correctly for weight-based products
-        if (existingItem.custom_quantity && existingItem.custom_unit) {
-          const pricePerCustomUnit = existingItem.price * existingItem.custom_quantity
-          existingItem.subtotal = pricePerCustomUnit * existingItem.quantity
-        } else {
-          existingItem.subtotal = existingItem.price * existingItem.quantity
-        }
+        // For all other products (including separate bottle products), use simple price * quantity
+        existingItem.subtotal = existingItem.price * existingItem.quantity
       }
     } else {
       // Add new item
       let subtotal: number
-      if (item.is_draft_beverage) {
-        subtotal = (item.price * item.quantity) + (item.bottle_cost || 0)
+      if (item.is_draft_beverage && item.bottle_cost) {
+        // Fallback: draft beverage with bottle cost included (when bottle products are not available)
+        subtotal = (item.price * item.quantity) + item.bottle_cost
       } else if (item.custom_quantity && item.custom_unit) {
         // For weight-based products, calculate price per custom unit
         const pricePerCustomUnit = item.price * item.custom_quantity
         subtotal = pricePerCustomUnit * item.quantity
       } else {
+        // For all other products (including separate bottle products), use simple price * quantity
         subtotal = item.price * item.quantity
       }
 
+      // Generate unique ID for cart item
+      const cartItemId = `${item.product_id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
       items.value.push({
         ...item,
+        cart_item_id: cartItemId,
         subtotal
       })
     }
@@ -97,12 +119,12 @@ export const useCartStore = defineStore('cart', () => {
     saveToStorage()
   }
 
-  const updateItemQuantity = (productId: string, quantity: number) => {
-    const item = items.value.find(i => i.product_id === productId)
+  const updateItemQuantity = (cartItemId: string, quantity: number) => {
+    const item = items.value.find(i => i.cart_item_id === cartItemId)
 
     if (item) {
       if (quantity <= 0) {
-        removeItem(productId)
+        removeItem(cartItemId)
       } else {
         // Check max quantity if specified
         if (item.max_quantity && quantity > item.max_quantity) {
@@ -111,8 +133,10 @@ export const useCartStore = defineStore('cart', () => {
 
         item.quantity = quantity
 
-        // Calculate subtotal correctly for weight-based products
-        if (item.custom_quantity && item.custom_unit) {
+        // Calculate subtotal correctly
+        if (item.is_draft_beverage) {
+          item.subtotal = (item.price * quantity) + (item.bottle_cost || 0)
+        } else if (item.custom_quantity && item.custom_unit) {
           const pricePerCustomUnit = item.price * item.custom_quantity
           item.subtotal = pricePerCustomUnit * quantity
         } else {
@@ -123,8 +147,8 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  const removeItem = (productId: string) => {
-    const index = items.value.findIndex(i => i.product_id === productId)
+  const removeItem = (cartItemId: string) => {
+    const index = items.value.findIndex(i => i.cart_item_id === cartItemId)
 
     if (index > -1) {
       items.value.splice(index, 1)
@@ -161,8 +185,8 @@ export const useCartStore = defineStore('cart', () => {
     saveToStorage()
   }
 
-  const increaseQuantity = (productId: string) => {
-    const item = items.value.find(i => i.product_id === productId)
+  const increaseQuantity = (cartItemId: string) => {
+    const item = items.value.find(i => i.cart_item_id === cartItemId)
 
     if (item) {
       // Use custom quantity step if available, otherwise default to 1
@@ -171,13 +195,13 @@ export const useCartStore = defineStore('cart', () => {
 
       // Check max quantity if specified
       if (!item.max_quantity || newQuantity <= item.max_quantity) {
-        updateItemQuantity(productId, newQuantity)
+        updateItemQuantity(cartItemId, newQuantity)
       }
     }
   }
 
-  const decreaseQuantity = (productId: string) => {
-    const item = items.value.find(i => i.product_id === productId)
+  const decreaseQuantity = (cartItemId: string) => {
+    const item = items.value.find(i => i.cart_item_id === cartItemId)
 
     if (item) {
       // Use custom quantity step if available, otherwise default to 1
@@ -185,9 +209,9 @@ export const useCartStore = defineStore('cart', () => {
       const newQuantity = item.quantity - step
 
       if (newQuantity > 0) {
-        updateItemQuantity(productId, newQuantity)
+        updateItemQuantity(cartItemId, newQuantity)
       } else {
-        removeItem(productId)
+        removeItem(cartItemId)
       }
     }
   }
@@ -214,9 +238,24 @@ export const useCartStore = defineStore('cart', () => {
       if (stored) {
         const cartData = JSON.parse(stored)
         items.value = cartData.items || []
+
+        // Migrate existing items to have cart_item_id
+        let needsSave = false
+        items.value.forEach(item => {
+          if (!item.cart_item_id) {
+            item.cart_item_id = `${item.product_id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+            needsSave = true
+          }
+        })
+
         branchId.value = cartData.branchId || ''
         deliveryMethod.value = cartData.deliveryMethod || ''
         deliveryFee.value = cartData.deliveryFee || 0
+
+        // Save migrated data
+        if (needsSave) {
+          saveToStorage()
+        }
       }
     } catch (error) {
       console.error('Failed to load cart from storage:', error)

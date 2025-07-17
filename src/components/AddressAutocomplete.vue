@@ -95,20 +95,7 @@
       </div>
     </div>
 
-    <!-- Manual Entry Option -->
-    <div v-if="showManualEntry && inputValue.length > 2" class="mt-2">
-      <button
-        @click="useManualAddress"
-        type="button"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        🔍 Знайти на карті: "{{ inputValue }}"
-      </button>
-    </div>
+
 
     <!-- Error Message -->
     <div v-if="error" class="mt-2 text-sm text-red-600">

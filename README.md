@@ -1,19 +1,28 @@
 # 🛒 PWA POS Shop - AI-Powered E-commerce Platform
 
-A modern Progressive Web App (PWA) for food delivery with AI chat assistant, multi-channel messaging, and intelligent product recommendations.
+A modern Progressive Web App (PWA) for beverage and food delivery with AI chat assistant, multi-channel messaging, intelligent product recommendations, and advanced bottle management system.
 
 ## 🌟 Features
+
+### 🍺 Advanced Beverage Management
+- **Draft Beverage System** - Automatic bottle selection and pricing for draft products
+- **Smart Bottle Sync** - Real-time bottle quantity synchronization with beverage amounts
+- **Weight-Based Products** - Custom quantity system for products sold by weight (per kg/gram)
+- **Bottle Product Management** - Separate bottle inventory with automatic cart integration
+- **Custom Quantities** - Flexible quantity options for specialty products (икра, икряник)
 
 ### 🤖 AI-Powered Features
 - **AI Chat Assistant** - Instant customer support with OpenAI GPT-4 integration
 - **Smart Product Recommendations** - Context-aware suggestions to boost sales
 - **Natural Language Processing** - Understands Ukrainian and English commands
+- **Recommendation Analytics** - Track AI suggestion performance and user engagement
 
 ### 📱 Multi-Channel Communication
 - **Email Notifications** - Beautiful HTML templates with order updates
 - **Telegram Integration** - Instant messaging via bot API
 - **Viber Support** - Rich messaging with interactive buttons
 - **SMS Fallback** - Reliable delivery for critical notifications
+- **Ukrainian Phone Validation** - Proper formatting and validation for Ukrainian numbers
 
 ### ⭐ Review & Rating System
 - **Post-Order Reviews** - Automated review requests after delivery
@@ -22,18 +31,29 @@ A modern Progressive Web App (PWA) for food delivery with AI chat assistant, mul
 - **Review Analytics** - Insights for business improvement
 
 ### 🛍️ E-commerce Features
-- **Product Catalog** - Integration with Poster POS API
+- **Product Catalog** - Integration with Poster POS API with real-time sync
 - **Dynamic Banners** - Homepage and shop page banner slider with admin management
 - **Image Management** - Upload and manage banner images with drag & drop reordering
-- **Smart Cart** - Recommendations and inventory validation
-- **Delivery Management** - Location-based pricing and routing
-- **Order Tracking** - Real-time status updates
+- **Smart Cart** - Automatic product combination and inventory validation
+- **Delivery Management** - Location-based pricing and routing with Kyiv address autocomplete
+- **Order Tracking** - Real-time status updates with Poster POS integration
+- **Daily Deals** - Sale price management with special "Акції" section
+- **Product Attributes** - Visual indicators for alcohol strength, bitterness, etc.
 
-### 📊 Business Intelligence
+### 🌍 Location & Delivery
+- **Geolocation Services** - Automatic nearby branch detection using Capacitor.js
+- **Interactive Maps** - OpenStreetMap integration with Leaflet for delivery areas
+- **Address Autocomplete** - Ukrainian street names with separate house number fields
+- **Delivery Pricing** - Free pickup, 99 UAH within 2km, +30 UAH per additional km
+- **Branch Selection** - Smart branch assignment based on customer location
+
+### 📊 Business Intelligence & Analytics
+- **Google Analytics 4** - Comprehensive tracking with ID: G-Y3NZ5WWN9G
 - **Sales Analytics** - Revenue tracking and insights
 - **Customer Behavior** - AI-powered analytics
-- **Inventory Management** - Real-time stock levels
+- **Inventory Management** - Real-time stock levels with branch-specific availability
 - **Performance Metrics** - Conversion and engagement tracking
+- **Poster POS Integration** - Seamless data synchronization
 
 ## 🚀 Quick Start
 
@@ -81,6 +101,37 @@ Visit `http://localhost:5176` to see the application.
 ### 5. Test AI Features
 Visit `http://localhost:5176/communication-demo` to test all AI and communication features.
 
+## 🛠️ Technical Stack
+
+### Frontend
+- **Vue 3** - Progressive JavaScript framework with Composition API
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool and development server
+- **Tailwind CSS** - Utility-first CSS framework
+- **Capacitor.js** - Native mobile app capabilities
+- **PWA** - Service worker, offline support, installable
+
+### Backend
+- **Node.js** - JavaScript runtime
+- **Express.js** - Web application framework
+- **Prisma** - Database ORM with PostgreSQL
+- **Railway** - Cloud hosting platform
+- **File Upload** - Local storage with image optimization
+
+### Integrations
+- **Poster POS API** - Real-time inventory and order management
+- **OpenAI GPT-4** - AI chat assistant and recommendations
+- **Google Analytics 4** - Comprehensive tracking (G-Y3NZ5WWN9G)
+- **OpenStreetMap/Leaflet** - Interactive maps for delivery
+- **Telegram/Viber APIs** - Multi-channel messaging
+
+### Deployment
+- **Frontend**: Netlify (opillia.com.ua)
+- **Backend**: Railway (backend-api-production-b3a0.up.railway.app)
+- **Database**: PostgreSQL on Railway
+- **Blog**: WordPress on blog.opillia.com.ua
+- **Redirects**: Netlify _redirects for SEO-friendly blog migration
+
 ## 🎯 Demo & Testing
 
 ### AI Chat Commands (Work Immediately)
@@ -99,44 +150,54 @@ Try these commands in the chat widget (blue button, bottom-right):
 
 ## 📦 Build & Deploy
 
+### Current Production Deployment
+- **Frontend**: https://opillia.com.ua (Netlify)
+- **Backend**: https://backend-api-production-b3a0.up.railway.app (Railway)
+- **Blog**: https://blog.opillia.com.ua (WordPress)
+
 ### Build for Production
 ```bash
 npm run build
 ```
 
-### Deploy to Netlify
-1. **Connect Repository**
-   - Go to [Netlify](https://netlify.com)
-   - Click "New site from Git"
-   - Connect your GitHub repository
-
-2. **Build Settings**
-   ```
-   Build command: npm run build
-   Publish directory: dist
-   ```
-
-3. **Environment Variables**
-   Add in Netlify dashboard under Site settings > Environment variables:
-   ```
-   VITE_BACKEND_URL=https://your-backend-api.com
-   VITE_OPENAI_API_KEY=your_openai_api_key
-   VITE_TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-   VITE_VIBER_BOT_TOKEN=your_viber_bot_token
-   ```
-
-4. **Deploy**
-   - Push to main branch
-   - Netlify auto-deploys on every push
-
-### Manual Deployment
+### Deploy Frontend to Netlify
 ```bash
-# Build the project
+# Build and deploy to production
 npm run build
-
-# Deploy dist folder to your hosting provider
-# The dist folder contains all static files
+netlify deploy --prod --dir=dist
 ```
+
+### Deploy Backend to Railway
+```bash
+# Navigate to server directory
+cd server
+
+# Deploy using Railway CLI
+railway up
+```
+
+### Environment Variables (Production)
+**Frontend (Netlify):**
+```env
+VITE_BACKEND_URL=https://backend-api-production-b3a0.up.railway.app
+VITE_OPENAI_API_KEY=your_openai_api_key
+VITE_POSTER_API_TOKEN=218047:05891220e474bad7f26b6eaa0be3f344
+```
+
+**Backend (Railway):**
+```env
+DATABASE_URL=postgresql://username:password@host:port/database
+POSTER_API_TOKEN=218047:05891220e474bad7f26b6eaa0be3f344
+OPENAI_API_KEY=your_openai_api_key
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+VIBER_BOT_TOKEN=your_viber_bot_token
+```
+
+### Blog Redirects
+The system includes comprehensive blog redirects from opillia.com.ua to blog.opillia.com.ua:
+- All blog posts: `/2023/05/post-name/` → `https://blog.opillia.com.ua/2023/05/post-name/`
+- Categories: `/ohliady/`, `/novyny/` → `https://blog.opillia.com.ua/category/`
+- SEO-friendly 301 redirects preserve search rankings
 
 ## 🔧 Configuration
 

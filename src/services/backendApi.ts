@@ -25,10 +25,10 @@ class BackendApiService {
   }
 
   // Categories
-  async getCategories(): Promise<Category[]> {
-    
-    const categories = await this.request<Category[]>('/categories')
-    
+  async getCategories(includeInactive = false): Promise<Category[]> {
+    const params = includeInactive ? '?includeInactive=true' : ''
+    const categories = await this.request<Category[]>(`/categories${params}`)
+
     return categories
   }
 
@@ -53,17 +53,19 @@ class BackendApiService {
   }
 
   // Products
-  async getProducts(categoryId?: string, branchId?: string): Promise<Product[]> {
+  async getProducts(categoryId?: string, branchId?: string, includeInactive = false): Promise<Product[]> {
     const params = new URLSearchParams()
     if (categoryId) params.append('categoryId', categoryId)
     if (branchId) params.append('branchId', branchId)
+    if (includeInactive) params.append('includeInactive', 'true')
+    // Add cache-busting parameter to force fresh data
+    params.append('_t', Date.now().toString())
 
     const queryString = params.toString()
     const endpoint = `/products${queryString ? `?${queryString}` : ''}`
 
-    
     const products = await this.request<Product[]>(endpoint)
-    
+
     return products
   }
 
@@ -78,13 +80,23 @@ class BackendApiService {
   }
 
   async updateProduct(id: string, product: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'quantity' | 'unit' | 'available'>>): Promise<Product> {
-    
+
     const updatedProduct = await this.request<Product>(`/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(product),
     })
-    
+
     return updatedProduct
+  }
+
+  async bulkEditProducts(bulkEditData: { productIds: string[], updates: any }): Promise<any> {
+
+    const result = await this.request<any>('/products/bulk-edit', {
+      method: 'POST',
+      body: JSON.stringify(bulkEditData),
+    })
+
+    return result
   }
 
   async uploadProductImage(file: File): Promise<string> {
@@ -109,10 +121,10 @@ class BackendApiService {
   }
 
   // Branches
-  async getBranches(): Promise<Branch[]> {
-    
-    const branches = await this.request<Branch[]>('/branches')
-    
+  async getBranches(includeInactive = false): Promise<Branch[]> {
+    const params = includeInactive ? '?includeInactive=true' : ''
+    const branches = await this.request<Branch[]>(`/branches${params}`)
+
     return branches
   }
 
@@ -138,11 +150,52 @@ class BackendApiService {
 
   // Sync operations
   async syncFullData(): Promise<{ success: boolean; message: string; stats: any }> {
-    
+
     const result = await this.request<{ success: boolean; message: string; stats: any }>('/sync/full', {
       method: 'POST',
     })
-    
+
+    return result
+  }
+
+  async syncProductsOnly(): Promise<{ success: boolean; message: string; stats: any }> {
+
+    const result = await this.request<{ success: boolean; message: string; stats: any }>('/sync/products-only', {
+      method: 'POST',
+    })
+
+    return result
+  }
+
+  async syncPricesOnly(): Promise<{ success: boolean; message: string; stats: any }> {
+
+    const result = await this.request<{ success: boolean; message: string; stats: any }>('/sync/prices-only', {
+      method: 'POST',
+    })
+
+    return result
+  }
+
+  async triggerInventorySync(): Promise<{ success: boolean; message: string }> {
+
+    const result = await this.request<{ success: boolean; message: string }>('/sync/inventory', {
+      method: 'POST',
+    })
+
+    return result
+  }
+
+  async getSyncStatus(): Promise<any> {
+
+    const result = await this.request<any>('/inventory/sync/status/latest')
+
+    return result
+  }
+
+  async getSyncHistory(limit: number = 10): Promise<any[]> {
+
+    const result = await this.request<any[]>(`/inventory/sync/history?limit=${limit}`)
+
     return result
   }
 
@@ -155,12 +208,12 @@ class BackendApiService {
     return result
   }
 
-  async syncImages(): Promise<{ success: boolean; message: string; stats: any }> {
-    
-    const result = await this.request<{ success: boolean; message: string; stats: any }>('/sync/images', {
+  async syncImages(): Promise<{ success: boolean; message: string; summary: any }> {
+
+    const result = await this.request<{ success: boolean; message: string; summary: any }>('/sync/images-only', {
       method: 'POST',
     })
-    
+
     return result
   }
 
@@ -245,6 +298,34 @@ class BackendApiService {
       method: 'POST',
     })
     
+    return result
+  }
+
+  // Inventory
+  async getBranchInventory(branchId: string): Promise<any[]> {
+
+    const inventory = await this.request<any[]>(`/inventory/branch/${branchId}`)
+
+    return inventory
+  }
+
+  async getProductsInventory(productIds: string[], branchId: string): Promise<any[]> {
+
+    const inventory = await this.request<any[]>('/inventory/products', {
+      method: 'POST',
+      body: JSON.stringify({
+        product_ids: productIds,
+        branch_id: branchId
+      }),
+    })
+
+    return inventory
+  }
+
+  async checkProductAvailability(productId: string, branchId: string, quantity: number = 1): Promise<any> {
+
+    const result = await this.request<any>(`/inventory/check/${productId}/${branchId}?quantity=${quantity}`)
+
     return result
   }
 

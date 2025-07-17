@@ -1,7 +1,7 @@
 <template>
   <div class="card-hover">
     <!-- Product Image -->
-    <div class="aspect-square bg-gray-100 flex items-center justify-center">
+    <div class="aspect-square bg-gray-100 flex items-center justify-center relative">
       <img
         v-if="imageUrl"
         :src="imageUrl"
@@ -10,6 +10,32 @@
         @error="onImageError"
       />
       <span v-else class="text-4xl">🍽️</span>
+
+      <!-- Product Attributes Overlay -->
+      <div v-if="product.attributes && product.attributes.length > 0"
+           class="absolute top-1 right-1 space-y-1">
+        <div
+          v-for="attribute in product.attributes.slice(0, 3)"
+          :key="attribute.name"
+          class="bg-white bg-opacity-75 backdrop-blur-sm rounded px-2 py-1 text-right shadow-sm min-w-0"
+        >
+          <div class="text-xs text-gray-700 font-medium leading-tight">{{ attribute.name }}</div>
+          <div class="text-xs font-bold text-gray-900 leading-tight">
+            {{ attribute.value }}{{ attribute.unit || '' }}
+          </div>
+          <!-- Scale bars -->
+          <div class="flex justify-end gap-0.5 mt-0.5">
+            <div
+              v-for="i in 5"
+              :key="i"
+              class="w-1.5 h-1 rounded-sm"
+              :class="i <= getScaleLevel(attribute.value, attribute.name)
+                ? getAttributeBarColor(attribute.color)
+                : 'bg-gray-300'"
+            ></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Product Info -->
@@ -22,7 +48,12 @@
       <!-- Price -->
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center space-x-2">
-          <span class="text-xl font-bold text-primary-600">{{ displayPrice }} ₴</span>
+          <span :class="[
+            'text-xl font-bold',
+            product.original_price && product.original_price > product.price
+              ? 'text-red-600'
+              : 'text-primary-600'
+          ]">{{ displayPrice }} ₴</span>
           <span v-if="product.original_price && product.original_price > product.price"
                 class="text-sm text-gray-400 line-through">
             {{ formatDisplayPrice(product.original_price) }} ₴
@@ -33,6 +64,13 @@
             за {{ displayPriceUnit }}
           </span>
         </div>
+      </div>
+
+      <!-- Sale Badge -->
+      <div v-if="product.original_price && product.original_price > product.price" class="mb-3">
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          🔥 {{ $t('deals.title') }}
+        </span>
       </div>
 
       <!-- Quantity Selector for Draft Beverages -->
@@ -72,26 +110,46 @@
         @cancel="onBottleSelectionCancel"
       />
 
-      <!-- Add to Cart Button -->
-      <button
-        v-if="!isDraft || !showBottleSelector"
-        @click="handleAddToCart"
-        :disabled="!isAvailableInBranch || (isDraft && (selectedQuantity === 0 || selectedQuantity > availableQuantity))"
-        class="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {{ getButtonText() }}
-      </button>
+      <!-- Add to Cart Buttons -->
+      <div v-if="!showBottleSelector" class="space-y-2">
+        <!-- Main Add to Cart Button (with auto bottle selection for draft) -->
+        <button
+          @click="handleAddToCart"
+          :disabled="!isAvailableInBranch || (isDraft && (selectedQuantity === 0 || selectedQuantity > availableQuantity))"
+          class="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ getButtonText() }}
+        </button>
+
+        <!-- Manual Bottle Selection Button (only for draft beverages) -->
+        <button
+          v-if="isDraft"
+          @click="showBottleSelector = true"
+          :disabled="!isAvailableInBranch || selectedQuantity === 0 || selectedQuantity > availableQuantity"
+          class="w-full text-sm py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          🍾 Обрати пляшки
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { defineProps, defineEmits, computed, ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Product, BottleSelection } from '@/types'
 import { backendApi } from '@/services/backendApi'
 import { useBranchStore } from '@/stores/branch'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
-import { isDraftBeverage, createEmptyBottleSelection } from '@/utils/bottleUtils'
+import {
+  isDraftBeverage,
+  createEmptyBottleSelection,
+  getDefaultBottleSelection,
+  getSimpleDefaultBottleSelection,
+  calculateBottleCost,
+  getBottleCartItems
+} from '@/utils/bottleUtils'
 import {
   convertToDisplayQuantity,
   getQuantityStep,
@@ -107,10 +165,14 @@ interface Props {
 
 interface Emits {
   (e: 'add-to-cart', product: Product, quantity?: number, bottles?: BottleSelection, bottleCost?: number): void
+  (e: 'add-bottle-to-cart', bottleItem: any): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// Translation
+const { t } = useI18n()
 
 // Stores
 const branchStore = useBranchStore()
@@ -208,8 +270,9 @@ const displayPriceUnit = computed(() => {
     return props.product.custom_unit
   }
 
-  // For regular products, show the unit
-  return props.product.unit || 'шт'
+  // For regular products, show the unit (convert "p" to "шт")
+  const unit = props.product.unit
+  return (unit === 'p' || unit === 'pcs') ? 'шт' : (unit || 'шт')
 })
 
 const formatDisplayPrice = (price: number): string => {
@@ -253,8 +316,22 @@ const onBottleSelectionApply = (bottles: BottleSelection, cost: number) => {
   selectedBottles.value = bottles
   showBottleSelector.value = false
 
-  // Add to cart with bottle selection
-  emit('add-to-cart', props.product, selectedQuantity.value, bottles, cost)
+  // Try to get bottle products for cart
+  const bottleCartItems = getBottleCartItems(bottles)
+
+  if (bottleCartItems.length > 0) {
+    // Add beverage to cart (without bottle cost since bottles are separate)
+    emit('add-to-cart', props.product, selectedQuantity.value, bottles)
+
+    // Add bottle products to cart as separate items
+    for (const bottleItem of bottleCartItems) {
+      emit('add-bottle-to-cart', bottleItem)
+    }
+  } else {
+    // Fallback: use old system with bottle cost included in beverage
+    console.warn('Bottle products not available, using fallback bottle cost system')
+    emit('add-to-cart', props.product, selectedQuantity.value, bottles, cost)
+  }
 }
 
 const onBottleSelectionCancel = () => {
@@ -278,7 +355,27 @@ const handleAddToCart = () => {
 
   if (isDraft.value) {
     if (selectedQuantity.value === 0 || selectedQuantity.value > availableQuantity.value) return
-    showBottleSelector.value = true
+
+    // Auto bottle selection: automatically select the best bottle combination
+    const autoBottles = getDefaultBottleSelection(selectedQuantity.value)
+    const bottleCost = calculateBottleCost(autoBottles)
+
+    // Try to get bottle products for cart
+    const bottleCartItems = getBottleCartItems(autoBottles)
+
+    if (bottleCartItems.length > 0) {
+      // Add beverage to cart (without bottle cost since bottles are separate)
+      emit('add-to-cart', props.product, selectedQuantity.value, autoBottles)
+
+      // Add bottle products to cart as separate items
+      for (const bottleItem of bottleCartItems) {
+        emit('add-bottle-to-cart', bottleItem)
+      }
+    } else {
+      // Fallback: use old system with bottle cost included in beverage
+      console.warn('Bottle products not available, using fallback bottle cost system')
+      emit('add-to-cart', props.product, selectedQuantity.value, autoBottles, bottleCost)
+    }
   } else {
     emit('add-to-cart', props.product)
   }
@@ -349,6 +446,49 @@ const loadBranchInventory = async () => {
 // Initialize quantity based on product settings
 const initializeQuantity = () => {
   selectedQuantity.value = minQuantity.value
+}
+
+// Get color class for attribute scale bars
+const getAttributeBarColor = (color?: string) => {
+  switch (color?.toLowerCase()) {
+    case 'red':
+      return 'bg-red-500'
+    case 'orange':
+      return 'bg-orange-500'
+    case 'yellow':
+      return 'bg-yellow-500'
+    case 'green':
+      return 'bg-green-500'
+    case 'blue':
+      return 'bg-blue-500'
+    case 'purple':
+      return 'bg-purple-500'
+    case 'pink':
+      return 'bg-pink-500'
+    default:
+      return 'bg-gray-500'
+  }
+}
+
+// Calculate scale level (1-5) based on attribute value and type
+const getScaleLevel = (value: string, attributeName: string): number => {
+  const numValue = parseFloat(value)
+
+  // Different scales for different attribute types
+  if (attributeName.toLowerCase().includes('міцність') || attributeName.toLowerCase().includes('abv')) {
+    // Alcohol strength: 0-20% -> 1-5 scale
+    return Math.min(5, Math.max(1, Math.ceil(numValue / 4)))
+  } else if (attributeName.toLowerCase().includes('гіркота') || attributeName.toLowerCase().includes('ibu')) {
+    // Bitterness: 0-100 IBU -> 1-5 scale
+    return Math.min(5, Math.max(1, Math.ceil(numValue / 20)))
+  } else if (attributeName.toLowerCase().includes('густина') || attributeName.toLowerCase().includes('og')) {
+    // Original gravity: typically 1.030-1.120 -> convert to percentage and scale
+    const percentage = (numValue - 1) * 100 // Convert 1.050 to 5%
+    return Math.min(5, Math.max(1, Math.ceil(percentage / 2)))
+  } else {
+    // Generic scale: assume 0-100 range
+    return Math.min(5, Math.max(1, Math.ceil(numValue / 20)))
+  }
 }
 
 // Lifecycle
