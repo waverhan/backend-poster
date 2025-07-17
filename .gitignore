@@ -412,9 +412,13 @@ public/images/banners/*
 !public/images/products/.gitkeep
 !public/images/banners/.gitkeep
 
-# PWA POS Shop - Server Images (large files)
-server/public/images/*
-!server/public/images/.gitkeep
+# PWA POS Shop - Server Images (large files - keep some for demo)
+server/public/images/products/*
+server/public/images/banners/*
+!server/public/images/products/.gitkeep
+!server/public/images/banners/.gitkeep
+!server/public/images/products/demo-*.jpg
+!server/public/images/banners/demo-*.jpg
 
 # PWA POS Shop - License and Security
 *.license
