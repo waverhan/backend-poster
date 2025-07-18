@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://opillia.com.ua/api/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /admin
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+# Allow important pages
+Allow: /
+Allow: /shop
+Allow: /product/
+Allow: /about
+Allow: /contact
+Allow: /branches
+Allow: /sitemap
+
+# Crawl delay
+Crawl-delay: 1
+
+# Host
+Host: https://opillia.com.ua

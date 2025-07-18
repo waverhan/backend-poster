@@ -27,6 +27,11 @@
                 📝 Блог
               </a>
             </li>
+            <li>
+              <router-link to="/sitemap" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                🗺️ Карта сайту
+              </router-link>
+            </li>
           </ul>
         </div>
 

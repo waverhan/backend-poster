@@ -10,7 +10,7 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
       meta: {
-        title: 'PWA POS - Modern Location-Based Shopping',
+        title: 'Опілля - Найкращі напої та делікатеси з доставкою по Києву',
         requiresAuth: false
       }
     },
@@ -19,7 +19,7 @@ const router = createRouter({
       name: 'shop',
       component: () => import('@/views/ShopView.vue'),
       meta: {
-        title: 'Shop - Browse Products',
+        title: 'Магазин - Опілля | Найкращі напої та делікатеси з доставкою по Києву',
         requiresAuth: false
       }
     },
@@ -28,7 +28,7 @@ const router = createRouter({
       name: 'product-detail',
       component: () => import('@/views/ProductDetailView.vue'),
       meta: {
-        title: 'Product Details',
+        title: 'Деталі товару - Опілля',
         requiresAuth: false
       }
     },
@@ -37,7 +37,7 @@ const router = createRouter({
       name: 'cart',
       component: () => import('@/views/CartView.vue'),
       meta: {
-        title: 'Shopping Cart',
+        title: 'Кошик - Опілля',
         requiresAuth: false
       }
     },
@@ -229,6 +229,15 @@ const router = createRouter({
       component: () => import('@/views/TestLicense.vue'),
       meta: {
         title: 'License System Test',
+        requiresAuth: false
+      }
+    },
+    {
+      path: '/sitemap',
+      name: 'sitemap',
+      component: () => import('@/views/SitemapView.vue'),
+      meta: {
+        title: 'Карта сайту - Опілля',
         requiresAuth: false
       }
     },

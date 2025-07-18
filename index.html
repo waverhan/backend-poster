@@ -1,34 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="Modern Progressive Web App Point of Sale System with location-based shopping" />
+    <meta name="description" content="Найкращі напої та делікатеси з доставкою по Києву. Замовляйте свіжі продукти онлайн." />
     
     <!-- PWA Meta Tags -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/masked-icon.svg" color="#2563eb" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="PWA POS" />
+    <meta name="apple-mobile-web-app-title" content="Опілля" />
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Google Analytics -->
+    <!-- Google Analytics with Enhanced E-commerce -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y3NZ5WWN9G"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', 'G-Y3NZ5WWN9G');
+      gtag('config', 'G-Y3NZ5WWN9G', {
+        // Enhanced E-commerce settings
+        send_page_view: true,
+        allow_enhanced_conversions: true,
+        currency: 'UAH'
+      });
     </script>
 
-    <title>PWA POS System</title>
+    <title>Опілля - Найкращі напої та делікатеси з доставкою по Києву</title>
   </head>
   <body class="font-sans antialiased">
     <div id="app"></div>

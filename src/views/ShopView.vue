@@ -8,32 +8,32 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
           <h1 class="text-4xl md:text-5xl font-bold mb-4">
-            🛒 Modern PWA Shop
+            🍺 Опілля
           </h1>
           <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Location-based shopping with real-time inventory from Poster POS
+            Найкращі напої та делікатеси з доставкою по Києву
           </p>
 
           <!-- Welcome Banner -->
           <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 max-w-2xl mx-auto">
             <div class="text-center">
-              <div class="text-6xl mb-4">🛒</div>
-              <h2 class="text-2xl font-bold mb-2">Welcome to Our Store!</h2>
-              <p class="text-primary-100 mb-6">Fresh products delivered to your door or ready for pickup</p>
+              <div class="text-6xl mb-4">🍺</div>
+              <h2 class="text-2xl font-bold mb-2">Ласкаво просимо до Опілля!</h2>
+              <p class="text-primary-100 mb-6">Свіжі продукти з доставкою додому або самовивозом</p>
 
               <!-- Features -->
               <div class="flex justify-center space-x-6 text-sm text-primary-200">
                 <div class="flex items-center">
                   <span class="mr-1">✅</span>
-                  <span>Real-time inventory</span>
+                  <span>Актуальні залишки</span>
                 </div>
                 <div class="flex items-center">
                   <span class="mr-1">⚡</span>
-                  <span>Fast service</span>
+                  <span>Швидка доставка</span>
                 </div>
                 <div class="flex items-center">
                   <span class="mr-1">💰</span>
-                  <span>Best prices</span>
+                  <span>Найкращі ціни</span>
                 </div>
               </div>
             </div>
@@ -441,6 +441,7 @@ import { useBannerStore } from '@/stores/banners'
 
 // Services
 import { capacitorService } from '@/services/capacitor'
+import googleAnalytics from '@/services/googleAnalytics'
 
 // Utils
 import { testPosterApi } from '@/utils/testApi'
@@ -993,11 +994,19 @@ const hideRecommendations = () => {
 // Lifecycle
 onMounted(async () => {
   try {
+    // Track page view
+    googleAnalytics.trackPageView('Магазин - Опілля | Найкращі напої та делікатеси з доставкою по Києву')
+
     // Load banners for the slider
     await bannerStore.fetchBanners()
 
     // Load default branch (Branch 4) and show products immediately for better UX
     await loadDefaultBranch()
+
+    // Track product list view when products are loaded
+    if (products.value.length > 0) {
+      googleAnalytics.trackViewItemList(products.value, 'Shop Page - All Products')
+    }
   } catch (error) {
     console.error('❌ Failed to initialize shop:', error)
   } finally {

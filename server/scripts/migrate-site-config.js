@@ -32,15 +32,15 @@ async function main() {
       
       const defaultConfig = {
         // Branding
-        site_name: 'Opillia Shop',
+        site_name: 'Опілля',
         site_description: 'Найкращі напої та делікатеси з доставкою по Києву',
         logo_url: '/logo.png',
         favicon_url: '/favicon.ico',
-        
+
         // SEO
-        seo_title: 'Opillia Shop - Найкращі напої та делікатеси',
+        seo_title: 'Опілля - Найкращі напої та делікатеси з доставкою по Києву',
         seo_description: 'Замовляйте найкращі напої, сири, м\'ясо та делікатеси з доставкою по Києву. Швидка доставка, свіжі продукти, AI-помічник для вибору.',
-        seo_keywords: 'напої, сир, м\'ясо, делікатеси, доставка, Київ, пиво, вино, крафт',
+        seo_keywords: 'напої, сир, м\'ясо, делікатеси, доставка, Київ, пиво, вино, крафт, Опілля',
         og_image_url: '/og-image.jpg',
         
         // Homepage
