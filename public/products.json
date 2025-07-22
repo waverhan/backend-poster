@@ -1,0 +1,23 @@
+{
+  "title": "Опілля - Product Feed",
+  "description": "Найкращі напої та делікатеси з доставкою по Києву",
+  "link": "https://opillia.com.ua",
+  "updated": "2025-01-17T00:00:00Z",
+  "note": "For real-time product data, please use the backend API endpoint",
+  "backend_api": "https://backend-api-production-b3a0.up.railway.app/api/feeds/products.json",
+  "products": [
+    {
+      "id": "sample-product",
+      "title": "Зразок товару - Опілля",
+      "description": "Це зразок товару. Для актуальних даних використовуйте API бекенду.",
+      "link": "https://opillia.com.ua/shop",
+      "image": "https://opillia.com.ua/images/placeholder.jpg",
+      "price": 0,
+      "currency": "UAH",
+      "availability": "in_stock",
+      "category": "Напої та делікатеси",
+      "brand": "Опілля",
+      "weight_based": false
+    }
+  ]
+}

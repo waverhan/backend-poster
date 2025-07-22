@@ -2,11 +2,11 @@ User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://opillia.com.ua/api/sitemap.xml
+Sitemap: https://opillia.com.ua/sitemap.xml
+Sitemap: https://backend-api-production-b3a0.up.railway.app/api/sitemap.xml
 
 # Disallow admin and API routes
 Disallow: /admin
-Disallow: /api/
 Disallow: /login
 Disallow: /register
 
@@ -18,6 +18,12 @@ Allow: /about
 Allow: /contact
 Allow: /branches
 Allow: /sitemap
+
+# Allow technical files
+Allow: /sitemap.xml
+Allow: /robots.txt
+Allow: /google-shopping.xml
+Allow: /products.json
 
 # Crawl delay
 Crawl-delay: 1

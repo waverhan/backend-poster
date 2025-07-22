@@ -1,13 +1,23 @@
 # Blog redirects - redirect old blog posts to new blog subdomain
 # Redirect all blog posts from opillia.com.ua to blog.opillia.com.ua
 
-# Blog category and page redirects (highest priority)
-/ohliady/* https://blog.opillia.com.ua/ohliady/:splat 301
-/novyny/* https://blog.opillia.com.ua/novyny/:splat 301
-/sales/* https://blog.opillia.com.ua/sales/:splat 301
+# Blog category and page redirects (highest priority - forced)
+/ohliady https://blog.opillia.com.ua/ohliady/ 301!
+/ohliady/ https://blog.opillia.com.ua/ohliady/ 301!
+/ohliady/* https://blog.opillia.com.ua/ohliady/:splat 301!
+/novyny https://blog.opillia.com.ua/novyny/ 301!
+/novyny/ https://blog.opillia.com.ua/novyny/ 301!
+/novyny/* https://blog.opillia.com.ua/novyny/:splat 301!
+/sales https://blog.opillia.com.ua/sales/ 301!
+/sales/ https://blog.opillia.com.ua/sales/ 301!
+/sales/* https://blog.opillia.com.ua/sales/:splat 301!
+/karta-sajtu https://blog.opillia.com.ua/karta-sajtu/ 301
 /karta-sajtu/ https://blog.opillia.com.ua/karta-sajtu/ 301
+/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi https://blog.opillia.com.ua/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ 301
 /pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ https://blog.opillia.com.ua/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ 301
+/contact-us https://blog.opillia.com.ua/contact-us/ 301
 /contact-us/ https://blog.opillia.com.ua/contact-us/ 301
+/home https://blog.opillia.com.ua/home/ 301
 /home/ https://blog.opillia.com.ua/home/ 301
 
 # Specific blog post redirects (examples from sitemap)

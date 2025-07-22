@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>Опілля - Найкращі напої та делікатеси</title>
+    <link>https://opillia.com.ua</link>
+    <description>Найкращі напої та делікатеси з доставкою по Києву</description>
+    <lastBuildDate>2025-01-17T00:00:00Z</lastBuildDate>
+    <generator>Опілля PWA Shop</generator>
+    
+    <!-- Note: This is a static sample feed -->
+    <!-- For real-time product data, use: https://backend-api-production-b3a0.up.railway.app/api/feeds/google-shopping.xml -->
+    
+    <item>
+      <g:id>sample-product</g:id>
+      <g:title><![CDATA[Зразок товару - Опілля]]></g:title>
+      <g:description><![CDATA[Це зразок товару для демонстрації формату Google Shopping. Для актуальних товарів використовуйте API бекенду.]]></g:description>
+      <g:link>https://opillia.com.ua/shop</g:link>
+      <g:image_link>https://opillia.com.ua/images/placeholder.jpg</g:image_link>
+      <g:availability>in stock</g:availability>
+      <g:price>0 UAH</g:price>
+      <g:brand>Опілля</g:brand>
+      <g:condition>new</g:condition>
+      <g:product_type>Напої та делікатеси</g:product_type>
+      <g:google_product_category>Food, Beverages &amp; Tobacco</g:google_product_category>
+      <g:identifier_exists>false</g:identifier_exists>
+      <g:shipping>
+        <g:country>UA</g:country>
+        <g:service>Доставка по Києву</g:service>
+        <g:price>99 UAH</g:price>
+      </g:shipping>
+      <g:custom_label_0>Поштучно</g:custom_label_0>
+      <g:custom_label_1>Напої та делікатеси</g:custom_label_1>
+    </item>
+  </channel>
+</rss>
