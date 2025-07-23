@@ -15,7 +15,8 @@ const messages = {
       profile: 'Профіль',
       about: 'Про нас',
       contact: 'Контакти',
-      menu: 'Меню'
+      menu: 'Меню',
+      search: 'Пошук'
     },
     // Common actions
     actions: {
@@ -143,6 +144,16 @@ const messages = {
       save: 'Економія',
       discount: 'Знижка'
     },
+    // Search
+    search: {
+      placeholder: 'Пошук товарів...',
+      results: 'Знайдено {count} товарів',
+      noResults: 'Товарів не знайдено',
+      showAll: 'Показати всі',
+      popularCategories: 'Популярні категорії',
+      enterQuery: 'Введіть назву товару...',
+      tryDifferent: 'Спробуйте інший запит'
+    },
     // Order related
     order: {
       number: 'Номер замовлення',
@@ -198,7 +209,8 @@ const messages = {
       profile: 'Profile',
       about: 'About',
       contact: 'Contact',
-      menu: 'Menu'
+      menu: 'Menu',
+      search: 'Search'
     },
     actions: {
       add: 'Add',
@@ -321,6 +333,16 @@ const messages = {
       originalPrice: 'Original Price',
       save: 'Save',
       discount: 'Discount'
+    },
+    // Search
+    search: {
+      placeholder: 'Search products...',
+      results: 'Found {count} products',
+      noResults: 'No products found',
+      showAll: 'Show all',
+      popularCategories: 'Popular categories',
+      enterQuery: 'Enter product name...',
+      tryDifferent: 'Try a different search'
     },
     // Order related
     order: {

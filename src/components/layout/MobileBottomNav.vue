@@ -26,6 +26,16 @@
         <span class="nav-label">{{ $t('nav.shop') }}</span>
       </router-link>
 
+      <!-- Search Button -->
+      <button @click="openSearch" class="nav-item">
+        <div class="nav-icon">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <span class="nav-label">{{ $t('nav.search', 'Пошук') }}</span>
+      </button>
+
       <!-- Cart Button -->
       <router-link to="/cart" class="nav-item">
         <div class="nav-icon">
@@ -39,6 +49,98 @@
 
 
     </nav>
+
+    <!-- Search Modal -->
+    <transition name="slide-up">
+      <div v-if="showSearch" class="mobile-menu-overlay" @click="closeSearch">
+        <div class="mobile-search-modal" @click.stop>
+          <div class="search-header">
+            <h3>🔍 Пошук товарів</h3>
+            <button @click="closeSearch" class="close-btn">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="search-content">
+            <div class="relative mb-4">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                ref="searchInput"
+                v-model="searchQuery"
+                @input="performSearch"
+                type="text"
+                placeholder="Введіть назву товару..."
+                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
+                autofocus
+              />
+              <button
+                v-if="searchQuery"
+                @click="clearSearch"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Search Results -->
+            <div v-if="searchQuery.trim()" class="search-results">
+              <div v-if="searchResults.length > 0" class="mb-2 text-sm text-gray-600">
+                Знайдено {{ searchResults.length }} товарів
+              </div>
+              <div v-if="searchResults.length === 0 && searchQuery.trim()" class="text-center py-8 text-gray-500">
+                <div class="text-4xl mb-2">🔍</div>
+                <div>Товарів не знайдено</div>
+                <div class="text-sm">Спробуйте інший запит</div>
+              </div>
+              <div v-else class="space-y-2 max-h-60 overflow-y-auto">
+                <div
+                  v-for="product in searchResults.slice(0, 10)"
+                  :key="product.id"
+                  @click="goToProduct(product)"
+                  class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                >
+                  <img
+                    :src="product.image_url || '/images/placeholder.jpg'"
+                    :alt="product.name"
+                    class="w-12 h-12 object-cover rounded-lg"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
+                    <div class="text-sm text-gray-500">{{ product.price }}₴</div>
+                  </div>
+                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Popular Searches or Categories -->
+            <div v-else class="popular-searches">
+              <h4 class="font-medium text-gray-900 mb-3">Популярні категорії</h4>
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  v-for="category in popularCategories"
+                  :key="category.id"
+                  @click="searchCategory(category.name)"
+                  class="p-3 bg-gray-50 rounded-lg text-left hover:bg-gray-100 transition-colors"
+                >
+                  <div class="font-medium text-gray-900">{{ category.display_name }}</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
 
     <!-- Expandable Menu -->
     <transition name="slide-up">
@@ -103,18 +205,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { useProductStore } from '@/stores/product'
+import type { Product } from '@/types'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const productStore = useProductStore()
 
 // State
 const showMenu = ref(false)
+const showSearch = ref(false)
+const searchQuery = ref('')
+const searchResults = ref<Product[]>([])
+const searchInput = ref<HTMLInputElement>()
 
 // Computed
 const cartCount = computed(() => cartStore.totalItems)
+
+const popularCategories = computed(() => {
+  return productStore.categories.slice(0, 6) // Show first 6 categories
+})
 
 // Methods
 const toggleMenu = () => {
@@ -123,6 +236,51 @@ const toggleMenu = () => {
 
 const closeMenu = () => {
   showMenu.value = false
+}
+
+// Search methods
+const openSearch = async () => {
+  showSearch.value = true
+  await nextTick()
+  searchInput.value?.focus()
+}
+
+const closeSearch = () => {
+  showSearch.value = false
+  clearSearch()
+}
+
+const performSearch = () => {
+  const query = searchQuery.value.trim().toLowerCase()
+
+  if (!query) {
+    searchResults.value = []
+    return
+  }
+
+  // Search in products
+  searchResults.value = productStore.products.filter(product => {
+    const nameMatch = product.name.toLowerCase().includes(query)
+    const descriptionMatch = product.description?.toLowerCase().includes(query) || false
+    const categoryMatch = product.category?.name.toLowerCase().includes(query) || false
+
+    return nameMatch || descriptionMatch || categoryMatch
+  })
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+}
+
+const searchCategory = (categoryName: string) => {
+  searchQuery.value = categoryName
+  performSearch()
+}
+
+const goToProduct = (product: Product) => {
+  closeSearch()
+  router.push(`/product/${product.id}`)
 }
 
 
@@ -243,6 +401,60 @@ router.afterEach(handleRouteChange)
   width: 100%;
   max-height: 70vh;
   overflow-y: auto;
+}
+
+.mobile-search-modal {
+  background: white;
+  border-radius: 1rem 1rem 0 0;
+  padding: 1.5rem;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dark .mobile-search-modal {
+  background: #1f2937;
+}
+
+.search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.search-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.dark .search-header h3 {
+  color: #f9fafb;
+}
+
+.dark .search-header {
+  border-bottom-color: #374151;
+}
+
+.search-content {
+  flex: 1;
+}
+
+.search-results {
+  margin-top: 1rem;
+}
+
+.popular-searches h4 {
+  margin: 0;
+  color: #111827;
+}
+
+.dark .popular-searches h4 {
+  color: #f9fafb;
 }
 
 .dark .mobile-menu {

@@ -200,8 +200,48 @@
             </div>
 
             <div v-else>
+              <!-- Search Bar -->
+              <div class="mb-4">
+                <div class="relative max-w-md mx-auto md:mx-0">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    v-model="searchQuery"
+                    @input="performSearch(searchQuery)"
+                    type="text"
+                    :placeholder="$t('search.placeholder', 'Пошук товарів...')"
+                    class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                  />
+                  <button
+                    v-if="searchQuery"
+                    @click="clearSearch"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Search Results Info -->
+                <div v-if="showSearchResults" class="mt-2 text-center">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ searchResults.length > 0
+                      ? $t('search.results', `Знайдено ${searchResults.length} товарів`)
+                      : $t('search.noResults', 'Товарів не знайдено')
+                    }}
+                  </span>
+                  <button @click="clearSearch" class="ml-2 text-primary-600 hover:text-primary-800 text-sm underline">
+                    {{ $t('search.showAll', 'Показати всі') }}
+                  </button>
+                </div>
+              </div>
+
               <!-- Mobile: Horizontal scrolling single line -->
-              <div class="block md:hidden">
+              <div class="block md:hidden" v-if="!showSearchResults">
                 <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                   <!-- Daily Deals Tab -->
                   <button
@@ -234,7 +274,7 @@
               </div>
 
               <!-- Desktop: Flex wrap with counts -->
-              <div class="hidden md:flex flex-wrap gap-3">
+              <div class="hidden md:flex flex-wrap gap-3" v-if="!showSearchResults">
                 <!-- Daily Deals Tab -->
                 <button
                   v-if="productsOnSale.length > 0"
@@ -499,6 +539,11 @@ const showPickupModal = ref(false)
 // Recommendations state
 const showRecommendations = ref(true)
 
+// Search state
+const searchQuery = ref('')
+const showSearchResults = ref(false)
+const searchResults = ref<Product[]>([])
+
 // Computed
 const cartCount = computed(() => cartStore.totalItems)
 
@@ -510,13 +555,49 @@ const getCategoryProductCount = (categoryId: string) => {
   return products.value.filter(product => product.category_id === categoryId).length
 }
 
-// Computed property for displayed products (either by category or deals)
+// Computed property for displayed products (either by category, deals, or search)
 const displayedProducts = computed(() => {
+  if (showSearchResults.value && searchQuery.value.trim()) {
+    return searchResults.value
+  }
   if (selectedCategory.value?.id === 'deals') {
     return productsOnSale.value
   }
   return productsByCategory.value
 })
+
+// Search functionality
+const performSearch = (query: string) => {
+  const trimmedQuery = query.trim().toLowerCase()
+
+  if (!trimmedQuery) {
+    clearSearch()
+    return
+  }
+
+  // Search in product names and descriptions
+  const results = products.value.filter(product => {
+    const nameMatch = product.name.toLowerCase().includes(trimmedQuery)
+    const descriptionMatch = product.description?.toLowerCase().includes(trimmedQuery) || false
+    const categoryMatch = product.category?.name.toLowerCase().includes(trimmedQuery) || false
+
+    return nameMatch || descriptionMatch || categoryMatch
+  })
+
+  searchResults.value = results
+  showSearchResults.value = true
+
+  // Track search in Google Analytics
+  if (googleAnalytics) {
+    googleAnalytics.trackSearch(trimmedQuery, results.length)
+  }
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+  showSearchResults.value = false
+}
 
 // Methods
 const openDeliveryModal = () => {
