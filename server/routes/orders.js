@@ -295,7 +295,8 @@ router.post('/', async (req, res) => {
       items,
       delivery_fee,
       notes,
-      no_callback_confirmation
+      no_callback_confirmation,
+      payment_method = 'cash'
     } = req.body
 
 
@@ -416,6 +417,8 @@ router.post('/', async (req, res) => {
         delivery_address,
         notes,
         no_callback_confirmation: no_callback_confirmation !== undefined ? no_callback_confirmation : true,
+        payment_method: payment_method || 'cash',
+        payment_status: payment_method === 'online' ? 'pending' : 'pending',
         items: {
           create: items.map(item => ({
             product_id: item.product_id,

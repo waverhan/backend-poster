@@ -126,6 +126,13 @@ model Order {
   notes                   String?
   no_callback_confirmation Boolean?    @default(true)
   poster_order_id         String?
+
+  // Payment fields
+  payment_method          String?     @default("cash") // cash, online
+  payment_status          String?     @default("pending") // pending, paid, failed
+  payment_transaction_id  String?
+  payment_details         String?     // JSON string with payment details
+
   created_at              DateTime    @default(now())
   updated_at              DateTime    @updatedAt
   items                   OrderItem[]
@@ -260,6 +267,13 @@ model SiteConfig {
   enable_recommendations    Boolean @default(true)
   enable_notifications      Boolean @default(true)
   enable_dark_mode          Boolean @default(true)
+
+  // Payment Settings
+  enable_online_payment     Boolean @default(false)
+  wayforpay_merchant_account String @default("")
+  wayforpay_merchant_secret String @default("")
+  wayforpay_merchant_domain String @default("opillia.com.ua")
+  wayforpay_test_mode       Boolean @default(true)
 
   // Theme
   primary_color             String  @default("#2563eb")

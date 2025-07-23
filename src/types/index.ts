@@ -433,6 +433,13 @@ export interface SiteConfig {
   enable_notifications: boolean
   enable_dark_mode: boolean
 
+  // Payment Settings
+  enable_online_payment: boolean
+  wayforpay_merchant_account: string
+  wayforpay_merchant_secret: string
+  wayforpay_merchant_domain: string
+  wayforpay_test_mode: boolean
+
   // Theme
   primary_color: string
   secondary_color: string

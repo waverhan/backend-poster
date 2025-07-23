@@ -62,6 +62,13 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
     enable_notifications: true,
     enable_dark_mode: true,
 
+    // Payment Settings
+    enable_online_payment: false,
+    wayforpay_merchant_account: '',
+    wayforpay_merchant_secret: '',
+    wayforpay_merchant_domain: 'opillia.com.ua',
+    wayforpay_test_mode: true,
+
     // Theme
     primary_color: '#2563eb',
     secondary_color: '#64748b',

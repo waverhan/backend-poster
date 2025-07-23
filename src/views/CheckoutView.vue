@@ -176,14 +176,64 @@
             </div>
 
             <div class="space-y-4">
-              <div class="border-2 border-blue-500 bg-blue-50 rounded-lg p-4">
+              <!-- Cash on Delivery -->
+              <div
+                :class="[
+                  'border-2 rounded-lg p-4 cursor-pointer transition-colors',
+                  paymentMethod === 'cash'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                ]"
+                @click="paymentMethod = 'cash'"
+              >
                 <div class="flex items-center gap-3">
-                  <input type="radio" checked class="w-4 h-4 text-blue-600" readonly />
+                  <input
+                    type="radio"
+                    :checked="paymentMethod === 'cash'"
+                    class="w-4 h-4 text-blue-600"
+                    readonly
+                  />
                   <div>
-                    <h3 class="font-medium text-gray-900">Оплата при отриманні</h3>
+                    <h3 class="font-medium text-gray-900">💵 Оплата при отриманні</h3>
                     <p class="text-sm text-gray-600">Сплачуйте готівкою або карткою при отриманні замовлення</p>
                   </div>
                 </div>
+              </div>
+
+              <!-- Online Payment (WayForPay) -->
+              <div
+                v-if="isOnlinePaymentEnabled"
+                :class="[
+                  'border-2 rounded-lg p-4 cursor-pointer transition-colors',
+                  paymentMethod === 'online'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                ]"
+                @click="paymentMethod = 'online'"
+              >
+                <div class="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    :checked="paymentMethod === 'online'"
+                    class="w-4 h-4 text-green-600"
+                    readonly
+                  />
+                  <div>
+                    <h3 class="font-medium text-gray-900">💳 Онлайн оплата</h3>
+                    <p class="text-sm text-gray-600">Безпечна оплата карткою через WayForPay</p>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Visa</span>
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Mastercard</span>
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Apple Pay</span>
+                      <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Google Pay</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Payment method not available message -->
+              <div v-if="!isOnlinePaymentEnabled" class="text-sm text-gray-500 italic">
+                💡 Онлайн оплата тимчасово недоступна
               </div>
             </div>
           </div>
@@ -442,6 +492,7 @@ import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useNotificationStore } from '@/stores/notification'
 import { capacitorService } from '@/services/capacitor'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
+import wayforpayService from '@/services/wayforpayService'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
@@ -482,6 +533,9 @@ const isPlacingOrder = ref(false)
 const showEditDeliveryModal = ref(false)
 const inventoryValidationResult = ref(null)
 const isValidatingInventory = ref(false)
+
+// Payment state
+const paymentMethod = ref<'cash' | 'online'>('cash')
 
 // Constants
 const MINIMUM_ORDER_AMOUNT = 300
@@ -547,6 +601,10 @@ const hasInventoryIssues = computed(() => {
 
 const isRecommendationsEnabled = computed(() => {
   return siteConfigStore.currentConfig.enable_recommendations !== false
+})
+
+const isOnlinePaymentEnabled = computed(() => {
+  return siteConfigStore.currentConfig.enable_online_payment && wayforpayService.isEnabled()
 })
 
 const canPlaceOrder = computed(() => {
@@ -832,26 +890,62 @@ const placeOrder = async () => {
     const order = await ordersStore.createOrder(
       customerForm.value,
       orderItems,
-      deliveryFee.value
+      deliveryFee.value,
+      paymentMethod.value // Pass payment method to order creation
     )
 
-    // Show success message
-    await capacitorService.showToast({
-      text: 'Замовлення успішно оформлено!',
-      duration: 'long',
-      position: 'bottom'
-    })
+    // Handle payment method
+    if (paymentMethod.value === 'online') {
+      // Process online payment
+      try {
+        const paymentSuccess = await wayforpayService.processPayment(order, cartItems.value)
 
-    // Show success notification
-    notificationStore.success(
-      'Замовлення створено!',
-      'Підтвердження надіслано на вашу електронну пошту',
-      { duration: 5000 }
-    )
+        if (paymentSuccess) {
+          // Clear cart before redirecting to payment
+          cartStore.clearCart()
 
-    // Clear cart and redirect to success page
-    cartStore.clearCart()
-    router.push(`/order-success/${order.id}`)
+          // Show message that user is being redirected
+          await capacitorService.showToast({
+            text: 'Перенаправлення на сторінку оплати...',
+            duration: 'short',
+            position: 'bottom'
+          })
+
+          // WayForPay service will handle the redirect
+          return
+        } else {
+          throw new Error('Failed to initialize payment')
+        }
+      } catch (paymentError) {
+        console.error('Payment processing error:', paymentError)
+
+        await capacitorService.showToast({
+          text: 'Помилка при ініціалізації оплати. Спробуйте ще раз.',
+          duration: 'long',
+          position: 'bottom'
+        })
+        return
+      }
+    } else {
+      // Cash payment - proceed normally
+      // Show success message
+      await capacitorService.showToast({
+        text: 'Замовлення успішно оформлено!',
+        duration: 'long',
+        position: 'bottom'
+      })
+
+      // Show success notification
+      notificationStore.success(
+        'Замовлення створено!',
+        'Підтвердження надіслано на вашу електронну пошту',
+        { duration: 5000 }
+      )
+
+      // Clear cart and redirect to success page
+      cartStore.clearCart()
+      router.push(`/order-success/${order.id}`)
+    }
 
   } catch (error) {
     console.error('Failed to place order:', error)

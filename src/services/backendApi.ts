@@ -254,17 +254,18 @@ class BackendApiService {
   }
 
   // Orders
-  async createOrder(orderData: OrderFormData, items: OrderItem[], deliveryFee: number): Promise<Order> {
-    
+  async createOrder(orderData: OrderFormData, items: OrderItem[], deliveryFee: number, paymentMethod: 'cash' | 'online' = 'cash'): Promise<Order> {
+
     const order = await this.request<Order>('/orders', {
       method: 'POST',
       body: JSON.stringify({
         ...orderData,
         items,
-        delivery_fee: deliveryFee
+        delivery_fee: deliveryFee,
+        payment_method: paymentMethod
       }),
     })
-    
+
     return order
   }
 

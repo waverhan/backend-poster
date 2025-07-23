@@ -61,7 +61,8 @@ export const useOrdersStore = defineStore('orders', () => {
   const createOrder = async (
     orderData: OrderFormData,
     cartItems: OrderItem[],
-    deliveryFee: number
+    deliveryFee: number,
+    paymentMethod: 'cash' | 'online' = 'cash'
   ): Promise<Order> => {
     loading.value = true
     error.value = null
@@ -71,7 +72,7 @@ export const useOrdersStore = defineStore('orders', () => {
       const { backendApi } = await import('@/services/backendApi')
 
       // Create order via backend API
-      const order = await backendApi.createOrder(orderData, cartItems, deliveryFee)
+      const order = await backendApi.createOrder(orderData, cartItems, deliveryFee, paymentMethod)
 
       // Update local state
       orders.value.unshift(order)

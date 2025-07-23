@@ -575,8 +575,16 @@ const performSearch = (query: string) => {
     return
   }
 
-  // Search in product names and descriptions
+  // Search in product names and descriptions, excluding out-of-stock products
   const results = products.value.filter(product => {
+    // First check if product is in stock
+    const isInStock = product.stock_quantity > 0
+
+    if (!isInStock) {
+      return false // Exclude out-of-stock products
+    }
+
+    // Then check if it matches search criteria
     const nameMatch = product.name.toLowerCase().includes(trimmedQuery)
     const descriptionMatch = product.description?.toLowerCase().includes(trimmedQuery) || false
     const categoryMatch = product.category?.name.toLowerCase().includes(trimmedQuery) || false

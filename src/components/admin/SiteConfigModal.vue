@@ -514,6 +514,95 @@
             </div>
           </div>
 
+          <!-- Payment Settings Section -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+              💳 Payment Settings
+            </h3>
+            <div class="space-y-4">
+              <!-- Enable Online Payment -->
+              <label class="flex items-center space-x-3">
+                <input
+                  v-model="formData.enable_online_payment"
+                  type="checkbox"
+                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span class="text-sm font-medium text-gray-700">Enable Online Payment (WayForPay)</span>
+              </label>
+
+              <!-- WayForPay Settings (shown only when online payment is enabled) -->
+              <div v-if="formData.enable_online_payment" class="space-y-4 pl-6 border-l-2 border-blue-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Merchant Account <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="formData.wayforpay_merchant_account"
+                      type="text"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="test_merch_n1"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Your WayForPay merchant account identifier</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                      Merchant Domain <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      v-model="formData.wayforpay_merchant_domain"
+                      type="text"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="opillia.com.ua"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Your domain registered with WayForPay</p>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Merchant Secret Key <span class="text-red-500">*</span>
+                  </label>
+                  <input
+                    v-model="formData.wayforpay_merchant_secret"
+                    type="password"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter your secret key"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">Secret key from your WayForPay merchant account (keep secure!)</p>
+                </div>
+                <label class="flex items-center space-x-3">
+                  <input
+                    v-model="formData.wayforpay_test_mode"
+                    type="checkbox"
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span class="text-sm font-medium text-gray-700">Test Mode (use for testing payments)</span>
+                </label>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div class="ml-3">
+                      <h3 class="text-sm font-medium text-blue-800">WayForPay Integration</h3>
+                      <div class="mt-2 text-sm text-blue-700">
+                        <p>To get your WayForPay credentials:</p>
+                        <ol class="list-decimal list-inside mt-1 space-y-1">
+                          <li>Register at <a href="https://wayforpay.com" target="_blank" class="underline">wayforpay.com</a></li>
+                          <li>Complete merchant verification</li>
+                          <li>Get your Merchant Account and Secret Key from the dashboard</li>
+                          <li>Add your domain to the allowed domains list</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Theme Section -->
           <div class="space-y-4">
             <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
