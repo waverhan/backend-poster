@@ -87,7 +87,7 @@ class LocalRecommendationService {
     if (!targetVector) return []
 
     const similarities = products
-      .filter(p => p.id !== productId && p.available && p.is_active) // Filter out unavailable products
+      .filter(p => p.id !== productId && p.stock_quantity > 0 && p.is_active) // Filter out out-of-stock products
       .map(product => {
         const productVector = this.productVectors.get(product.id)
         if (!productVector) return { product, similarity: 0 }
@@ -129,7 +129,7 @@ class LocalRecommendationService {
       const recommended = Array.from(complementaryProducts)
         .map(id => products.find(p => p.id === id))
         .filter(Boolean)
-        .filter(p => p.available && p.is_active) // Filter out unavailable products
+        .filter(p => p.stock_quantity > 0 && p.is_active) // Filter out out-of-stock products
         .slice(0, limit)
 
       if (recommended.length >= limit) {
@@ -154,7 +154,7 @@ class LocalRecommendationService {
       .filter(product =>
         complementaryCategories.includes(product.category_name) &&
         !cartItems.some(item => item.product_id === product.id) &&
-        product.available && product.is_active // Filter out unavailable products
+        product.stock_quantity > 0 && product.is_active // Filter out out-of-stock products
       )
 
     // Enhanced scoring based on multiple factors
@@ -219,7 +219,7 @@ class LocalRecommendationService {
   // Get trending/popular products
   getTrendingProducts(products: Product[], limit = 4): Product[] {
     const filtered = products
-      .filter(product => product.available && product.is_active) // Filter out unavailable products
+      .filter(product => product.stock_quantity > 0 && product.is_active) // Filter out out-of-stock products
       .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
 
     // Add randomness by taking more products and shuffling
@@ -232,7 +232,7 @@ class LocalRecommendationService {
     const timeCategories = this.getTimeBasedCategories(hour)
 
     const filtered = products
-      .filter(product => timeCategories.includes(product.category_name) && product.available && product.is_active)
+      .filter(product => timeCategories.includes(product.category_name) && product.stock_quantity > 0 && product.is_active)
       .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
 
     // Add randomness and seasonal factors

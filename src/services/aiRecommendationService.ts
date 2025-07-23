@@ -31,7 +31,9 @@ class AIRecommendationService {
     maxRecommendations = 4
   ): Promise<RecommendationResponse> {
     try {
-      const prompt = this.buildPrompt(context, availableProducts, maxRecommendations)
+      // Filter out out-of-stock products before processing
+      const inStockProducts = availableProducts.filter(product => product.stock_quantity > 0 && product.is_active)
+      const prompt = this.buildPrompt(context, inStockProducts, maxRecommendations)
       
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -60,10 +62,10 @@ class AIRecommendationService {
       })
 
       const data = await response.json()
-      return this.parseAIResponse(data.choices[0].message.content, availableProducts)
+      return this.parseAIResponse(data.choices[0].message.content, inStockProducts)
     } catch (error) {
       console.error('AI recommendation error:', error)
-      return this.getFallbackRecommendations(context, availableProducts, maxRecommendations)
+      return this.getFallbackRecommendations(context, inStockProducts, maxRecommendations)
     }
   }
 
@@ -144,14 +146,14 @@ Respond in JSON format:
       const complementaryCategories = this.getComplementaryCategories(cartCategories)
       
       recommendations = products
-        .filter(p => complementaryCategories.includes(p.category_name))
+        .filter(p => complementaryCategories.includes(p.category_name) && p.stock_quantity > 0 && p.is_active)
         .slice(0, maxRecommendations)
     }
 
     if (recommendations.length < maxRecommendations) {
       // Add popular/trending products
       const popular = products
-        .filter(p => !recommendations.includes(p))
+        .filter(p => !recommendations.includes(p) && p.stock_quantity > 0 && p.is_active)
         .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
         .slice(0, maxRecommendations - recommendations.length)
       

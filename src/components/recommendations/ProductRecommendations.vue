@@ -283,8 +283,9 @@ const getLocalRecommendations = async () => {
 }
 
 const getFallbackRecommendations = (): Product[] => {
-  // Simple fallback: return popular products
+  // Simple fallback: return popular products that are in stock
   return productStore.products
+    .filter(product => product.stock_quantity > 0 && product.is_active)
     .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
     .slice(0, props.maxRecommendations)
 }
