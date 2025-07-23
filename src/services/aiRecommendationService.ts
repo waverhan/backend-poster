@@ -30,9 +30,10 @@ class AIRecommendationService {
     availableProducts: Product[],
     maxRecommendations = 4
   ): Promise<RecommendationResponse> {
+    // Filter out out-of-stock products before processing
+    const inStockProducts = availableProducts.filter(product => (product.stock_quantity === undefined || product.stock_quantity === null || product.stock_quantity > 0) && product.is_active)
+
     try {
-      // Filter out out-of-stock products before processing
-      const inStockProducts = availableProducts.filter(product => product.stock_quantity > 0 && product.is_active)
       const prompt = this.buildPrompt(context, inStockProducts, maxRecommendations)
       
       const response = await fetch(this.baseUrl, {
@@ -146,14 +147,14 @@ Respond in JSON format:
       const complementaryCategories = this.getComplementaryCategories(cartCategories)
       
       recommendations = products
-        .filter(p => complementaryCategories.includes(p.category_name) && p.stock_quantity > 0 && p.is_active)
+        .filter(p => complementaryCategories.includes(p.category_name) && (p.stock_quantity === undefined || p.stock_quantity === null || p.stock_quantity > 0) && p.is_active)
         .slice(0, maxRecommendations)
     }
 
     if (recommendations.length < maxRecommendations) {
       // Add popular/trending products
       const popular = products
-        .filter(p => !recommendations.includes(p) && p.stock_quantity > 0 && p.is_active)
+        .filter(p => !recommendations.includes(p) && (p.stock_quantity === undefined || p.stock_quantity === null || p.stock_quantity > 0) && p.is_active)
         .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
         .slice(0, maxRecommendations - recommendations.length)
       
