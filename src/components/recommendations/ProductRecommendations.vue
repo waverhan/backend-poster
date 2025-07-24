@@ -168,11 +168,12 @@ const loadRecommendations = async () => {
 
     let result
 
-    if (props.useAI && import.meta.env.VITE_OPENAI_API_KEY) {
-      result = await getAIRecommendations()
-    } else {
+    // Temporarily disable AI recommendations to prevent errors
+    // if (props.useAI && import.meta.env.VITE_OPENAI_API_KEY) {
+    //   result = await getAIRecommendations()
+    // } else {
       result = await getLocalRecommendations()
-    }
+    // }
 
     recommendations.value = result.products
     reasoning.value = result.reasoning
