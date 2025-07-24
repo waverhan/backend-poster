@@ -404,43 +404,59 @@ router.post('/', async (req, res) => {
 
     console.log(`📍 Using branch for order: ${branch.name} (ID: ${branch.id}, poster_id: ${branch.poster_id})`)
 
-    // Create order
-    const order = await prisma.order.create({
-      data: {
+    // Create order with error handling
+    let order
+    try {
+      console.log('🔄 Creating order with data:', {
         customer_id: customer?.id,
         branch_id: branch.id,
-        order_number: generateOrderNumber(),
-        status: 'PENDING',
-        fulfillment: delivery_method.toUpperCase(),
+        delivery_method: delivery_method.toUpperCase(),
         total_amount: total,
         delivery_fee: delivery_fee || 0,
-        delivery_address,
-        notes,
-        no_callback_confirmation: no_callback_confirmation !== undefined ? no_callback_confirmation : true,
-        // Temporarily remove payment fields until database migration is complete
-        // payment_method: payment_method || 'cash',
-        // payment_status: payment_method === 'online' ? 'pending' : 'pending',
-        items: {
-          create: items.map(item => ({
-            product_id: item.product_id,
-            quantity: item.quantity,
-            unit_price: item.price,
-            total_price: item.price * item.quantity,
-            custom_quantity: item.custom_quantity || null,
-            custom_unit: item.custom_unit || null
-          }))
-        }
-      },
-      include: {
-        items: {
-          include: {
-            product: true
+        items_count: items.length
+      })
+
+      order = await prisma.order.create({
+        data: {
+          customer_id: customer?.id,
+          branch_id: branch.id,
+          order_number: generateOrderNumber(),
+          status: 'PENDING',
+          fulfillment: delivery_method.toUpperCase(),
+          total_amount: total,
+          delivery_fee: delivery_fee || 0,
+          delivery_address,
+          notes,
+          no_callback_confirmation: no_callback_confirmation !== undefined ? no_callback_confirmation : true,
+          payment_method: payment_method || 'cash',
+          payment_status: payment_method === 'online' ? 'pending' : 'pending',
+          items: {
+            create: items.map(item => ({
+              product_id: item.product_id,
+              quantity: item.quantity,
+              unit_price: item.price,
+              total_price: item.price * item.quantity,
+              custom_quantity: item.custom_quantity || null,
+              custom_unit: item.custom_unit || null
+            }))
           }
         },
-        customer: true,
-        branch: true
-      }
-    })
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          },
+          customer: true,
+          branch: true
+        }
+      })
+
+      console.log('✅ Order created successfully:', order.id)
+    } catch (orderError) {
+      console.error('❌ Failed to create order:', orderError)
+      throw orderError
+    }
 
     // Transform to match frontend interface
 

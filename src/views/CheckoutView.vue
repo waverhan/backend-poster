@@ -891,7 +891,7 @@ const placeOrder = async () => {
       customerForm.value,
       orderItems,
       deliveryFee.value,
-      paymentMethod.value // Pass payment method to order creation
+      paymentMethod.value
     )
 
     // Handle payment method
