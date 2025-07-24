@@ -306,9 +306,64 @@ router.post('/', async (req, res) => {
     
     
 
-    // Calculate totals
+    // Validate that all products exist
+    console.log('🔍 Validating products exist...')
+    const productIds = items.map(item => item.product_id)
+    console.log('📦 Product IDs to validate:', productIds)
+
+    const existingProducts = await prisma.product.findMany({
+      where: {
+        id: {
+          in: productIds
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        is_active: true
+      }
+    })
+
+    console.log('✅ Found products:', existingProducts.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })))
+
+    const existingProductIds = existingProducts.map(p => p.id)
+    const missingProductIds = productIds.filter(id => !existingProductIds.includes(id))
+    const inactiveProducts = existingProducts.filter(p => !p.is_active)
+
+    if (missingProductIds.length > 0) {
+      console.warn('⚠️ Missing products detected:', missingProductIds)
+
+      // Check if missing products are bottles (which can be safely removed)
+      const missingBottles = missingProductIds.filter(id => id.startsWith('bottle_'))
+      const missingNonBottles = missingProductIds.filter(id => !id.startsWith('bottle_'))
+
+      if (missingNonBottles.length > 0) {
+        // If non-bottle products are missing, fail the order
+        console.error('❌ Critical products missing:', missingNonBottles)
+        return res.status(400).json({
+          error: 'Some products no longer exist',
+          missing_products: missingNonBottles
+        })
+      }
+
+      if (missingBottles.length > 0) {
+        console.warn('⚠️ Missing bottle products (will be filtered out):', missingBottles)
+        // Filter out missing bottles from the items
+        items = items.filter(item => !missingBottles.includes(item.product_id))
+        console.log('✅ Filtered items (bottles removed):', items.length, 'items remaining')
+      }
+    }
+
+    if (inactiveProducts.length > 0) {
+      console.warn('⚠️ Order contains inactive products (allowing order to proceed):', inactiveProducts.map(p => ({ id: p.id, name: p.name })))
+      // Allow order to proceed even with inactive products (e.g., bottles)
+    }
+
+    // Calculate totals (after filtering out missing products)
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     const total = subtotal + (delivery_fee || 0)
+
+    console.log('💰 Order totals after filtering:', { subtotal, delivery_fee, total, items_count: items.length })
 
     // Create or find customer
     let customer = null
@@ -970,6 +1025,50 @@ router.get('/debug/poster-products', async (req, res) => {
   } catch (error) {
     console.error('❌ Error checking Poster products:', error)
     res.status(500).json({ error: 'Failed to check Poster products' })
+  }
+})
+
+// GET /api/orders/debug/check-products - Check if specific products exist
+router.get('/debug/check-products', async (req, res) => {
+  try {
+    const { ids } = req.query
+    const productIds = ids ? ids.split(',') : []
+
+    console.log('🔍 Checking products:', productIds)
+
+    const products = await prisma.product.findMany({
+      where: {
+        id: {
+          in: productIds
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        is_active: true,
+        category: {
+          select: {
+            name: true,
+            is_active: true
+          }
+        }
+      }
+    })
+
+    const existingIds = products.map(p => p.id)
+    const missingIds = productIds.filter(id => !existingIds.includes(id))
+
+    res.json({
+      requested_ids: productIds,
+      found_products: products,
+      missing_ids: missingIds,
+      total_requested: productIds.length,
+      total_found: products.length,
+      total_missing: missingIds.length
+    })
+  } catch (error) {
+    console.error('❌ Error checking products:', error)
+    res.status(500).json({ error: 'Failed to check products' })
   }
 })
 

@@ -886,6 +886,10 @@ const placeOrder = async () => {
       }
     })
 
+    // Debug: Log order items to console
+    console.log('🛒 Order items being sent:', orderItems)
+    console.log('📦 Product IDs:', orderItems.map(item => item.product_id))
+
     // Create the order
     const order = await ordersStore.createOrder(
       customerForm.value,
