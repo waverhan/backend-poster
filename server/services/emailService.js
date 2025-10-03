@@ -43,17 +43,18 @@ class EmailService {
 
   async sendOrderConfirmationEmail(order) {
     if (!this.isConfigured) {
-      
+
       return { success: false, error: 'Email service not configured' }
     }
 
     try {
-      
-      
+
+
 
       const emailContent = this.generateOrderConfirmationEmail(order)
 
-      const mailOptions = {
+      // Send to customer
+      const customerMailOptions = {
         from: `"${process.env.SHOP_NAME || 'Opillia Shop'}" <${process.env.SMTP_USER}>`,
         to: order.customer?.email,
         subject: emailContent.subject,
@@ -61,12 +62,15 @@ class EmailService {
         html: emailContent.html
       }
 
-      
 
-      const result = await this.transporter.sendMail(mailOptions)
-      
 
-      return { success: true, messageId: result.messageId }
+      const customerResult = await this.transporter.sendMail(customerMailOptions)
+
+
+      // Also send notification to company email
+      await this.sendOrderNotificationToCompany(order)
+
+      return { success: true, messageId: customerResult.messageId }
     } catch (error) {
       console.error('❌ Failed to send order confirmation email:', error)
       console.error('❌ Error details:', {
@@ -121,6 +125,11 @@ class EmailService {
     // Calculate subtotal
     const subtotal = order.total_amount - (order.delivery_fee || 0)
 
+    // Format callback confirmation
+    const callbackInfo = order.no_callback_confirmation
+      ? '✓ Без дзвінка для підтвердження'
+      : '📞 Наш менеджер зв\'яжеться з вами найближчим часом для підтвердження деталей замовлення'
+
     const text = `
 Вітаємо, ${order.customer?.name || 'Шановний клієнте'}!
 
@@ -141,9 +150,10 @@ ${deliveryInfo}
 ОПЛАТА:
 Оплата при отриманні (готівка або картка)
 
-${order.notes ? `КОМЕНТАР ДО ЗАМОВЛЕННЯ:\n${order.notes}\n` : ''}
+ПІДТВЕРДЖЕННЯ ЗАМОВЛЕННЯ:
+${callbackInfo}
 
-Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей замовлення.
+${order.notes ? `КОМЕНТАР ДО ЗАМОВЛЕННЯ:\n${order.notes}\n` : ''}
 
 Дякуємо за вибір ${shopName}!
 
@@ -177,6 +187,8 @@ ${order.notes ? `КОМЕНТАР ДО ЗАМОВЛЕННЯ:\n${order.notes}\n` 
         .total-row { font-weight: bold; font-size: 18px; color: #2563eb; }
         .footer { text-align: center; margin-top: 30px; padding: 20px; background: #e9ecef; border-radius: 8px; }
         .contact-info { margin: 10px 0; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; }
+        .warning { background: #fff3cd; border-left: 4px solid #ffc107; }
     </style>
 </head>
 <body>
@@ -229,17 +241,17 @@ ${order.notes ? `КОМЕНТАР ДО ЗАМОВЛЕННЯ:\n${order.notes}\n` 
         <p>Оплата при отриманні (готівка або картка)</p>
     </div>
 
+    <div class="section ${order.no_callback_confirmation ? 'success' : 'warning'}">
+        <h3>📞 Підтвердження замовлення</h3>
+        <p><strong>${callbackInfo}</strong></p>
+    </div>
+
     ${order.notes ? `
     <div class="section">
         <h3>📝 Коментар до замовлення</h3>
         <p>${order.notes}</p>
     </div>
     ` : ''}
-
-    <div class="section">
-        <h3>📞 Що далі?</h3>
-        <p>Наш менеджер зв'яжеться з вами найближчим часом для підтвердження деталей замовлення.</p>
-    </div>
 
     <div class="footer">
         <h3>Дякуємо за вибір ${shopName}!</h3>
@@ -360,6 +372,175 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
         <h3>З повагою, команда ${shopName}!</h3>
         <div>📞 ${process.env.SHOP_PHONE || '+38 (097) 324 46 68'}</div>
         <div>✉️ ${process.env.SHOP_EMAIL || 'info@opillia.com.ua'}</div>
+    </div>
+</body>
+</html>
+    `.trim()
+
+    return { subject, text, html }
+  }
+
+  async sendOrderNotificationToCompany(order) {
+    if (!this.isConfigured) {
+      return { success: false, error: 'Email service not configured' }
+    }
+
+    try {
+      const companyEmail = process.env.SHOP_EMAIL || 'info@opillia.com.ua'
+      const shopName = process.env.SHOP_NAME || 'Opillia Shop'
+
+      const emailContent = this.generateCompanyOrderNotification(order)
+
+      const mailOptions = {
+        from: `"${shopName}" <${process.env.SMTP_USER}>`,
+        to: companyEmail,
+        subject: emailContent.subject,
+        text: emailContent.text,
+        html: emailContent.html
+      }
+
+      const result = await this.transporter.sendMail(mailOptions)
+      console.log(`✅ Company notification sent to ${companyEmail}`)
+
+      return { success: true, messageId: result.messageId }
+    } catch (error) {
+      console.error('❌ Failed to send company notification:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
+  generateCompanyOrderNotification(order) {
+    const shopName = process.env.SHOP_NAME || 'Opillia Shop'
+    const subject = `🛒 Нове замовлення №${order.order_number} - ${shopName}`
+
+    // Format items list
+    const itemsList = order.items?.map(item =>
+      `• ${item.product?.display_name || item.product?.name || 'Товар'} - ${item.quantity} шт. × ${item.unit_price.toFixed(2)} ₴ = ${item.total_price.toFixed(2)} ₴`
+    ).join('\n') || 'Товари не вказані'
+
+    // Format delivery information
+    const deliveryInfo = order.fulfillment === 'DELIVERY'
+      ? `🚚 Доставка за адресою: ${order.delivery_address}`
+      : `🏪 Самовивіз з магазину: ${order.branch?.name || 'Не вказано'}`
+
+    // Calculate subtotal
+    const subtotal = order.total_amount - (order.delivery_fee || 0)
+
+    // Format callback confirmation
+    const callbackInfo = order.no_callback_confirmation
+      ? '✓ Без дзвінка для підтвердження'
+      : '📞 Потрібен дзвінок для підтвердження'
+
+    const text = `
+НОВЕ ЗАМОВЛЕННЯ №${order.order_number}
+
+КЛІЄНТ:
+👤 Ім'я: ${order.customer?.name || 'Не вказано'}
+📧 Email: ${order.customer?.email || 'Не вказано'}
+📱 Телефон: ${order.customer?.phone || 'Не вказано'}
+
+ТОВАРИ:
+${itemsList}
+
+ПІДСУМОК:
+💰 Сума товарів: ${subtotal.toFixed(2)} ₴
+🚚 Доставка: ${(order.delivery_fee || 0).toFixed(2)} ₴
+💳 Загальна сума: ${order.total_amount.toFixed(2)} ₴
+
+ДОСТАВКА:
+${deliveryInfo}
+
+ПІДТВЕРДЖЕННЯ:
+${callbackInfo}
+
+ОПЛАТА:
+💵 ${order.payment_method === 'cash' ? 'Готівка при отриманні' : 'Онлайн оплата'}
+
+${order.notes ? `КОМЕНТАР:\n${order.notes}\n` : ''}
+
+ФІЛІЯ:
+🏪 ${order.branch?.name || 'Не вказано'}
+📍 ${order.branch?.address || 'Адреса не вказана'}
+
+---
+Замовлення створено: ${new Date(order.created_at).toLocaleString('uk-UA')}
+    `.trim()
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #2c5aa0; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f9f9f9; }
+        .section { margin-bottom: 20px; padding: 15px; background: white; border-radius: 5px; }
+        .section h3 { margin-top: 0; color: #2c5aa0; }
+        .items { background: #f5f5f5; padding: 10px; border-radius: 3px; }
+        .total { font-weight: bold; font-size: 1.2em; color: #2c5aa0; }
+        .footer { text-align: center; padding: 20px; color: #666; }
+        .urgent { background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛒 Нове замовлення №${order.order_number}</h1>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <h3>👤 Інформація про клієнта</h3>
+                <p><strong>Ім'я:</strong> ${order.customer?.name || 'Не вказано'}</p>
+                <p><strong>Email:</strong> ${order.customer?.email || 'Не вказано'}</p>
+                <p><strong>Телефон:</strong> ${order.customer?.phone || 'Не вказано'}</p>
+            </div>
+
+            <div class="section">
+                <h3>🛍️ Товари</h3>
+                <div class="items">
+                    ${order.items?.map(item =>
+                      `<p>• ${item.product?.display_name || item.product?.name || 'Товар'} - ${item.quantity} шт. × ${item.unit_price.toFixed(2)} ₴ = <strong>${item.total_price.toFixed(2)} ₴</strong></p>`
+                    ).join('') || '<p>Товари не вказані</p>'}
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>💰 Підсумок</h3>
+                <p>Сума товарів: ${subtotal.toFixed(2)} ₴</p>
+                <p>Доставка: ${(order.delivery_fee || 0).toFixed(2)} ₴</p>
+                <p class="total">Загальна сума: ${order.total_amount.toFixed(2)} ₴</p>
+            </div>
+
+            <div class="section">
+                <h3>🚚 Доставка</h3>
+                <p>${deliveryInfo}</p>
+            </div>
+
+            <div class="section ${order.no_callback_confirmation ? '' : 'urgent'}">
+                <h3>📞 Підтвердження</h3>
+                <p><strong>${callbackInfo}</strong></p>
+            </div>
+
+            ${order.notes ? `
+            <div class="section">
+                <h3>💬 Коментар</h3>
+                <p>${order.notes}</p>
+            </div>
+            ` : ''}
+
+            <div class="section">
+                <h3>🏪 Філія</h3>
+                <p><strong>${order.branch?.name || 'Не вказано'}</strong></p>
+                <p>${order.branch?.address || 'Адреса не вказана'}</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Замовлення створено: ${new Date(order.created_at).toLocaleString('uk-UA')}</p>
+        </div>
     </div>
 </body>
 </html>

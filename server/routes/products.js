@@ -50,7 +50,10 @@ router.put('/:id', async (req, res) => {
       custom_unit,
       quantity_step,
       min_quantity,
-      max_quantity
+      max_quantity,
+      is_new,
+      new_until,
+      sale_expires_at
     } = req.body
 
     // Validation
@@ -77,7 +80,10 @@ router.put('/:id', async (req, res) => {
         custom_unit: custom_unit || null,
         quantity_step: quantity_step || null,
         min_quantity: min_quantity || null,
-        max_quantity: max_quantity || null
+        max_quantity: max_quantity || null,
+        is_new: is_new || false,
+        new_until: new_until ? new Date(new_until) : null,
+        sale_expires_at: sale_expires_at ? new Date(sale_expires_at) : null
       },
       include: {
         category: true,
@@ -110,6 +116,10 @@ router.put('/:id', async (req, res) => {
       quantity_step: product.quantity_step,
       min_quantity: product.min_quantity,
       max_quantity: product.max_quantity,
+      // New product badge and sale features
+      is_new: product.is_new || false,
+      new_until: product.new_until ? product.new_until.toISOString() : null,
+      sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
       category: product.category ? {
         id: product.category.id,
         name: product.category.name,
@@ -122,7 +132,7 @@ router.put('/:id', async (req, res) => {
     
     res.json(formattedProduct)
   } catch (error) {
-    console.error(`❌ Error updating product ${id}:`, error)
+    console.error(`❌ Error updating product ${req.params.id}:`, error)
     console.error(`❌ Error details:`, {
       message: error.message,
       code: error.code,
@@ -336,13 +346,11 @@ router.post('/bulk-edit', async (req, res) => {
                 // Price stays the same (price per kg)
               } else {
                 // Changing custom quantity on existing weight-based product
-                // Adjust price to maintain the same price per kg
-                const pricePerKg = currentProduct.price / oldCustomQuantity
+                // Only update the custom quantity fields, keep the price as-is
                 updateData.custom_quantity = newCustomQuantity
-                updateData.custom_unit = updates.custom_unit || 'kg'
-                updateData.quantity_step = updates.quantity_step || newCustomQuantity
-                updateData.price = pricePerKg * newCustomQuantity
-                updateData.original_price = pricePerKg * newCustomQuantity
+                updateData.custom_unit = updates.custom_unit || currentProduct.custom_unit || 'г'
+                updateData.quantity_step = updates.quantity_step || 1
+                // Do not automatically adjust price - let user set it manually
               }
             } else {
               // Removing custom quantity (converting back to regular product)
@@ -404,14 +412,8 @@ router.post('/bulk-edit', async (req, res) => {
             updateData.price = newPrice
             updateData.original_price = newPrice
 
-            
-            
-            
-            
-            if (currentProduct.custom_quantity) {
-              
-              
-            }
+            // Note: Do not apply additional price conversions for weight-based products
+            // The price should be stored as entered by the user
           }
         }
 
@@ -479,6 +481,90 @@ router.post('/bulk-edit', async (req, res) => {
     console.error('❌ Bulk edit failed:', error)
     res.status(500).json({
       error: 'Bulk edit failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/products/fix-weight-quantity-steps - Fix quantity_step for weight-based products
+router.post('/fix-weight-quantity-steps', async (req, res) => {
+  try {
+    console.log('🔧 Fixing quantity_step for weight-based products...')
+
+    // Get all weight-based products (products with custom_quantity)
+    const weightBasedProducts = await prisma.product.findMany({
+      where: {
+        AND: [
+          {
+            custom_quantity: {
+              not: null
+            }
+          },
+          {
+            custom_quantity: {
+              gt: 0
+            }
+          }
+        ]
+      },
+      select: {
+        id: true,
+        name: true,
+        custom_quantity: true,
+        custom_unit: true,
+        quantity_step: true
+      }
+    })
+
+    console.log(`📊 Found ${weightBasedProducts.length} weight-based products`)
+
+    let updatedCount = 0
+    const results = []
+
+    for (const product of weightBasedProducts) {
+      // For weight-based products, quantity_step should always be 1 (representing 1 piece)
+      if (product.quantity_step !== 1) {
+        console.log(`🔄 Updating ${product.name}: quantity_step ${product.quantity_step} → 1`)
+
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { quantity_step: 1 }
+        })
+
+        results.push({
+          name: product.name,
+          old_quantity_step: product.quantity_step,
+          new_quantity_step: 1,
+          status: 'updated'
+        })
+
+        updatedCount++
+      } else {
+        console.log(`✅ ${product.name}: quantity_step already correct (1)`)
+        results.push({
+          name: product.name,
+          quantity_step: 1,
+          status: 'already_correct'
+        })
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Fixed quantity_step for ${updatedCount} weight-based products`,
+      stats: {
+        total_products: weightBasedProducts.length,
+        updated_count: updatedCount,
+        already_correct: weightBasedProducts.length - updatedCount
+      },
+      results
+    })
+
+  } catch (error) {
+    console.error('❌ Error fixing quantity steps:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fix quantity steps',
       message: error.message
     })
   }

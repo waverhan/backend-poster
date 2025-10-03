@@ -242,6 +242,15 @@ const router = createRouter({
       }
     },
     {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: () => import('@/views/PrivacyPolicyView.vue'),
+      meta: {
+        title: 'Політика приватності - Опілля',
+        requiresAuth: false
+      }
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

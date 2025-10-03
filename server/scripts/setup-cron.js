@@ -156,30 +156,30 @@ function setupCronJobs() {
     timezone: 'Europe/Kiev'
   })
 
-  // Daily full sync - every day at 6 AM
-  cron.schedule('0 6 * * *', async () => {
-    log('⏰ Triggered: Daily full sync (6 AM)')
+  // // Daily full sync - every day at 6 AM
+  // cron.schedule('0 6 * * *', async () => {
+  //   log('⏰ Triggered: Daily full sync (6 AM)')
     
-    // Trigger full product sync as well
-    try {
-      const fullSyncResponse = await fetch(`${BACKEND_URL}/api/sync/full`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 300000 // 5 minutes timeout for full sync
-      })
+  //   // Trigger full product sync as well
+  //   try {
+  //     const fullSyncResponse = await fetch(`${BACKEND_URL}/api/sync/full`, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       timeout: 300000 // 5 minutes timeout for full sync
+  //     })
       
-      if (fullSyncResponse.ok) {
-        const result = await fullSyncResponse.json()
-        log(`✅ Daily full sync completed: ${JSON.stringify(result.stats)}`)
-      } else {
-        log(`❌ Daily full sync failed: ${fullSyncResponse.status}`, 'ERROR')
-      }
-    } catch (error) {
-      log(`❌ Daily full sync error: ${error.message}`, 'ERROR')
-    }
-  }, {
-    timezone: 'Europe/Kiev'
-  })
+  //     if (fullSyncResponse.ok) {
+  //       const result = await fullSyncResponse.json()
+  //       log(`✅ Daily full sync completed: ${JSON.stringify(result.stats)}`)
+  //     } else {
+  //       log(`❌ Daily full sync failed: ${fullSyncResponse.status}`, 'ERROR')
+  //     }
+  //   } catch (error) {
+  //     log(`❌ Daily full sync error: ${error.message}`, 'ERROR')
+  //   }
+  // }, {
+  //   timezone: 'Europe/Kiev'
+  // })
 
   // Log cleanup - every Sunday at 2 AM
   cron.schedule('0 2 * * 0', () => {
@@ -262,6 +262,11 @@ function main() {
 // Run if this script is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   main()
+} else {
+  // When imported as a module, just setup the cron jobs
+  log('🚀 Setting up cron jobs for inventory synchronization...')
+  setupCronJobs()
+  log('✅ Cron jobs setup completed!')
 }
 
 export { triggerInventorySync, healthCheck, setupCronJobs }

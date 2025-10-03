@@ -15,6 +15,9 @@
         </svg>
       </div>
 
+      <!-- New Product Badge -->
+      <NewProductBadge :product="product" />
+
       <!-- Status badges -->
       <div class="absolute top-2 left-2 flex flex-col gap-1">
         <span v-if="!product.available" class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded">
@@ -50,8 +53,8 @@
     <!-- Product Info -->
     <div class="p-4">
       <!-- Product Name -->
-      <h3 class="font-semibold text-base text-gray-900 mb-1 line-clamp-2">
-        {{ product.display_name }}
+      <h3 class="font-semibold text-base text-gray-900 mb-1">
+        {{ formattedProductName }}
       </h3>
 
       <!-- Product Description -->
@@ -108,6 +111,13 @@
         </span>
       </div>
 
+      <!-- Sale Countdown -->
+      <SaleCountdown
+        v-if="product.original_price && product.original_price > product.price"
+        :product="product"
+        @sale-expired="handleSaleExpired"
+      />
+
       <!-- Add to Cart Button -->
       <button
         @click="$emit('add-to-cart', product)"
@@ -124,6 +134,9 @@
 import { ref, computed } from 'vue'
 import type { Product } from '@/types'
 import { backendApi } from '@/services/backendApi'
+import { formatProductName } from '@/utils/productNameFormatter'
+import SaleCountdown from './SaleCountdown.vue'
+import NewProductBadge from './NewProductBadge.vue'
 
 interface Props {
   product: Product
@@ -137,6 +150,11 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const imageError = ref(false)
+
+// Formatted product name
+const formattedProductName = computed(() => {
+  return formatProductName(props.product.display_name || props.product.name)
+})
 
 // Price display logic for weight-based products
 const displayPrice = computed(() => {
@@ -210,6 +228,12 @@ const getColorClass = (color: string): string => {
     gray: 'bg-gray-500'
   }
   return colorMap[color] || 'bg-gray-500'
+}
+
+const handleSaleExpired = (product: Product) => {
+  console.log(`🔥 Sale expired for product: ${product.name}`)
+  // The sale service will handle the price reversion
+  // We could emit an event to parent components if needed
 }
 </script>
 

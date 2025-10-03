@@ -1,11 +1,10 @@
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
 import { emailService } from '../services/emailService.js'
 import axios from 'axios'
 import { sendViberOrderNotification, sendViberStatusUpdate } from '../services/viberService.js'
+import { prisma } from '../index.js'
 
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // Poster API configuration
 const POSTER_API_BASE = 'https://joinposter.com/api'
@@ -306,8 +305,8 @@ router.post('/', async (req, res) => {
     
     
 
-    // Validate that all products exist
-    console.log('🔍 Validating products exist...')
+    // Validate that all products exist and check inventory
+    console.log('🔍 Validating products exist and checking inventory...')
     const productIds = items.map(item => item.product_id)
     console.log('📦 Product IDs to validate:', productIds)
 
@@ -320,6 +319,7 @@ router.post('/', async (req, res) => {
       select: {
         id: true,
         name: true,
+        display_name: true,
         is_active: true
       }
     })
@@ -329,6 +329,61 @@ router.post('/', async (req, res) => {
     const existingProductIds = existingProducts.map(p => p.id)
     const missingProductIds = productIds.filter(id => !existingProductIds.includes(id))
     const inactiveProducts = existingProducts.filter(p => !p.is_active)
+
+    // Check inventory levels for each product at the selected branch
+    console.log('📊 Checking inventory levels...')
+    const inventoryIssues = []
+
+    for (const item of items) {
+      try {
+        const inventory = await prisma.productInventory.findUnique({
+          where: {
+            product_id_branch_id: {
+              product_id: item.product_id,
+              branch_id: branch.id
+            }
+          }
+        })
+
+        const stockLevel = inventory?.quantity || 0
+        const product = existingProducts.find(p => p.id === item.product_id)
+
+        console.log(`📦 Product ${product?.name}: requested ${item.quantity}, available ${stockLevel}`)
+
+        if (stockLevel < item.quantity) {
+          inventoryIssues.push({
+            product_id: item.product_id,
+            product_name: product?.display_name || product?.name || 'Unknown Product',
+            requested_quantity: item.quantity,
+            available_quantity: stockLevel,
+            shortage: item.quantity - stockLevel
+          })
+        }
+      } catch (inventoryError) {
+        console.error(`❌ Error checking inventory for product ${item.product_id}:`, inventoryError)
+        // Continue with order creation if inventory check fails
+      }
+    }
+
+    if (inventoryIssues.length > 0) {
+      console.log('⚠️ Inventory issues detected:', inventoryIssues)
+
+      // Log detailed inventory issue for debugging
+      inventoryIssues.forEach(issue => {
+        console.log(`❌ ${issue.product_name}: requested ${issue.requested_quantity}, available ${issue.available_quantity}, shortage ${issue.shortage}`)
+      })
+
+      // For now, just log the warning but allow order creation
+      // TODO: Re-enable strict inventory validation after testing
+      console.log('⚠️ Proceeding with order creation despite inventory issues (for testing)')
+
+      // return res.status(400).json({
+      //   error: 'Insufficient inventory',
+      //   message: 'Some products are not available in the requested quantities',
+      //   inventory_issues: inventoryIssues,
+      //   branch_name: branch.name
+      // })
+    }
 
     if (missingProductIds.length > 0) {
       console.warn('⚠️ Missing products detected:', missingProductIds)
@@ -417,7 +472,7 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Find branch (use pickup branch or default to first branch for delivery)
+    // Find branch (use pickup branch for pickup, or delivery branch for delivery)
     let branch
     if (delivery_method === 'pickup' && pickup_branch) {
       console.log(`🏪 Looking for pickup branch with ID: ${pickup_branch.id}`)
@@ -443,10 +498,25 @@ router.post('/', async (req, res) => {
       }
 
       if (branch) {
-        console.log(`✅ Found branch: ${branch.name} (poster_id: ${branch.poster_id})`)
+        console.log(`✅ Found pickup branch: ${branch.name} (poster_id: ${branch.poster_id})`)
+      }
+    } else if (delivery_method === 'delivery' && pickup_branch) {
+      // For delivery, pickup_branch actually contains the selected delivery branch
+      console.log(`🚚 Looking for delivery branch with ID: ${pickup_branch.id}`)
+
+      branch = await prisma.branch.findUnique({
+        where: {
+          id: pickup_branch.id,
+          is_active: true
+        }
+      })
+
+      if (branch) {
+        console.log(`✅ Found delivery branch: ${branch.name} (poster_id: ${branch.poster_id})`)
       }
     } else {
-      // For delivery, use the first available branch
+      // Fallback: use the first available branch
+      console.log(`⚠️ No branch specified, using first available branch`)
       branch = await prisma.branch.findFirst({
         where: { is_active: true }
       })
@@ -633,12 +703,12 @@ router.post('/', async (req, res) => {
 
         // Add fulfillment type to comment and address for delivery
         if (order.fulfillment === 'DELIVERY') {
-          posterOrderData.comment = 'delivery'
+          posterOrderData.comment = ' Доставка'
           if (order.delivery_address) {
             posterOrderData.address = order.delivery_address
           }
         } else {
-          posterOrderData.comment = 'takeaway'
+          posterOrderData.comment = ' Самовивіз з магазину'
         }
 
         // Send to Poster POS API
@@ -872,14 +942,17 @@ router.post('/:id/send-to-poster', async (req, res) => {
       products: posterProducts
     }
 
-    // Add fulfillment type to comment and address for delivery
+    // Add fulfillment type, client info, and callback preference to comment
+    const clientInfo = `${order.customer?.name || 'Клієнт'} (${order.customer?.email || 'email не вказано'})`
+    const callbackInfo = order.no_callback_confirmation ? 'Без дзвінка' : 'Потрібен дзвінок'
+
     if (order.fulfillment === 'DELIVERY') {
-      posterOrderData.comment = 'delivery'
+      posterOrderData.comment = `Доставка | ${clientInfo} | ${callbackInfo}`
       if (order.delivery_address) {
         posterOrderData.address = order.delivery_address
       }
     } else {
-      posterOrderData.comment = 'takeaway'
+      posterOrderData.comment = `Самовивіз | ${clientInfo} | ${callbackInfo}`
     }
 
     // Send to Poster POS API
@@ -1025,6 +1098,302 @@ router.get('/debug/poster-products', async (req, res) => {
   } catch (error) {
     console.error('❌ Error checking Poster products:', error)
     res.status(500).json({ error: 'Failed to check Poster products' })
+  }
+})
+
+// POST /api/orders/debug/sync-tara - Sync only Тара category from Poster POS
+router.post('/debug/sync-tara', async (req, res) => {
+  try {
+    console.log('🔄 Starting selective sync for Тара category...')
+
+    const POSTER_TOKEN = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
+    const POSTER_API_BASE = 'https://joinposter.com/api'
+
+    if (!POSTER_TOKEN) {
+      return res.status(500).json({ error: 'Poster token not configured' })
+    }
+
+    // Get categories from Poster POS
+    console.log('📂 Fetching categories from Poster POS...')
+    const categoriesResponse = await axios.get(`${POSTER_API_BASE}/menu.getCategories?token=${POSTER_TOKEN}`)
+    const posterCategories = categoriesResponse.data.response
+
+    // Find Тара category
+    const taraCategory = posterCategories.find(cat => cat.category_name === 'Тара')
+    if (!taraCategory) {
+      return res.status(404).json({ error: 'Тара category not found in Poster POS' })
+    }
+
+    console.log('✅ Found Тара category:', taraCategory.category_name, 'ID:', taraCategory.category_id)
+
+    // Get products from Poster POS for Тара category
+    console.log('📦 Fetching products from Poster POS...')
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts?token=${POSTER_TOKEN}&type=products`)
+    const posterProducts = productsResponse.data.response
+
+    // Filter products for Тара category
+    const taraProducts = posterProducts.filter(product => product.category_id === taraCategory.category_id)
+    console.log(`📦 Found ${taraProducts.length} products in Тара category`)
+
+    // Ensure Тара category exists in our database
+    let dbCategory = await prisma.category.findFirst({
+      where: { name: 'Тара' }
+    })
+
+    if (!dbCategory) {
+      console.log('➕ Creating Тара category in database...')
+      dbCategory = await prisma.category.create({
+        data: {
+          name: 'Тара',
+          poster_category_id: taraCategory.category_id,
+          is_active: true
+        }
+      })
+    } else {
+      console.log('✅ Тара category exists in database, updating...')
+      dbCategory = await prisma.category.update({
+        where: { id: dbCategory.id },
+        data: {
+          poster_category_id: taraCategory.category_id,
+          is_active: true
+        }
+      })
+    }
+
+    // Sync products
+    let created = 0
+    let updated = 0
+    let errors = 0
+
+    for (const posterProduct of taraProducts) {
+      try {
+        const existingProduct = await prisma.product.findFirst({
+          where: { poster_product_id: posterProduct.product_id }
+        })
+
+        const productData = {
+          name: posterProduct.product_name,
+          description: posterProduct.product_name,
+          price: parseFloat(posterProduct.price.replace(',', '.')),
+          category_id: dbCategory.id,
+          poster_product_id: posterProduct.product_id,
+          is_active: true,
+          weight_flag: parseInt(posterProduct.weight_flag) || 0
+        }
+
+        if (existingProduct) {
+          await prisma.product.update({
+            where: { id: existingProduct.id },
+            data: productData
+          })
+          updated++
+          console.log(`✅ Updated: ${posterProduct.product_name}`)
+        } else {
+          await prisma.product.create({
+            data: productData
+          })
+          created++
+          console.log(`➕ Created: ${posterProduct.product_name}`)
+        }
+      } catch (error) {
+        console.error(`❌ Error syncing product ${posterProduct.product_name}:`, error.message)
+        errors++
+      }
+    }
+
+    console.log('🎉 Тара category sync completed!')
+
+    res.json({
+      success: true,
+      message: 'Тара category synced successfully',
+      category: {
+        name: dbCategory.name,
+        id: dbCategory.id,
+        poster_id: dbCategory.poster_category_id
+      },
+      products: {
+        total_in_poster: taraProducts.length,
+        created,
+        updated,
+        errors
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error syncing Тара category:', error)
+    res.status(500).json({
+      error: 'Failed to sync Тара category',
+      message: error.message
+    })
+  }
+})
+
+// GET /api/orders/debug/poster-categories - List all categories from Poster POS
+router.get('/debug/poster-categories', async (req, res) => {
+  try {
+    const POSTER_TOKEN = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
+    const POSTER_API_BASE = 'https://joinposter.com/api'
+
+    console.log('📂 Fetching all categories from Poster POS...')
+    const categoriesResponse = await axios.get(`${POSTER_API_BASE}/menu.getCategories?token=${POSTER_TOKEN}`)
+    const posterCategories = categoriesResponse.data.response
+
+    console.log('📦 Fetching all products from Poster POS...')
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts?token=${POSTER_TOKEN}&type=products`)
+    const posterProducts = productsResponse.data.response
+
+    // Group products by category
+    const categoriesWithProducts = posterCategories.map(category => {
+      const categoryProducts = posterProducts.filter(product => product.category_id === category.category_id)
+      return {
+        id: category.category_id,
+        name: category.category_name,
+        product_count: categoryProducts.length,
+        products: categoryProducts.map(p => ({
+          id: p.product_id,
+          name: p.product_name,
+          price: p.price
+        }))
+      }
+    })
+
+    res.json({
+      total_categories: posterCategories.length,
+      total_products: posterProducts.length,
+      categories: categoriesWithProducts
+    })
+
+  } catch (error) {
+    console.error('❌ Error fetching Poster categories:', error)
+    res.status(500).json({ error: 'Failed to fetch Poster categories' })
+  }
+})
+
+
+// POST /api/orders/debug/test-full-order - Test complete order creation process
+router.post('/debug/test-full-order', async (req, res) => {
+  try {
+    console.log('🧪 Testing complete order creation process...')
+
+    // Simulate an order with draft beverage + bottles (same as real order)
+    const testOrderData = {
+      customer_name: 'Test Customer',
+      customer_email: 'test@example.com',
+      customer_phone: '0671234567',
+      delivery_method: 'pickup',
+      pickup_branch: 'cmclpsiy60003stlk9kpfn3yc', // First branch
+      items: [
+        {
+          product_id: 'cmclpvn6p004tstlkez9ybagy', // Some draft beverage
+          quantity: 2,
+          price: 50.00
+        },
+        {
+          product_id: 'cmclpuhcn003fstlkqt40lvme', // ПЕТ 2л bottle
+          quantity: 1,
+          price: 5.31
+        }
+      ],
+      delivery_fee: 0,
+      notes: 'Test order with bottles',
+      no_callback_confirmation: true,
+      payment_method: 'cash'
+    }
+
+    console.log('📦 Test order data:', JSON.stringify(testOrderData, null, 2))
+
+    // Step 1: Validate products exist
+    const productIds = testOrderData.items.map(item => item.product_id)
+    console.log('🔍 Step 1: Validating product IDs:', productIds)
+
+    const existingProducts = await prisma.product.findMany({
+      where: {
+        id: { in: productIds }
+      },
+      select: {
+        id: true,
+        name: true,
+        is_active: true,
+        poster_product_id: true
+      }
+    })
+
+    console.log('✅ Found products:', existingProducts)
+
+    const existingProductIds = existingProducts.map(p => p.id)
+    const missingProductIds = productIds.filter(id => !existingProductIds.includes(id))
+
+    if (missingProductIds.length > 0) {
+      console.error('❌ Missing products:', missingProductIds)
+      return res.status(400).json({
+        success: false,
+        error: 'Missing products',
+        missing_products: missingProductIds,
+        found_products: existingProducts
+      })
+    }
+
+    // Step 2: Check branch
+    console.log('🔍 Step 2: Checking branch:', testOrderData.pickup_branch)
+    const branch = await prisma.branch.findUnique({
+      where: { id: testOrderData.pickup_branch }
+    })
+
+    if (!branch) {
+      console.error('❌ Branch not found:', testOrderData.pickup_branch)
+      return res.status(400).json({
+        success: false,
+        error: 'Branch not found',
+        branch_id: testOrderData.pickup_branch
+      })
+    }
+
+    console.log('✅ Found branch:', branch.name)
+
+    // Step 3: Try to create customer
+    console.log('🔍 Step 3: Creating/finding customer')
+    let customer = await prisma.customer.findUnique({
+      where: { email: testOrderData.customer_email }
+    })
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          name: testOrderData.customer_name,
+          email: testOrderData.customer_email,
+          phone: testOrderData.customer_phone
+        }
+      })
+      console.log('✅ Created new customer:', customer.id)
+    } else {
+      console.log('✅ Found existing customer:', customer.id)
+    }
+
+    // Step 4: Calculate totals
+    const subtotal = testOrderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const total = subtotal + (testOrderData.delivery_fee || 0)
+    console.log('💰 Step 4: Calculated totals:', { subtotal, delivery_fee: testOrderData.delivery_fee, total })
+
+    res.json({
+      success: true,
+      message: 'All validation steps passed, order creation would succeed',
+      validation_results: {
+        products: existingProducts,
+        branch: { id: branch.id, name: branch.name },
+        customer: { id: customer.id, name: customer.name },
+        totals: { subtotal, delivery_fee: testOrderData.delivery_fee, total }
+      },
+      test_order_data: testOrderData
+    })
+
+  } catch (error) {
+    console.error('❌ Error in test full order:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Test failed',
+      details: error.message,
+      stack: error.stack
+    })
   }
 })
 

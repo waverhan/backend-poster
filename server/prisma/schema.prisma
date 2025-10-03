@@ -45,6 +45,11 @@ model Product {
   quantity_step     Float?             // Step for quantity increase (e.g., 0.5 for beer, 0.05 for snacks)
   min_quantity      Float?             // Minimum order quantity
   max_quantity      Float?             // Maximum order quantity
+  // New product badge system
+  is_new            Boolean            @default(false)  // Mark product as new
+  new_until         DateTime?          // Show new badge until this date
+  // Sale system
+  sale_expires_at   DateTime?          // When sale pricing expires
   created_at        DateTime           @default(now())
   updated_at        DateTime           @updatedAt
   cart_items        CartItem[]

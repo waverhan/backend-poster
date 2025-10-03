@@ -91,6 +91,7 @@ export interface Product {
   description?: string
   price: number
   original_price?: number
+  sale_expires_at?: string
   image_url?: string
   display_image_url?: string
   unit?: string // 'pcs', 'kg', 'г', etc.
@@ -98,6 +99,8 @@ export interface Product {
   max_quantity?: number
   is_active: boolean
   available: boolean
+  is_new?: boolean // Mark as new product
+  new_until?: string // When to stop showing as new
   requires_bottles: boolean
   attributes?: ProductAttribute[] // Product attributes like alcohol%, IBU, density
   // Custom quantity system for weight-based products
@@ -141,6 +144,7 @@ export interface CartItem {
   bottles?: BottleSelection
   bottle_cost?: number
   is_draft_beverage?: boolean
+  is_bottle_product?: boolean
   // For inventory validation
   original_quantity?: number // Original quantity before adjustment
 }

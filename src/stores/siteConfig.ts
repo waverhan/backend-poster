@@ -98,14 +98,15 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
     error.value = null
 
     try {
-      // Try to fetch from backend API
-      const response = await fetch('/api/site-config')
+      // Try to fetch from backend API using proper backend URL
+      const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`
+      const response = await fetch(`${API_BASE_URL}/site-config`)
       if (response.ok) {
         const fetchedConfig = await response.json()
         config.value = fetchedConfig
         lastFetched.value = new Date()
         saveToStorage()
-        
+
       } else {
         throw new Error('Failed to fetch config from API')
       }
@@ -132,8 +133,9 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
     error.value = null
 
     try {
-      // Update backend API
-      const response = await fetch('/api/site-config', {
+      // Update backend API using proper backend URL
+      const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`
+      const response = await fetch(`${API_BASE_URL}/site-config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -146,7 +148,7 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
         config.value = updatedConfig
         lastFetched.value = new Date()
         saveToStorage()
-        
+
         return updatedConfig
       } else {
         throw new Error('Failed to update config')

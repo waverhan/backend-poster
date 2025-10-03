@@ -1,11 +1,10 @@
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { prisma } from '../index.js'
 
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // Configure multer for banner image uploads
 const storage = multer.diskStorage({

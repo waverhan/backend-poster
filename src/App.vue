@@ -43,6 +43,9 @@
     <!-- License Components -->
     <LicenseModal />
     <LicenseWarning />
+
+    <!-- Cookie Consent Banner -->
+    <CookieConsent />
   </div>
 </template>
 
@@ -69,6 +72,7 @@ import LoadingOverlay from '@/components/ui/LoadingOverlay.vue'
 import ChatWidget from '@/components/chat/ChatWidget.vue'
 import LicenseModal from '@/components/license/LicenseModal.vue'
 import LicenseWarning from '@/components/license/LicenseWarning.vue'
+import CookieConsent from '@/components/CookieConsent.vue'
 import type { Product } from '@/types'
 
 // Router and Stores

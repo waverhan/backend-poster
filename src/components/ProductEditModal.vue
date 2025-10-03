@@ -86,6 +86,55 @@
             </div>
           </div>
 
+          <!-- New Product Badge -->
+          <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 class="text-sm font-medium text-green-800 mb-3">✨ New Product Badge</h3>
+            <label class="flex items-center mb-2">
+              <input
+                v-model="formData.is_new"
+                type="checkbox"
+                class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+              />
+              <span class="ml-2 text-sm text-gray-700">Mark as New Product (Новинка)</span>
+            </label>
+            <div v-if="formData.is_new" class="ml-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Show as New Until
+              </label>
+              <input
+                v-model="formData.new_until"
+                type="datetime-local"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <p class="text-xs text-gray-500 mt-1">Badge will automatically disappear after this date</p>
+            </div>
+          </div>
+
+          <!-- Sale Pricing -->
+          <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h3 class="text-sm font-medium text-red-800 mb-3">🔥 Sale Pricing</h3>
+            <div v-if="formData.original_price && formData.original_price > formData.price">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Sale Expires At
+              </label>
+              <input
+                v-model="formData.sale_expires_at"
+                type="datetime-local"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              <p class="text-xs text-gray-500 mt-1">Sale will automatically end at this date</p>
+            </div>
+            <div v-if="formData.original_price && formData.original_price > formData.price" class="mt-2 p-2 bg-red-100 rounded">
+              <p class="text-xs text-red-700">
+                💰 Sale: {{ ((formData.original_price - formData.price) / formData.original_price * 100).toFixed(0) }}% off
+                (Save {{ formData.original_price - formData.price }} UAH)
+              </p>
+            </div>
+            <div v-else class="text-xs text-gray-500">
+              Set Original Price higher than Current Price to enable sale countdown
+            </div>
+          </div>
+
           <!-- Custom Quantity System -->
           <div class="border-t pt-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Custom Quantity System</h3>
@@ -443,7 +492,10 @@ const formData = ref({
   custom_unit: '',
   quantity_step: null as number | null,
   min_quantity: null as number | null,
-  max_quantity: null as number | null
+  max_quantity: null as number | null,
+  is_new: false,
+  new_until: '',
+  sale_expires_at: ''
 })
 
 // Watch for product changes to populate form
@@ -470,7 +522,10 @@ watch(() => props.product, (newProduct) => {
       custom_unit: newProduct.custom_unit || '',
       quantity_step: newProduct.quantity_step || null,
       min_quantity: newProduct.min_quantity || null,
-      max_quantity: newProduct.max_quantity || null
+      max_quantity: newProduct.max_quantity || null,
+      is_new: newProduct.is_new || false,
+      new_until: newProduct.new_until ? new Date(newProduct.new_until).toISOString().slice(0, 16) : '',
+      sale_expires_at: newProduct.sale_expires_at ? new Date(newProduct.sale_expires_at).toISOString().slice(0, 16) : ''
     }
   } else {
     // Reset form for new product
@@ -490,7 +545,10 @@ watch(() => props.product, (newProduct) => {
       custom_unit: '',
       quantity_step: null,
       min_quantity: null,
-      max_quantity: null
+      max_quantity: null,
+      is_new: false,
+      new_until: '',
+      sale_expires_at: ''
     }
   }
 }, { immediate: true })

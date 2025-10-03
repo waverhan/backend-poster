@@ -330,6 +330,13 @@ class BackendApiService {
     return result
   }
 
+  async getLowStockAlerts(branchId: string): Promise<any[]> {
+
+    const result = await this.request<any[]>(`/inventory/low-stock/${branchId}`)
+
+    return result
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string; message: string }> {
     const result = await this.request<{ status: string; message: string }>('/health')

@@ -162,8 +162,8 @@ class InventoryService {
    */
   async getLowStockAlerts(branchId: string): Promise<InventoryStatus[]> {
     try {
-      const response = await backendApi.get(`/inventory/low-stock/${branchId}`)
-      return response.data
+      const alerts = await backendApi.getLowStockAlerts(branchId)
+      return alerts
     } catch (error) {
       console.error('Failed to fetch low stock alerts:', error)
       throw error

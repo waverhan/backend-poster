@@ -10,6 +10,40 @@ Disallow: /admin
 Disallow: /login
 Disallow: /register
 
+# Disallow old WordPress/WooCommerce paths (now redirected to blog.opillia.com.ua)
+Disallow: /wp-admin/
+Disallow: /wp-content/
+Disallow: /wp-includes/
+Disallow: /wp-json/
+Disallow: /wc-api/
+Disallow: /blog/
+Disallow: /ohliady/
+Disallow: /sales/
+Disallow: /category/
+Disallow: /tag/
+Disallow: /author/
+Disallow: /2024/
+Disallow: /2023/
+Disallow: /2022/
+Disallow: /2021/
+Disallow: /2020/
+
+# Disallow old WooCommerce category paths
+Disallow: /vyno/
+Disallow: /zakusky/
+Disallow: /pyvo/
+Disallow: /sydr/
+Disallow: /m-yaso/
+Disallow: /kovbasy/
+Disallow: /ryba/
+Disallow: /syr/
+Disallow: /molochni-produkty/
+Disallow: /konservy/
+Disallow: /khlib/
+Disallow: /solodoshchi/
+Disallow: /napoi/
+Disallow: /alkohol/
+
 # Allow important pages
 Allow: /
 Allow: /shop

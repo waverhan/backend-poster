@@ -189,8 +189,13 @@ export const useCartStore = defineStore('cart', () => {
     const item = items.value.find(i => i.cart_item_id === cartItemId)
 
     if (item) {
-      // Use custom quantity step if available, otherwise default to 1
-      const step = item.quantity_step || 1
+      // For weight-based products, always use step of 1 (representing 1 piece)
+      // For regular products, use quantity_step or default to 1
+      let step = 1
+      if (!item.custom_quantity) {
+        step = item.quantity_step || 1
+      }
+
       const newQuantity = item.quantity + step
 
       // Check max quantity if specified
@@ -204,8 +209,13 @@ export const useCartStore = defineStore('cart', () => {
     const item = items.value.find(i => i.cart_item_id === cartItemId)
 
     if (item) {
-      // Use custom quantity step if available, otherwise default to 1
-      const step = item.quantity_step || 1
+      // For weight-based products, always use step of 1 (representing 1 piece)
+      // For regular products, use quantity_step or default to 1
+      let step = 1
+      if (!item.custom_quantity) {
+        step = item.quantity_step || 1
+      }
+
       const newQuantity = item.quantity - step
 
       if (newQuantity > 0) {

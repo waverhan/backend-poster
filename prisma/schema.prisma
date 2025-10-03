@@ -30,16 +30,28 @@ model Category {
 model Product {
   id                String   @id @default(cuid())
   poster_product_id String?  @unique // Link to Poster POS
+  ingredient_id     String?
   category_id       String
   name              String
   display_name      String
   description       String?
   price             Float
   original_price    Float?   // For discounts
+  sale_expires_at   DateTime? // When sale price expires
   image_url         String?
   display_image_url String?
   sort_order        Int      @default(0)
   is_active         Boolean  @default(true)
+  is_new            Boolean  @default(false) // Mark as new product
+  new_until         DateTime? // When to stop showing as new
+  requires_bottles  Boolean  @default(false)
+  attributes        String?  // JSON string for product attributes like alcohol%, IBU, density, etc.
+  // Custom quantity system for weight-based products
+  custom_quantity   Float?   // Custom selling quantity (e.g., 0.05 for 50g, 0.5 for 500ml)
+  custom_unit       String?  // Display unit (e.g., "г", "мл", "шт")
+  quantity_step     Float?   // Step for quantity increase (e.g., 0.5 for beer, 0.05 for snacks)
+  min_quantity      Float?   // Minimum order quantity
+  max_quantity      Float?   // Maximum order quantity
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
@@ -47,6 +59,7 @@ model Product {
   category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
   inventory         ProductInventory[]
   cart_items        CartItem[]
+  order_items       OrderItem[]
 
   @@map("products")
 }
@@ -70,23 +83,7 @@ model Branch {
   @@map("branches")
 }
 
-model ProductInventory {
-  id         String   @id @default(cuid())
-  product_id String
-  branch_id  String
-  quantity   Float    @default(0)
-  unit       String   @default("pcs")
-  min_stock  Float?   // Minimum stock alert
-  max_stock  Float?   // Maximum stock capacity
-  updated_at DateTime @updatedAt
 
-  // Relations
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  branch     Branch   @relation(fields: [branch_id], references: [id], onDelete: Cascade)
-
-  @@unique([product_id, branch_id])
-  @@map("product_inventory")
-}
 
 model Customer {
   id         String   @id @default(cuid())
@@ -106,41 +103,45 @@ model Customer {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  customer_id     String?
-  branch_id       String
-  order_number    String      @unique
-  status          OrderStatus @default(PENDING)
-  fulfillment     FulfillmentType
-  total_amount    Float
-  delivery_fee    Float       @default(0)
-  delivery_address String?
-  delivery_lat    Float?
-  delivery_lng    Float?
-  notes           String?
-  poster_order_id String?     // Link to Poster POS order
-  created_at      DateTime    @default(now())
-  updated_at      DateTime    @updatedAt
+  id                      String      @id @default(cuid())
+  customer_id             String?
+  branch_id               String
+  order_number            String      @unique
+  status                  String      @default("PENDING")
+  fulfillment             String
+  total_amount            Float
+  delivery_fee            Float       @default(0)
+  delivery_address        String?
+  delivery_lat            Float?
+  delivery_lng            Float?
+  notes                   String?
+  no_callback_confirmation Boolean?    @default(true)
+  poster_order_id         String?     // Link to Poster POS order
+  created_at              DateTime    @default(now())
+  updated_at              DateTime    @updatedAt
 
   // Relations
-  customer        Customer?   @relation(fields: [customer_id], references: [id])
-  branch          Branch      @relation(fields: [branch_id], references: [id])
-  items           OrderItem[]
+  customer                Customer?   @relation(fields: [customer_id], references: [id])
+  branch                  Branch      @relation(fields: [branch_id], references: [id])
+  items                   OrderItem[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
-  order_id   String
-  product_id String
-  quantity   Int
-  unit_price Float
-  total_price Float
-  created_at DateTime @default(now())
+  id              String   @id @default(cuid())
+  order_id        String
+  product_id      String
+  quantity        Int
+  unit_price      Float
+  total_price     Float
+  custom_quantity Float?   // For weight-based products (kg)
+  custom_unit     String?  // Display unit (г, мл, etc.)
+  created_at      DateTime @default(now())
 
   // Relations
-  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order           Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product         Product  @relation(fields: [product_id], references: [id])
 
   @@map("order_items")
 }
@@ -160,25 +161,16 @@ model CartItem {
   @@map("cart_items")
 }
 
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PREPARING
-  READY
-  DELIVERED
-  CANCELLED
-}
 
-enum FulfillmentType {
-  PICKUP
-  DELIVERY
-}
 
 model ProductInventory {
   id           String   @id @default(cuid())
   product_id   String
   branch_id    String
-  stock_level  Float    @default(0)
+  quantity     Float    @default(0)
+  unit         String   @default("pcs")
+  min_stock    Float?
+  max_stock    Float?
   last_updated DateTime @default(now())
   last_sync_at DateTime @default(now())
   created_at   DateTime @default(now())

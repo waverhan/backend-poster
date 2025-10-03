@@ -1024,7 +1024,7 @@ const addBottleToCart = async (bottleItem: any) => {
   await capacitorService.hapticImpact('light')
 
   const cartItem: any = {
-    product_id: `bottle_${bottleItem.poster_product_id}`,
+    product_id: bottleItem.product_id || bottleItem.id, // Use actual database ID
     poster_product_id: bottleItem.poster_product_id,
     name: bottleItem.name,
     price: bottleItem.price,

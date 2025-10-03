@@ -1,8 +1,6 @@
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
 import { getCategories, createCategory } from '../services/database.js'
-
-const prisma = new PrismaClient()
+import { prisma } from '../index.js'
 
 const router = express.Router()
 

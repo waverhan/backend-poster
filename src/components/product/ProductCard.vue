@@ -11,6 +11,9 @@
       />
       <span v-else class="text-4xl">🍽️</span>
 
+      <!-- New Product Badge -->
+      <NewProductBadge :product="product" />
+
       <!-- Product Attributes Overlay -->
       <div v-if="product.attributes && product.attributes.length > 0"
            class="absolute top-1 right-1 space-y-1">
@@ -40,7 +43,7 @@
 
     <!-- Product Info -->
     <div class="p-4">
-      <h3 class="font-bold text-base mb-2 line-clamp-2">{{ product.display_name || product.name }}</h3>
+      <h3 class="font-bold text-base mb-2">{{ formattedProductName }}</h3>
       <p v-if="product.description" class="text-gray-600 text-sm mb-3 line-clamp-2">
         {{ product.description }}
       </p>
@@ -72,6 +75,13 @@
           🔥 {{ $t('deals.title') }}
         </span>
       </div>
+
+      <!-- Sale Countdown -->
+      <SaleCountdown
+        v-if="product.original_price && product.original_price > product.price"
+        :product="product"
+        @sale-expired="handleSaleExpired"
+      />
 
       <!-- Quantity Selector for Draft Beverages -->
       <div v-if="isDraft && !showBottleSelector" class="mb-4">
@@ -121,7 +131,8 @@
           {{ getButtonText() }}
         </button>
 
-        <!-- Manual Bottle Selection Button (only for draft beverages) -->
+        <!-- Manual Bottle Selection Button (temporarily hidden) -->
+        <!--
         <button
           v-if="isDraft"
           @click="showBottleSelector = true"
@@ -130,6 +141,7 @@
         >
           🍾 Обрати пляшки
         </button>
+        -->
       </div>
     </div>
   </div>
@@ -157,7 +169,10 @@ import {
   getMaxQuantity,
   formatQuantityDisplay
 } from '@/utils/quantityUtils'
+import { formatProductName } from '@/utils/productNameFormatter'
 import BottleSelector from './BottleSelector.vue'
+import SaleCountdown from '../SaleCountdown.vue'
+import NewProductBadge from '../NewProductBadge.vue'
 
 interface Props {
   product: Product
@@ -241,6 +256,11 @@ const displayUnit = computed(() => {
 // Display quantity with proper formatting
 const displayQuantity = computed(() => {
   return formatQuantityDisplay(selectedQuantity.value, displayUnit.value)
+})
+
+// Formatted product name
+const formattedProductName = computed(() => {
+  return formatProductName(props.product.display_name || props.product.name)
 })
 
 // Price display logic for weight-based products
@@ -489,6 +509,12 @@ const getScaleLevel = (value: string, attributeName: string): number => {
     // Generic scale: assume 0-100 range
     return Math.min(5, Math.max(1, Math.ceil(numValue / 20)))
   }
+}
+
+const handleSaleExpired = (product: Product) => {
+  console.log(`🔥 Sale expired for product: ${product.name}`)
+  // The sale service will handle the price reversion
+  // We could emit an event to parent components if needed
 }
 
 // Lifecycle

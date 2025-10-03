@@ -48,6 +48,80 @@
           </select>
         </div>
 
+        <!-- New Product Badge -->
+        <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 class="text-sm font-medium text-green-800 mb-3">✨ New Product Badge</h3>
+          <label class="flex items-center mb-2">
+            <input
+              v-model="formData.is_new"
+              type="checkbox"
+              class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <span class="ml-2 text-sm text-gray-700">Mark as New Product (Новинка)</span>
+          </label>
+          <div v-if="formData.is_new" class="ml-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Show as New Until
+            </label>
+            <input
+              v-model="formData.new_until"
+              type="datetime-local"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <p class="text-xs text-gray-500 mt-1">Badge will automatically disappear after this date</p>
+          </div>
+        </div>
+
+        <!-- Sale Pricing -->
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <h3 class="text-sm font-medium text-red-800 mb-3">🔥 Sale Pricing</h3>
+          <div class="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Current Price (UAH)
+              </label>
+              <input
+                v-model.number="formData.price"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Original Price (UAH)
+              </label>
+              <input
+                v-model.number="formData.original_price"
+                type="number"
+                step="0.01"
+                min="0"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Leave empty if not on sale"
+              />
+            </div>
+          </div>
+          <div v-if="formData.original_price && formData.original_price > formData.price">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Sale Expires At
+            </label>
+            <input
+              v-model="formData.sale_expires_at"
+              type="datetime-local"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+            <p class="text-xs text-gray-500 mt-1">Sale will automatically end at this date</p>
+          </div>
+          <div v-if="formData.original_price && formData.original_price > formData.price" class="mt-2 p-2 bg-red-100 rounded">
+            <p class="text-xs text-red-700">
+              💰 Sale: {{ ((formData.original_price - formData.price) / formData.original_price * 100).toFixed(0) }}% off
+              (Save {{ formData.original_price - formData.price }} UAH)
+            </p>
+          </div>
+        </div>
+
         <!-- Description -->
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -61,36 +135,7 @@
           ></textarea>
         </div>
 
-        <!-- Price -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Price (UAH) *
-            </label>
-            <input
-              v-model.number="formData.price"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Original Price (UAH)
-            </label>
-            <input
-              v-model.number="formData.original_price"
-              type="number"
-              step="0.01"
-              min="0"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-            />
-          </div>
-        </div>
+
 
         <!-- Image Upload -->
         <div class="mb-4">
@@ -199,6 +244,8 @@
             Enable this for draft beverages like beer, wine, cider, or kvas that need bottle size selection
           </p>
         </div>
+
+
 
         <!-- Custom Quantity Settings -->
         <div class="mb-6 border-t pt-4">
@@ -343,6 +390,9 @@ const formData = ref({
   display_image_url: '',
   is_active: true,
   requires_bottles: false,
+  is_new: false,
+  new_until: '',
+  sale_expires_at: '',
   custom_quantity: null as number | null,
   custom_unit: '',
   quantity_step: null as number | null,
@@ -367,6 +417,9 @@ watch(() => props.product, (newProduct) => {
       display_image_url: newProduct.display_image_url || '',
       is_active: newProduct.is_active,
       requires_bottles: newProduct.requires_bottles || false,
+      is_new: newProduct.is_new || false,
+      new_until: newProduct.new_until ? new Date(newProduct.new_until).toISOString().slice(0, 16) : '',
+      sale_expires_at: newProduct.sale_expires_at ? new Date(newProduct.sale_expires_at).toISOString().slice(0, 16) : '',
       custom_quantity: newProduct.custom_quantity || null,
       custom_unit: newProduct.custom_unit || '',
       quantity_step: newProduct.quantity_step || null,
@@ -389,6 +442,9 @@ watch(() => props.product, (newProduct) => {
       display_image_url: '',
       is_active: true,
       requires_bottles: false,
+      is_new: false,
+      new_until: '',
+      sale_expires_at: '',
       custom_quantity: null,
       custom_unit: '',
       quantity_step: null,

@@ -47,14 +47,14 @@ export class ProductAvailabilityService {
 
     for (const item of cartItems) {
       // Skip inventory check for bottle products (they're always available)
-      if (item.is_bottle_product || item.product_id.startsWith('bottle_')) {
+      if (item.is_bottle_product) {
         availableItems.push(item)
         totalAvailableValue += item.subtotal || (item.price * item.quantity)
         continue
       }
 
       // Get detailed inventory information for regular products
-      const inventory = await this.getProductInventory(item.product_id, targetBranch.id)
+      const inventory = await this.getProductInventory(item.product_id, targetBranch.id, item.quantity)
       
 
       // Helper function to calculate correct price for weight-based products
@@ -144,11 +144,13 @@ export class ProductAvailabilityService {
   /**
    * Get detailed product inventory for a specific branch
    */
-  static async getProductInventory(productId: string, branchId: string): Promise<ProductInventory> {
+  static async getProductInventory(productId: string, branchId: string, requiredQuantity: number = 1): Promise<ProductInventory> {
     try {
-      // Call backend API to get detailed inventory
-      // Use proxy in development, or fallback to environment variable
-      const apiUrl = `/api/products/${productId}/inventory/${branchId}`
+      // Call backend API to get detailed inventory using correct backend URL
+      const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`
+      const apiUrl = `${API_BASE_URL}/inventory/check/${productId}/${branchId}?quantity=${requiredQuantity}`
+
+      console.log(`🔍 Checking inventory: ${apiUrl}`)
       const response = await fetch(apiUrl)
 
       if (!response.ok) {
@@ -180,11 +182,13 @@ export class ProductAvailabilityService {
       }
 
       const data = await response.json()
+      console.log(`📊 Inventory response for ${productId}:`, data)
+
       return {
         product_id: productId,
-        available_quantity: data.available_quantity || 0,
+        available_quantity: data.stock_level || 0,
         unit: data.unit || 'p',
-        is_available: data.is_available && data.available_quantity > 0
+        is_available: (data.stock_level || 0) > 0 // Product is available if stock > 0, regardless of requested quantity
       }
     } catch (error) {
       // Only log the error if it's not a JSON parsing error from HTML response
@@ -206,8 +210,8 @@ export class ProductAvailabilityService {
   /**
    * Check if a specific product is available in a branch (legacy method)
    */
-  static async isProductAvailableInBranch(productId: string, branchId: string): Promise<boolean> {
-    const inventory = await this.getProductInventory(productId, branchId)
+  static async isProductAvailableInBranch(productId: string, branchId: string, quantity: number = 1): Promise<boolean> {
+    const inventory = await this.getProductInventory(productId, branchId, quantity)
     return inventory.is_available
   }
 

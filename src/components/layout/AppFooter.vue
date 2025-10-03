@@ -32,6 +32,11 @@
                 🗺️ Карта сайту
               </router-link>
             </li>
+            <li>
+              <router-link to="/privacy-policy" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                🔒 Політика приватності
+              </router-link>
+            </li>
           </ul>
         </div>
 

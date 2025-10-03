@@ -340,9 +340,12 @@ router.post('/full', async (req, res) => {
 
 // POST /api/sync/inventory - Quick inventory sync
 router.post('/inventory', async (req, res) => {
+  let syncLogId = null
+
   try {
-
-
+    // Create sync log entry
+    const syncLog = await createSyncLog('inventory', 'running')
+    syncLogId = syncLog.id
 
     const branches = await prisma.branch.findMany({ where: { is_active: true } })
     const products = await prisma.product.findMany({ where: { is_active: true } })
@@ -416,11 +419,21 @@ router.post('/inventory', async (req, res) => {
       }
     }
 
+    // Update sync log with completion
+    if (syncLogId) {
+      await updateSyncLog(syncLogId, 'completed', totalInventoryRecords)
+    }
 
     res.json(result)
 
   } catch (error) {
     console.error('❌ Inventory sync failed:', error)
+
+    // Update sync log with error
+    if (syncLogId) {
+      await updateSyncLog(syncLogId, 'failed', 0, error.message)
+    }
+
     res.status(500).json({
       success: false,
       error: 'Inventory sync failed',
@@ -949,6 +962,11 @@ router.post('/products-only', async (req, res) => {
         quantity_step: (isWeightBased || isBeverageWithKgUnit) ? 1 : null
       }
 
+      // Get existing product to preserve custom quantities
+      const existingProduct = await prisma.product.findUnique({
+        where: { poster_product_id: posterProduct.product_id }
+      })
+
       // Upsert product (update if exists, create if not)
       const product = await prisma.product.upsert({
         where: { poster_product_id: posterProduct.product_id },
@@ -963,10 +981,10 @@ router.post('/products-only', async (req, res) => {
           display_image_url: productData.display_image_url,
           is_active: productData.is_active,
           attributes: productData.attributes ? JSON.stringify(productData.attributes) : null,
-          // Only update custom quantity fields if they don't exist
-          custom_quantity: productData.custom_quantity,
-          custom_unit: productData.custom_unit,
-          quantity_step: productData.quantity_step
+          // Preserve existing custom quantity fields if they exist, otherwise use defaults
+          custom_quantity: existingProduct?.custom_quantity ?? productData.custom_quantity,
+          custom_unit: existingProduct?.custom_unit ?? productData.custom_unit,
+          quantity_step: existingProduct?.quantity_step ?? productData.quantity_step
         },
         create: {
           ...productData,

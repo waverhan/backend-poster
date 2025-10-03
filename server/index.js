@@ -19,6 +19,8 @@ import inventoryRouter from './routes/inventory.js'
 import feedRoutes from './routes/feeds.js'
 import sitemapRoutes from './routes/sitemap.js'
 import wayforpayRoutes from './routes/wayforpay.js'
+import salesRouter from './routes/sales.js'
+import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -98,6 +100,7 @@ app.use('/api/inventory', inventoryRouter)
 app.use('/api/feeds', feedRoutes)
 app.use('/api', sitemapRoutes)
 app.use('/api/wayforpay', wayforpayRoutes)
+app.use('/api/sales', salesRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

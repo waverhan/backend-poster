@@ -1,9 +1,8 @@
 import express from 'express'
-import { PrismaClient } from '@prisma/client'
 import crypto from 'crypto'
+import { prisma } from '../index.js'
 
 const router = express.Router()
-const prisma = new PrismaClient()
 
 // Generate license key
 function generateLicenseKey() {

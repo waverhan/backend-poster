@@ -482,7 +482,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useOrdersStore } from '@/stores/orders'
@@ -493,6 +493,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { capacitorService } from '@/services/capacitor'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
 import wayforpayService from '@/services/wayforpayService'
+import { getDefaultBottleSelection, getBottleCartItems, getBottleProduct } from '@/utils/bottleUtils'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
@@ -533,6 +534,7 @@ const isPlacingOrder = ref(false)
 const showEditDeliveryModal = ref(false)
 const inventoryValidationResult = ref(null)
 const isValidatingInventory = ref(false)
+const cartUpdateTrigger = ref(0) // Force reactive updates
 
 // Payment state
 const paymentMethod = ref<'cash' | 'online'>('cash')
@@ -541,7 +543,11 @@ const paymentMethod = ref<'cash' | 'online'>('cash')
 const MINIMUM_ORDER_AMOUNT = 300
 
 // Computed
-const cartItems = computed(() => cartStore.items)
+const cartItems = computed(() => {
+  // Include trigger to force reactivity
+  cartUpdateTrigger.value
+  return cartStore.items
+})
 
 // Calculate subtotal based on available/adjusted quantities
 const cartSubtotal = computed(() => {
@@ -754,7 +760,7 @@ const handleMethodSelected = (data: any) => {
   customerForm.value.delivery_method = data.method
   if (data.method === 'delivery') {
     customerForm.value.delivery_address = data.location?.address || ''
-    customerForm.value.pickup_branch = undefined
+    customerForm.value.pickup_branch = data.branch // Use selected delivery branch
   } else {
     customerForm.value.pickup_branch = data.branch
     customerForm.value.delivery_address = ''
@@ -814,6 +820,53 @@ const navigateToProduct = (product: Product) => {
   router.push(`/product/${product.id}`)
 }
 
+// Helper function to recalculate bottles for draft beverages when quantities are adjusted
+const recalculateBottlesForDraftBeverage = async (newBeerQuantity: number) => {
+  console.log('🔄 Recalculating 1L bottles for new beer quantity:', newBeerQuantity)
+
+  // Remove all existing bottle products from cart
+  const bottleItems = cartItems.value.filter(item => item.is_bottle_product)
+  for (const bottleItem of bottleItems) {
+    console.log('🗑️ Removing old bottle:', bottleItem.name)
+    cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
+  }
+
+  // Wait for removals to complete
+  await nextTick()
+
+  // Simple calculation: need exactly newBeerQuantity number of 1L bottles
+  const needed1LBottles = Math.ceil(newBeerQuantity)
+  console.log('🍾 Need', needed1LBottles, '× 1L bottles')
+
+  // Add the exact number of 1L bottles needed
+  if (needed1LBottles > 0) {
+    const bottle1L = getBottleProduct('1L')
+    if (bottle1L) {
+      console.log(`➕ Adding ${needed1LBottles}x ${bottle1L.name}`)
+
+      const cartItem = {
+        product_id: bottle1L.id,
+        poster_product_id: bottle1L.poster_product_id,
+        name: bottle1L.name,
+        price: bottle1L.price,
+        quantity: needed1LBottles,
+        image_url: '',
+        unit: 'pcs',
+        is_bottle_product: true
+      }
+      cartStore.addItem(cartItem)
+
+      // Wait for addition to complete
+      await nextTick()
+    }
+  }
+
+  console.log('✅ Bottle recalculation completed')
+
+  // Force reactive update
+  cartUpdateTrigger.value++
+}
+
 const placeOrder = async () => {
   if (!canPlaceOrder.value || isPlacingOrder.value) return
 
@@ -832,63 +885,149 @@ const placeOrder = async () => {
       return
     }
 
-    // If we already have inventory issues detected, handle them automatically
+    // If we have inventory issues, automatically adjust cart without showing popup
     if (hasInventoryIssues.value && inventoryValidationResult.value) {
-      
 
-      // Show confirmation dialog
-      const confirmed = await ProductAvailabilityService.handleInventoryConflicts(
-        inventoryValidationResult.value,
-        targetBranch
-      )
 
-      if (!confirmed) {
-        await capacitorService.showToast({
-          text: 'Замовлення скасовано. Перевірте кошик.',
-          duration: 'long',
-          position: 'bottom'
-        })
-        router.push('/cart')
-        return
+      // Automatically remove unavailable items and adjust quantities
+      const cartStore = useCartStore()
+
+      // Remove completely unavailable items
+      for (const item of inventoryValidationResult.value.unavailableItems) {
+        if (!inventoryValidationResult.value.adjustedItems.find(adj => adj.product_id === item.product_id)) {
+          const cartItem = cartItems.value.find(ci => ci.product_id === item.product_id)
+          if (cartItem) {
+            console.log(`🗑️ Removing unavailable item: ${item.name} (cart_item_id: ${cartItem.cart_item_id})`)
+            cartStore.removeItem(cartItem.cart_item_id || cartItem.product_id)
+          }
+        }
       }
+
+      // Update quantities for adjusted items
+      console.log('📝 Updating cart quantities:')
+      for (const item of inventoryValidationResult.value.adjustedItems) {
+        const cartItem = cartItems.value.find(ci => ci.product_id === item.product_id)
+        if (cartItem) {
+          console.log(`  - ${item.name}: ${cartItem.quantity} → ${item.quantity} (cart_item_id: ${cartItem.cart_item_id})`)
+          cartStore.updateItemQuantity(cartItem.cart_item_id || cartItem.product_id, item.quantity)
+        }
+      }
+
+      // CRITICAL: Wait for cart store updates to be reflected in reactive cartItems
+      await nextTick()
+      cartUpdateTrigger.value++ // Force reactive update
+      await nextTick() // Wait again for reactivity to complete
+
+      // Debug: Verify cart quantities after updates
+      console.log('✅ Cart quantities after updates:')
+      cartItems.value.filter(item => item.is_draft_beverage).forEach(item => {
+        console.log(`  - ${item.name}: ${item.quantity}L`)
+      })
+
+      // After all adjustments, recalculate bottles based on total remaining draft beverage quantity
+      const remainingDraftBeverages = cartItems.value.filter(item => item.is_draft_beverage)
+      const totalDraftQuantity = remainingDraftBeverages.reduce((total, item) => total + item.quantity, 0)
+
+      if (totalDraftQuantity > 0) {
+        console.log(`🍺 Total remaining draft beverage quantity: ${totalDraftQuantity}L`)
+        await recalculateBottlesForDraftBeverage(totalDraftQuantity)
+      } else {
+        // No draft beverages left, remove all bottles
+        console.log('🗑️ No draft beverages remaining, removing all bottles')
+        const bottleItems = cartItems.value.filter(item => item.is_bottle_product)
+        for (const bottleItem of bottleItems) {
+          cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
+        }
+      }
+
+      // Wait for cart updates to complete before re-validating
+      await nextTick()
+
+      // Debug: Log current cart state after bottle recalculation
+      console.log('🔍 Cart state after bottle recalculation:')
+      console.log('📦 All items:', cartItems.value.map(item => `${item.name}: ${item.quantity}`))
+      console.log('🍺 Draft items:', cartItems.value.filter(item => item.is_draft_beverage).map(item => `${item.name}: ${item.quantity}L`))
+      console.log('🍾 Bottle items:', cartItems.value.filter(item => item.is_bottle_product).map(item => `${item.name}: ${item.quantity}x`))
+
+      // Force reactive update
+      cartUpdateTrigger.value++
 
       // Re-validate after cart changes
       await validateInventoryOnLoad()
+    }
 
-      // If still have issues, stop
-      if (hasInventoryIssues.value) {
-        await capacitorService.showToast({
-          text: 'Все ще є проблеми з наявністю. Перевірте кошик.',
-          duration: 'long',
-          position: 'bottom'
-        })
-        router.push('/cart')
-        return
+    // If no inventory issues, still need to recalculate bottles for any manual cart changes
+    if (!hasInventoryIssues.value) {
+      await nextTick() // Wait for all cart updates to complete
+
+      const allDraftBeverages = cartItems.value.filter(item => item.is_draft_beverage)
+      const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
+
+      console.log(`🔄 Final bottle recalculation for ${totalDraftQuantity}L total draft beverages`)
+      console.log('🍺 Current draft beverages:', allDraftBeverages.map(item => `${item.name}: ${item.quantity}L`))
+
+      if (totalDraftQuantity > 0) {
+        await recalculateBottlesForDraftBeverage(totalDraftQuantity)
+
+        // Wait for cart updates to complete
+        await nextTick()
+
+        // Force reactive update
+        cartUpdateTrigger.value++
       }
     }
 
-    
 
-    // Convert cart items to order items format - use cart's correct calculations
-    const orderItems = cartItems.value.map(item => {
-      // Use the cart's already correct calculations
-      const unitPrice = item.subtotal / item.quantity // This gives us the correct price per unit
 
-      return {
-        product_id: item.product_id,
-        name: item.name,
-        price: unitPrice, // Use calculated unit price from cart
-        quantity: item.quantity,
-        unit: item.unit,
-        image_url: item.image_url,
-        custom_quantity: item.custom_quantity,
-        custom_unit: item.custom_unit
-      }
-    })
+    // Convert cart items to order items format - only include available and adjusted items
+    const orderItems = cartItems.value
+      .filter(item => {
+        // If we have inventory validation results, filter out unavailable items
+        if (inventoryValidationResult.value) {
+          const status = getItemInventoryStatus(item)
+          return status !== 'unavailable'
+        }
+        // If no validation results, include all items
+        return true
+      })
+      .map(item => {
+        // Use the cart's already correct calculations
+        const unitPrice = item.subtotal / item.quantity // This gives us the correct price per unit
+
+        // If item is adjusted, use the adjusted quantity
+        let finalQuantity = item.quantity
+        if (inventoryValidationResult.value) {
+          const status = getItemInventoryStatus(item)
+          if (status === 'adjusted') {
+            finalQuantity = getAdjustedQuantity(item)
+          }
+        }
+
+        return {
+          product_id: item.product_id,
+          name: item.name,
+          price: unitPrice, // Use calculated unit price from cart
+          quantity: finalQuantity, // Use adjusted quantity if applicable
+          unit: item.unit,
+          image_url: item.image_url,
+          custom_quantity: item.custom_quantity,
+          custom_unit: item.custom_unit
+        }
+      })
 
     // Debug: Log order items to console
     console.log('🛒 Order items being sent:', orderItems)
     console.log('📦 Product IDs:', orderItems.map(item => item.product_id))
+
+    // Check if we have any items to order
+    if (orderItems.length === 0) {
+      await capacitorService.showToast({
+        text: 'Немає доступних товарів для замовлення.',
+        duration: 'long',
+        position: 'bottom'
+      })
+      return
+    }
 
     // Create the order
     const order = await ordersStore.createOrder(
@@ -1016,6 +1155,7 @@ onMounted(async () => {
     customerForm.value.delivery_method = method
     if (method === 'delivery' && location) {
       customerForm.value.delivery_address = location.address || ''
+      customerForm.value.pickup_branch = targetBranch // Use selected delivery branch
     } else if (method === 'pickup' && targetBranch) {
       customerForm.value.pickup_branch = targetBranch
     }

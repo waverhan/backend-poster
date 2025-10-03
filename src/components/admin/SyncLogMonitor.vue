@@ -235,12 +235,12 @@ const loadSyncHistory = async () => {
     isLoading.value = true
     error.value = null
 
-    const response = await backendApi.get('/inventory/sync/history?limit=20')
-    syncHistory.value = response.data
+    const syncHistory_data = await backendApi.getSyncHistory(20)
+    syncHistory.value = syncHistory_data
 
     // Get latest sync status
-    const latestResponse = await backendApi.get('/inventory/sync/status/latest')
-    latestSync.value = latestResponse.data
+    const latestSync_data = await backendApi.getSyncStatus()
+    latestSync.value = latestSync_data
 
   } catch (err: any) {
     error.value = err.message || 'Failed to load sync history'

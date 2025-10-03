@@ -1,12 +1,38 @@
 import type { Product, BottleSize, BottleSelection } from '@/types'
 
 // Bottle products mapping - these are real products from the "Тара" category
+// Updated with actual database IDs from your Тара category
 export const BOTTLE_PRODUCTS = {
-  '0.5L': { poster_product_id: '188', name: 'ПЕТ 0,5 + Кришка', price: 4.41 },
-  '1L': { poster_product_id: '189', name: 'ПЕТ 1 л + кришка', price: 4.71 },
-  '1.5L': { poster_product_id: '190', name: 'ПЕТ 1,5 л + кришка', price: 4.81 },
-  '2L': { poster_product_id: '191', name: 'ПЕТ 2 л + кришка', price: 5.31 },
-  '3L': { poster_product_id: '412', name: 'ПЕТ 3л + кришка', price: 6.31 }
+  '0.5L': {
+    id: 'cmclpuhbu003cstlkvtk6370w',
+    poster_product_id: '188',
+    name: 'ПЕТ 0,5 + Кришка',
+    price: 4.41
+  },
+  '1L': {
+    id: 'cmclpuhc4003dstlk7h9hxdmn',
+    poster_product_id: '189',
+    name: 'ПЕТ 1 л + кришка',
+    price: 4.71
+  },
+  '1.5L': {
+    id: 'cmclpuhcd003estlkt8azael3',
+    poster_product_id: '190',
+    name: 'ПЕТ 1,5 л + кришка',
+    price: 4.81
+  },
+  '2L': {
+    id: 'cmclpuhcn003fstlkqt40lvme',
+    poster_product_id: '191',
+    name: 'ПЕТ 2 л + кришка',
+    price: 5.31
+  },
+  '3L': {
+    id: 'cmclpuhcv003gstlkms24s9gv',
+    poster_product_id: '412',
+    name: 'ПЕТ 3л + кришка',
+    price: 6.31
+  }
 }
 
 // Bottle sizes for UI display (derived from real products)
@@ -31,40 +57,15 @@ export function isDraftBeverage(product: Product): boolean {
 
 /**
  * Get the default bottle selection for a given beverage quantity
- * This automatically selects the most appropriate bottle(s) for the quantity
+ * SIMPLIFIED: Only use 1L bottles for easy calculation
  */
 export function getDefaultBottleSelection(beverageQuantity: number): BottleSelection {
   const selection: BottleSelection = createEmptyBottleSelection()
 
-  // Auto-select the most efficient bottle combination
-  // Priority: 2L > 1.5L > 1L > 0.5L (most cost-effective)
-
-  let remainingQuantity = beverageQuantity
-
-  // First, use as many 2L bottles as possible
-  if (remainingQuantity >= 2) {
-    const bottles2L = Math.floor(remainingQuantity / 2)
-    selection['2L'] = bottles2L
-    remainingQuantity -= bottles2L * 2
-  }
-
-  // Then use 1.5L if remaining quantity is >= 1.5L
-  if (remainingQuantity >= 1.5) {
-    selection['1.5L'] = 1
-    remainingQuantity -= 1.5
-  }
-
-  // Then use 1L if remaining quantity is >= 1L
-  if (remainingQuantity >= 1) {
-    selection['1L'] = 1
-    remainingQuantity -= 1
-  }
-
-  // Finally use 0.5L for any remaining quantity
-  if (remainingQuantity > 0) {
-    const bottles05L = Math.ceil(remainingQuantity / 0.5)
-    selection['0.5L'] = bottles05L
-  }
+  // Simple approach: Use only 1L bottles
+  // Round up to ensure we have enough bottles for the total volume
+  const bottles1L = Math.ceil(beverageQuantity)
+  selection['1L'] = bottles1L
 
   return selection
 }
@@ -104,6 +105,7 @@ export function getBottleCartItems(bottleSelection: BottleSelection) {
       const bottleProduct = getBottleProduct(size)
       if (bottleProduct) {
         cartItems.push({
+          product_id: bottleProduct.id, // Use actual database ID
           poster_product_id: bottleProduct.poster_product_id,
           name: bottleProduct.name,
           price: bottleProduct.price,

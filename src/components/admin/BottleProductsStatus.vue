@@ -114,8 +114,7 @@ const checkStatus = async () => {
   loading.value = true
   try {
     // Get all products from Тара category
-    const response = await backendApi.get('/products')
-    const products = response.data
+    const products = await backendApi.getProducts()
     
     // Filter bottle products
     const bottleProducts = products.filter((p: any) => 

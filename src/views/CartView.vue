@@ -13,12 +13,12 @@
       </div>
 
       <div v-else class="space-y-6">
-        <!-- Cart Items -->
+        <!-- Cart Items (Regular Products Only) -->
         <div class="card p-6">
-          <h2 class="text-xl font-bold mb-4">{{ $t('cart.items') }} ({{ totalItems }})</h2>
+          <h2 class="text-xl font-bold mb-4">{{ $t('cart.items') }} ({{ regularItemsCount }})</h2>
           <div class="space-y-4">
             <div
-              v-for="item in items"
+              v-for="item in regularItems"
               :key="item.cart_item_id || item.product_id"
               class="py-4 border-b border-gray-200 last:border-b-0"
             >
@@ -28,7 +28,7 @@
                   <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <img
                       v-if="item.image_url"
-                      :src="item.image_url"
+                      :src="getImageUrl(item.image_url)"
                       :alt="item.name"
                       class="w-full h-full object-cover rounded-lg"
                     />
@@ -48,15 +48,15 @@
                     <!-- Mobile quantity controls and total -->
                     <div class="flex items-center justify-between mt-2">
                       <div class="flex items-center space-x-2">
-                        <!-- Quantity controls -->
-                        <div class="flex items-center space-x-1">
+                        <!-- Quantity controls (hidden for bottle products) -->
+                        <div v-if="!item.is_bottle_product" class="flex items-center space-x-1">
                           <button
                             @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
                             class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
                           >
                             -
                           </button>
-                          <span class="w-6 text-center text-sm">{{ item.quantity }}</span>
+                          <span class="w-6 text-center text-sm">{{ formatQuantityDisplay(item) }}</span>
                           <button
                             @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
                             class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
@@ -64,12 +64,18 @@
                             +
                           </button>
                         </div>
+                        <!-- Show quantity only for bottle products -->
+                        <div v-else class="flex items-center space-x-1">
+                          <span class="w-6 text-center text-sm text-gray-500">{{ item.quantity }}</span>
+                        </div>
                         <!-- Draft beverage info - Hidden -->
                       </div>
 
                       <div class="flex items-center space-x-2">
                         <div class="font-bold text-sm">{{ formatItemTotal(item) }} ₴</div>
+                        <!-- Hide delete button for bottle products -->
                         <button
+                          v-if="!item.is_bottle_product"
                           @click="removeItem(item.cart_item_id || item.product_id)"
                           class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
                         >
@@ -87,7 +93,7 @@
                   <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
                     <img
                       v-if="item.image_url"
-                      :src="item.image_url"
+                      :src="getImageUrl(item.image_url)"
                       :alt="item.name"
                       class="w-full h-full object-cover rounded-lg"
                     />
@@ -107,21 +113,25 @@
                 </div>
 
                 <div class="flex items-center space-x-4">
-                  <!-- Quantity controls -->
-                  <div class="flex items-center space-x-2">
+                  <!-- Quantity controls (hidden for bottle products) -->
+                  <div v-if="!item.is_bottle_product" class="flex items-center space-x-2">
                     <button
                       @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
                       class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
                     >
                       -
                     </button>
-                    <span class="w-8 text-center">{{ item.quantity }}</span>
+                    <span class="w-8 text-center">{{ formatQuantityDisplay(item) }}</span>
                     <button
                       @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
                       class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
                     >
                       +
                     </button>
+                  </div>
+                  <!-- Show quantity only for bottle products -->
+                  <div v-else class="flex items-center space-x-2">
+                    <span class="w-8 text-center text-gray-500">{{ item.quantity }}</span>
                   </div>
 
                   <!-- Draft beverage info - Hidden -->
@@ -130,7 +140,9 @@
                     <div class="font-bold">{{ formatItemTotal(item) }} ₴</div>
                   </div>
 
+                  <!-- Hide delete button for bottle products -->
                   <button
+                    v-if="!item.is_bottle_product"
                     @click="removeItem(item.cart_item_id || item.product_id)"
                     class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
                   >
@@ -139,6 +151,35 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Bottles Section (Auto-added for draft beverages) -->
+        <div v-if="bottleItems.length > 0" class="card p-6">
+          <h2 class="text-xl font-bold mb-4">🍾 Пляшки (автоматично додано)</h2>
+          <div class="space-y-2">
+            <div
+              v-for="bottle in bottleItems"
+              :key="bottle.cart_item_id || bottle.product_id"
+              class="flex items-center justify-between py-2 text-sm text-gray-600"
+            >
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                  🍾
+                </div>
+                <div>
+                  <span class="font-medium">{{ bottle.name }}</span>
+                  <div class="text-xs text-gray-500">{{ bottle.price }} ₴ за шт</div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="font-medium">{{ bottle.quantity }} шт</span>
+                <span class="font-bold">{{ (bottle.price * bottle.quantity).toFixed(2) }} ₴</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+            * Пляшки автоматично додаються для розливного пива
           </div>
         </div>
 
@@ -238,8 +279,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useCartStore } from '@/stores/cart'
 import { useLocationStore } from '@/stores/location'
@@ -251,9 +292,11 @@ import { useProductStore } from '@/stores/product'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import ProductAvailabilityService from '@/services/productAvailabilityService'
+import { backendApi } from '@/services/backendApi'
 import type { Branch, LocationData, Product } from '@/types'
 
 const router = useRouter()
+const route = useRoute()
 const cartStore = useCartStore()
 const locationStore = useLocationStore()
 const branchStore = useBranchStore()
@@ -262,6 +305,11 @@ const siteConfigStore = useSiteConfigStore()
 const productStore = useProductStore()
 
 const { items, totalItems, subtotal, deliveryFee, total, isEmpty } = storeToRefs(cartStore)
+
+// Computed properties to separate regular items from bottles
+const regularItems = computed(() => items.value.filter(item => !item.is_bottle_product))
+const bottleItems = computed(() => items.value.filter(item => item.is_bottle_product))
+const regularItemsCount = computed(() => regularItems.value.length)
 
 // Constants
 const MINIMUM_ORDER_AMOUNT = 300
@@ -296,23 +344,33 @@ const handleMethodSelected = async (data: any) => {
     
 
     try {
-      const result = await ProductAvailabilityService.validateCartForBranch(
-        data.branch,
-        true // Show availability report
+      const result = await ProductAvailabilityService.checkProductAvailability(
+        cartStore.items,
+        data.branch
       )
 
       if (result.hasUnavailableItems || result.hasAdjustedItems) {
-        
 
-        // The service will handle showing the detailed report and user confirmation
-        // If user confirmed changes, the cart will be automatically updated
+
+        // Automatically adjust cart without showing popup
+        // Remove completely unavailable items
+        for (const item of result.unavailableItems) {
+          if (!result.adjustedItems.find(adj => adj.product_id === item.product_id)) {
+            cartStore.removeItem(item.product_id)
+          }
+        }
+
+        // Update quantities for adjusted items
+        for (const item of result.adjustedItems) {
+          cartStore.updateItemQuantity(item.product_id, item.quantity)
+        }
 
         // Refresh the selected method if cart is now empty
         if (cartStore.items.length === 0) {
           selectedMethod.value = null
         }
       } else {
-        
+
       }
     } catch (error) {
       console.error('Error checking product availability:', error)
@@ -337,26 +395,16 @@ const removeItem = (cartItemId: string) => {
 
 // Draft beverage quantity management with bottle sync
 const increaseDraftQuantity = (draftItem: any) => {
-  const newQuantity = draftItem.quantity + 1
-  console.log('⬆️ Increasing draft quantity for:', draftItem.name, 'from', draftItem.quantity, 'to', newQuantity)
+  console.log('⬆️ Increasing draft quantity for:', draftItem.name, 'from', draftItem.quantity)
 
   // Increase draft beverage quantity first
   cartStore.increaseQuantity(draftItem.cart_item_id || draftItem.product_id)
 
-  // Force sync bottles with multiple attempts
-  console.log('🔄 Force syncing bottles immediately...')
-  syncBottleQuantities(draftItem, newQuantity)
-
-  // Also try again after a short delay to ensure cart state is updated
-  setTimeout(() => {
-    console.log('🔄 Secondary bottle sync attempt...')
-    const updatedItem = cartStore.items.find(item =>
-      (item.cart_item_id || item.product_id) === (draftItem.cart_item_id || draftItem.product_id)
-    )
-    if (updatedItem) {
-      syncBottleQuantities(updatedItem, updatedItem.quantity)
-    }
-  }, 200)
+  // Wait a moment for cart to update, then force sync all bottles
+  nextTick(() => {
+    console.log('🔄 Force syncing all bottles after quantity increase...')
+    forceBottleSync()
+  })
 }
 
 const decreaseDraftQuantity = (draftItem: any) => {
@@ -369,81 +417,60 @@ const decreaseDraftQuantity = (draftItem: any) => {
     return
   }
 
-  const newQuantity = draftItem.quantity - 1
-
   // Decrease draft beverage quantity first
   cartStore.decreaseQuantity(draftItem.cart_item_id || draftItem.product_id)
 
-  // Force sync bottles with multiple attempts
-  console.log('🔄 Force syncing bottles immediately...')
-  syncBottleQuantities(draftItem, newQuantity)
-
-  // Also try again after a short delay
-  setTimeout(() => {
-    console.log('🔄 Secondary bottle sync attempt...')
-    const updatedItem = cartStore.items.find(item =>
-      (item.cart_item_id || item.product_id) === (draftItem.cart_item_id || draftItem.product_id)
-    )
-    if (updatedItem) {
-      syncBottleQuantities(updatedItem, updatedItem.quantity)
-    }
-  }, 200)
+  // Wait a moment for cart to update, then force sync all bottles
+  nextTick(() => {
+    console.log('🔄 Force syncing all bottles after quantity decrease...')
+    forceBottleSync()
+  })
 }
 
 const syncBottleQuantities = (draftItem: any, newQuantity: number) => {
-  console.log('🔄 Syncing bottles for draft item:', draftItem.name, 'New quantity:', newQuantity)
+  console.log('🔄 Syncing 1L bottles for draft beverages')
 
-  // Calculate new optimal bottle selection for the new quantity
-  const newBottleSelection = getDefaultBottleSelection(newQuantity)
-  console.log('📊 New bottle selection:', newBottleSelection)
-
-  // Get current cart items (fresh reference)
+  // Calculate total quantity for ALL draft beverages in cart
   const currentItems = cartStore.items
-  const bottleItems = currentItems.filter(item => item.is_bottle_product)
-  console.log('🍾 Current bottle items in cart:', bottleItems.length, bottleItems.map(b => `${b.name} (${b.quantity})`))
+  const allDraftBeverages = currentItems.filter(item => item.is_draft_beverage)
+  const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
 
-  // Clear all existing bottles first (simpler approach)
+  console.log('🍺 Total draft quantity needed:', totalDraftQuantity, 'L')
+
+  // Simple calculation: need exactly totalDraftQuantity number of 1L bottles
+  const needed1LBottles = Math.ceil(totalDraftQuantity)
+  console.log('🍾 Need', needed1LBottles, '× 1L bottles')
+
+  // Get current bottle items
+  const bottleItems = currentItems.filter(item => item.is_bottle_product)
+
+  // Remove all existing bottles
   for (const bottleItem of bottleItems) {
-    console.log('🗑️ Removing bottle:', bottleItem.name, 'ID:', bottleItem.cart_item_id || bottleItem.product_id)
+    console.log('🗑️ Removing bottle:', bottleItem.name)
     cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
   }
 
-  // Add new bottles based on optimal selection
-  for (const [size, neededQuantity] of Object.entries(newBottleSelection)) {
-    if (neededQuantity > 0) {
-      const bottleProduct = getBottleProduct(size)
-      if (bottleProduct) {
-        console.log(`➕ Adding ${neededQuantity}x ${bottleProduct.name} (${size})`)
+  // Add the exact number of 1L bottles needed
+  if (needed1LBottles > 0) {
+    const bottle1L = getBottleProduct('1L')
+    if (bottle1L) {
+      console.log(`➕ Adding ${needed1LBottles}x ${bottle1L.name}`)
 
-        const bottleCartItem = {
-          product_id: `bottle_${bottleProduct.poster_product_id}`,
-          poster_product_id: bottleProduct.poster_product_id,
-          name: bottleProduct.name,
-          price: bottleProduct.price,
-          quantity: neededQuantity,
-          image_url: '',
-          unit: 'pcs',
-          is_bottle_product: true
-        }
-        cartStore.addItem(bottleCartItem)
+      const bottleCartItem = {
+        product_id: bottle1L.id,
+        poster_product_id: bottle1L.poster_product_id,
+        name: bottle1L.name,
+        price: bottle1L.price,
+        quantity: needed1LBottles,
+        image_url: '',
+        unit: 'pcs',
+        is_bottle_product: true
       }
+      cartStore.addItem(bottleCartItem)
     }
   }
 
-  // Verify the sync worked
-  const newBottleItems = cartStore.items.filter(item => item.is_bottle_product)
-  const totalBottleVolume = newBottleItems.reduce((total, bottle) => {
-    const size = extractBottleSizeFromName(bottle.name)
-    const volume = parseFloat(size.replace('L', '').replace(',', '.')) || 0
-    return total + (volume * bottle.quantity)
-  }, 0)
-
-  console.log('✅ Bottle sync completed. New bottles:', newBottleItems.map(b => `${b.quantity}x ${b.name}`))
-  console.log('📊 Total bottle volume:', totalBottleVolume, 'L vs beverage quantity:', newQuantity, 'L')
-
-  if (Math.abs(totalBottleVolume - newQuantity) > 0.1) {
-    console.warn('⚠️ Bottle volume mismatch! Expected:', newQuantity, 'L, Got:', totalBottleVolume, 'L')
-  }
+  console.log('✅ Bottle sync completed:', needed1LBottles, '× 1L bottles for', totalDraftQuantity, 'L beer')
 }
 
 const removeDraftBeverageAndBottles = (draftItem: any) => {
@@ -454,6 +481,30 @@ const removeDraftBeverageAndBottles = (draftItem: any) => {
   const bottleItems = items.value.filter(item => item.is_bottle_product)
   for (const bottleItem of bottleItems) {
     cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
+  }
+}
+
+// Force sync all bottles based on current draft beverage quantities
+const forceBottleSync = () => {
+  console.log('🔄 Force syncing all bottles...')
+
+  const currentItems = cartStore.items
+  const allDraftBeverages = currentItems.filter(item => item.is_draft_beverage)
+  const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
+
+  console.log('🍺 Total draft quantity:', totalDraftQuantity, 'L')
+  console.log('🍺 Draft beverages:', allDraftBeverages.map(d => `${d.name}: ${d.quantity}L`))
+
+  if (totalDraftQuantity > 0) {
+    // Use the first draft beverage as a reference for the sync function
+    const referenceDraft = allDraftBeverages[0]
+    syncBottleQuantities(referenceDraft, totalDraftQuantity)
+  } else {
+    // No draft beverages, remove all bottles
+    const bottleItems = currentItems.filter(item => item.is_bottle_product)
+    for (const bottleItem of bottleItems) {
+      cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
+    }
   }
 }
 
@@ -557,6 +608,20 @@ const formatCustomUnit = (item: any): string => {
   return (unit === 'p' || unit === 'pcs') ? 'шт' : (unit || 'шт')
 }
 
+const formatQuantityDisplay = (item: any): string => {
+  // For weight-based products, show pieces (quantity should always be whole numbers now)
+  if (item.custom_quantity && item.custom_unit) {
+    return Math.round(item.quantity).toString()
+  }
+
+  // For regular products, show quantity as is
+  return Math.round(item.quantity).toString()
+}
+
+const getImageUrl = (imagePath: string): string => {
+  return backendApi.getImageUrl(imagePath)
+}
+
 const formatItemTotal = (item: any): string => {
   // Use the subtotal if available (calculated correctly in cart store)
   if (item.subtotal !== undefined) {
@@ -575,14 +640,18 @@ const formatItemTotal = (item: any): string => {
 
 // Lifecycle
 onMounted(async () => {
-  
+  // Force sync bottles on page load to ensure consistency
+  console.log('🔄 Cart page mounted - checking bottle sync...')
+  nextTick(() => {
+    forceBottleSync()
+  })
 
   // Ensure branches are loaded for delivery method selector
   if (!branchStore.branches.length) {
     await branchStore.fetchBranches()
-    
+
   } else {
-    
+
   }
 
   // Check if delivery method was already selected (from ShopView)
@@ -612,6 +681,12 @@ watch(() => cartStore.items, (newItems, oldItems) => {
     return
   }
 
+  // Skip auto-sync on checkout page - checkout handles bottle recalculation manually
+  if (route.name === 'checkout') {
+    console.log('🚫 Skipping auto bottle sync on checkout page')
+    return
+  }
+
   // Find draft beverages that changed quantity
   const draftBeverages = newItems.filter(item => item.is_draft_beverage)
   const oldDraftBeverages = oldItems.filter(item => item.is_draft_beverage)
@@ -636,7 +711,7 @@ watch(() => cartStore.items, (newItems, oldItems) => {
   }
 }, { deep: true, immediate: false })
 
-// Also add a manual check function that can be called from console
+// Add debug functions to window for console access
 window.debugBottleSync = () => {
   const allItems = cartStore.items
   const draftBeverages = allItems.filter(item => item.is_draft_beverage)
@@ -653,41 +728,8 @@ window.debugBottleSync = () => {
   })))
   console.log('🍺 Draft beverages:', draftBeverages.map(d => `${d.name}: ${d.quantity}L`))
   console.log('🍾 Bottle items:', bottleItems.map(b => `${b.name}: ${b.quantity}x`))
-
-  // Calculate total bottle volume
-  const totalBottleVolume = bottleItems.reduce((total, bottle) => {
-    const size = extractBottleSizeFromName(bottle.name)
-    const volume = parseFloat(size.replace('L', '').replace(',', '.')) || 0
-    return total + (volume * bottle.quantity)
-  }, 0)
-
-  console.log('📊 Total bottle volume:', totalBottleVolume, 'L')
-
-  // Check each draft beverage
-  for (const draftItem of draftBeverages) {
-    console.log(`🔄 Syncing bottles for ${draftItem.name} (${draftItem.quantity}L)`)
-    syncBottleQuantities(draftItem, draftItem.quantity)
-  }
-
-  // If no draft beverages found, check if any items look like draft beverages
-  if (draftBeverages.length === 0) {
-    console.log('⚠️ No draft beverages found! Checking for items that might be draft beverages...')
-    const possibleDraftItems = allItems.filter(item =>
-      item.name && (
-        item.name.includes('КЕГ') ||
-        item.name.includes('розливне') ||
-        item.name.includes('draft')
-      )
-    )
-    console.log('🤔 Possible draft items:', possibleDraftItems.map(item => ({
-      name: item.name,
-      is_draft_beverage: item.is_draft_beverage,
-      flags: {
-        hasKEG: item.name.includes('КЕГ'),
-        hasRozlivne: item.name.includes('розливне'),
-        hasDraft: item.name.includes('draft')
-      }
-    })))
-  }
 }
+
+// Add force sync function to window for debugging
+window.forceBottleSync = forceBottleSync
 </script>

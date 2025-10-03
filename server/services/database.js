@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '../index.js'
 
 export { prisma }
 
@@ -131,7 +129,10 @@ function needsPriceConversion(product) {
     }
   }
 
-  return isWeightBasedProduct(product)
+  // IMPORTANT: Disabled automatic price conversion for weight-based products
+  // Weight-based products should store their prices as entered by the user
+  // The frontend will handle display pricing using custom_quantity
+  return false
 }
 
 // Helper function to convert price from stored per-kg to display per-kg/per-liter
@@ -211,6 +212,10 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       quantity_step: product.quantity_step,
       min_quantity: product.min_quantity,
       max_quantity: product.max_quantity,
+      // New product badge and sale features
+      is_new: product.is_new || false,
+      new_until: product.new_until ? product.new_until.toISOString() : null,
+      sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
       // Category information for recommendations
       category_name: product.category.display_name,
       category: product.category ? {
@@ -243,7 +248,10 @@ export async function createProduct(data) {
       custom_unit: data.custom_unit || null,
       quantity_step: data.quantity_step || null,
       min_quantity: data.min_quantity || null,
-      max_quantity: data.max_quantity || null
+      max_quantity: data.max_quantity || null,
+      is_new: data.is_new || false,
+      new_until: data.new_until ? new Date(data.new_until) : null,
+      sale_expires_at: data.sale_expires_at ? new Date(data.sale_expires_at) : null
     },
     include: {
       category: true,

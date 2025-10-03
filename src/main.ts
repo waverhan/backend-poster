@@ -7,6 +7,7 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
+import { saleService } from './services/saleService'
 import './style.css'
 
 // Register service worker for PWA
@@ -42,6 +43,9 @@ app.use(i18n)
 
 // Initialize Capacitor
 initializeCapacitor().catch(console.error)
+
+// Start sale monitoring
+saleService.startMonitoring()
 
 // Mount the app
 app.mount('#app')
