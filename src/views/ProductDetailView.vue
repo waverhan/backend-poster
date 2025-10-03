@@ -125,6 +125,29 @@
 
         <!-- Reviews Section -->
         <div class="mt-8 border-t border-gray-200 pt-8 px-8">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-900">Відгуки</h2>
+            <button
+              @click="showReviewForm = !showReviewForm"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              {{ showReviewForm ? 'Скасувати' : 'Написати відгук' }}
+            </button>
+          </div>
+
+          <!-- Review Form -->
+          <div v-if="showReviewForm" class="mb-8">
+            <ReviewForm
+              v-if="product"
+              :product="product"
+              :order-id="'guest-review'"
+              :show-cancel="true"
+              @submitted="handleReviewSubmitted"
+              @cancel="showReviewForm = false"
+            />
+          </div>
+
+          <!-- Review List -->
           <ReviewList
             v-if="product"
             :product-id="product.id"
@@ -158,6 +181,7 @@ import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
 import ReviewList from '@/components/reviews/ReviewList.vue'
+import ReviewForm from '@/components/reviews/ReviewForm.vue'
 import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import type { Product } from '@/types'
 
@@ -173,6 +197,7 @@ const notificationStore = useNotificationStore()
 
 const loading = ref(true)
 const product = ref<Product | null>(null)
+const showReviewForm = ref(false)
 
 const getImageUrl = (imagePath: string): string => {
   return backendApi.getImageUrl(imagePath)
@@ -254,6 +279,18 @@ const addToCart = () => {
 const navigateToProduct = (selectedProduct: Product) => {
   router.push(`/product/${selectedProduct.id}`)
   // Reload to show new product
+  window.location.reload()
+}
+
+const handleReviewSubmitted = (review: any) => {
+  showReviewForm.value = false
+  notificationStore.add({
+    type: 'success',
+    title: 'Дякуємо!',
+    message: 'Ваш відгук успішно надіслано. Він з\'явиться після модерації.',
+    duration: 5000
+  })
+  // Reload reviews
   window.location.reload()
 }
 

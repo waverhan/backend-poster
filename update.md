@@ -1,5 +1,38 @@
 # PWA POS System - Version History
 
+## Version 1.4.2 - 2025-09-28
+
+### ✍️ Review System Enhancements
+- **Write Review Button**: Added "Написати відгук" button on product detail page
+- **Review Form**: Integrated ReviewForm component for submitting reviews
+- **Form Toggle**: Click button to show/hide review form
+- **Success Notification**: Shows Ukrainian success message after review submission
+- **Auto-Reload**: Page reloads after review submission to show updated reviews
+
+### 🖼️ Product Image Improvements
+- **Clickable Images**: Product images in category arrays now clickable
+- **Navigation**: Clicking product image navigates to product detail page
+- **Hover Effect**: Added opacity transition on hover for better UX
+- **Router Link**: Wrapped images in router-link for proper navigation
+
+### 🎯 Related Products Section
+- **Loading State**: Shows "Завантаження рекомендацій..." while loading
+- **Empty State**: Shows "Немає схожих товарів" when no recommendations
+- **Always Visible**: Section now always renders (not hidden when empty)
+- **Better UX**: Users can see when recommendations are loading or unavailable
+
+### 🔧 Technical Improvements
+- **ReviewForm Import**: Added ReviewForm component to ProductDetailView
+- **State Management**: Added `showReviewForm` state for form visibility
+- **Event Handling**: Implemented `handleReviewSubmitted` function
+- **Component Structure**: Improved ProductRecommendations template structure
+
+### 📦 Deployment
+- **Frontend**: Deployed to Netlify with all improvements
+- **Status**: ✅ LIVE - Review form, clickable images, and related products working
+
+---
+
 ## Version 1.4.1 - 2025-09-28
 
 ### 🤖 AI Chat Assistant Improvements

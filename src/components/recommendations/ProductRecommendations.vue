@@ -1,5 +1,19 @@
 <template>
-  <div v-if="recommendations.length > 0 && isRecommendationsEnabled" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+  <div v-if="isRecommendationsEnabled" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <!-- Loading State -->
+    <div v-if="isLoading" class="text-center py-8">
+      <div class="animate-spin text-4xl mb-2">🔄</div>
+      <p class="text-gray-600">Завантаження рекомендацій...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else-if="recommendations.length === 0" class="text-center py-8">
+      <div class="text-4xl mb-2">🔍</div>
+      <p class="text-gray-600">Немає схожих товарів</p>
+    </div>
+
+    <!-- Recommendations -->
+    <div v-else>
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
         <span class="text-xl">🤖</span>
@@ -76,6 +90,7 @@
       >
         Hide suggestions
       </button>
+    </div>
     </div>
   </div>
 </template>
