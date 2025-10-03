@@ -70,7 +70,7 @@
           >
             <p class="whitespace-pre-wrap">{{ message.content }}</p>
 
-            <!-- Message metadata -->
+            <!-- Message metadata - Products -->
             <div v-if="message.metadata?.products && message.metadata.products.length > 0" class="mt-2 space-y-1">
               <div
                 v-for="product in message.metadata.products.slice(0, 3)"
@@ -79,10 +79,23 @@
                 @click="$emit('productSelected', product)"
               >
                 <div class="font-medium">{{ product.display_name || product.name }}</div>
-                <div class="text-blue-600">{{ product.price }} UAH</div>
+                <div class="text-blue-600">{{ product.price }} ₴</div>
               </div>
               <div v-if="message.metadata.products.length > 3" class="text-xs text-gray-500 text-center">
                 +{{ message.metadata.products.length - 3 }} більше товарів
+              </div>
+            </div>
+
+            <!-- Message metadata - Categories -->
+            <div v-if="message.metadata?.categories && message.metadata.categories.length > 0" class="mt-2 space-y-1">
+              <div
+                v-for="category in message.metadata.categories"
+                :key="category.name"
+                class="text-xs bg-green-50 border border-green-200 text-green-800 p-2 rounded cursor-pointer hover:bg-green-100 transition-colors flex items-center gap-2"
+                @click="navigateToCategory(category.name)"
+              >
+                <span class="text-base">{{ category.icon }}</span>
+                <span class="font-medium">{{ category.name }}</span>
               </div>
             </div>
 
@@ -146,7 +159,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useOrdersStore } from '@/stores/orders'
 import { useLocationStore } from '@/stores/location'
@@ -161,6 +174,7 @@ const emit = defineEmits<{
 
 // Services and stores
 const route = useRoute()
+const router = useRouter()
 const cartStore = useCartStore()
 const ordersStore = useOrdersStore()
 const locationStore = useLocationStore()
@@ -255,6 +269,13 @@ const sendQuickReply = (reply: string) => {
   sendMessage()
 }
 
+const navigateToCategory = (categoryName: string) => {
+  // Navigate to shop with category filter
+  router.push({ path: '/shop', query: { category: categoryName } })
+  // Close chat
+  isOpen.value = false
+}
+
 const handleAction = async (action: string, metadata: any) => {
   switch (action) {
     case 'search_products':
@@ -345,11 +366,15 @@ const handleLocalCommands = async (message: string): Promise<ChatMessage | null>
 
   // Categories command
   if (lowerMessage.includes('категорії') || lowerMessage.includes('показати категорії')) {
+    const categories = await getCategories()
     return {
       id: Date.now().toString(),
       role: 'assistant',
-      content: 'Ось наші категорії товарів:\n\n🍺 Напої\n🍖 М\'ясо\n🧀 Сири\n🍞 Хліб\n🍰 Десерти\n☕ Кава\n🥨 Закуски',
-      timestamp: new Date()
+      content: categories.length > 0
+        ? `Ось наші категорії товарів:`
+        : 'На жаль, зараз немає доступних категорій.',
+      timestamp: new Date(),
+      metadata: { categories }
     }
   }
 
@@ -377,7 +402,7 @@ const handleLocalCommands = async (message: string): Promise<ChatMessage | null>
   return null
 }
 
-// Get popular products from store
+// Get popular products from store (randomized)
 const getPopularProducts = async (): Promise<Product[]> => {
   try {
     const productStore = useProductStore()
@@ -385,12 +410,49 @@ const getPopularProducts = async (): Promise<Product[]> => {
       await productStore.fetchProducts()
     }
 
-    return productStore.products
-      .filter(p => p.available)
-      .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
-      .slice(0, 4)
+    const availableProducts = productStore.products.filter(p => p.available)
+
+    // Shuffle array and take first 4
+    const shuffled = [...availableProducts].sort(() => Math.random() - 0.5)
+    return shuffled.slice(0, 4)
   } catch (error) {
     console.error('Failed to get popular products:', error)
+    return []
+  }
+}
+
+// Get categories from store
+const getCategories = async (): Promise<Array<{name: string, icon: string}>> => {
+  try {
+    const productStore = useProductStore()
+    if (productStore.products.length === 0) {
+      await productStore.fetchProducts()
+    }
+
+    // Get unique categories
+    const categoryMap = new Map<string, string>()
+    productStore.products.forEach(p => {
+      if (p.category_name && !categoryMap.has(p.category_name)) {
+        // Assign icons based on category name
+        let icon = '📦'
+        const catLower = p.category_name.toLowerCase()
+        if (catLower.includes('напо') || catLower.includes('пиво')) icon = '🍺'
+        else if (catLower.includes('м\'ясо') || catLower.includes('ковбас')) icon = '🍖'
+        else if (catLower.includes('сир')) icon = '🧀'
+        else if (catLower.includes('хліб')) icon = '🍞'
+        else if (catLower.includes('десерт') || catLower.includes('солод')) icon = '🍰'
+        else if (catLower.includes('кава')) icon = '☕'
+        else if (catLower.includes('закус') || catLower.includes('снек')) icon = '🥨'
+        else if (catLower.includes('вино')) icon = '🍷'
+        else if (catLower.includes('сидр')) icon = '🍎'
+
+        categoryMap.set(p.category_name, icon)
+      }
+    })
+
+    return Array.from(categoryMap.entries()).map(([name, icon]) => ({ name, icon }))
+  } catch (error) {
+    console.error('Failed to get categories:', error)
     return []
   }
 }
@@ -418,12 +480,17 @@ const getFallbackResponse = async (message: string): Promise<ChatMessage> => {
   } else if (lowerMessage.includes('доставка')) {
     content = `📦 Інформація про доставку:
 
-🚚 Доставка по місту: 99 UAH
+🚚 Доставка по Києву:
+   • В межах 2 км: 99 ₴
+   • Кожен додатковий км: +30 ₴
+
 🏪 Самовивіз: безкоштовно
+
 ⏰ Час доставки: 1-2 години
+
 📍 Зона доставки: весь Київ
 
-Мінімальна сума замовлення: 300 UAH`
+💰 Мінімальна сума замовлення: 300 ₴`
   }
 
   return {

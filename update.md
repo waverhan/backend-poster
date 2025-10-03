@@ -1,5 +1,55 @@
 # PWA POS System - Version History
 
+## Version 1.4.1 - 2025-09-28
+
+### 🤖 AI Chat Assistant Improvements
+- **Real Categories**: Now shows actual categories from database instead of hardcoded list
+- **Clickable Categories**: Category buttons navigate to shop with category filter
+- **Category Icons**: Smart icon assignment based on category names (🍺 🍖 🧀 🍞 🍰 ☕ 🥨 🍷 🍎)
+- **Randomized Products**: Popular products now randomized each time for variety
+- **Accurate Delivery Info**: Updated delivery information with correct pricing structure
+  - Within 2km: 99 ₴
+  - Each additional km: +30 ₴
+  - Pickup: Free
+  - Minimum order: 300 ₴
+
+### 🌐 Product Detail Page - Full Ukrainian Translation
+- **Navigation**: "Назад до магазину" (Back to Shop)
+- **Loading States**: "Завантаження деталей товару..." (Loading product details)
+- **Product Info**: "Характеристики товару" (Product Specifications)
+- **Description**: "Опис" (Description)
+- **Availability**: "Наявність" (Availability)
+- **Stock**: "Залишок" (Stock)
+- **Status**: "В наявності" / "Немає в наявності" (Available / Out of Stock)
+- **Unit Labels**: "за кг", "за г", "за л", "за шт" (per kg, per g, per l, per pc)
+
+### 📝 Reviews Section - Ukrainian Translation
+- **Filters**: "Спочатку нові", "Найвищий рейтинг", "Найкорисніші"
+- **Ratings**: "Всі оцінки", "5 зірок", "4 зірки", etc.
+- **Checkboxes**: "Тільки підтверджені покупки", "З фото"
+- **Verified**: "✓ Підтверджена покупка"
+- **Empty State**: "Поки що немає відгуків"
+- **Call to Action**: "Будьте першим, хто залишить відгук про цей товар!"
+- **Load More**: "Завантажити більше відгуків"
+
+### 🎯 Related Products Section
+- **New Section**: "Схожі товари" displayed at bottom of product page
+- **Smart Recommendations**: Shows 4 related products based on category and attributes
+- **Clickable Products**: Product images and cards navigate to product detail page
+- **Auto-Reload**: Page reloads when clicking related product to show new details
+
+### 🔧 Technical Improvements
+- **Router Integration**: Added router to ChatWidget for category navigation
+- **Unit Formatting**: Created `getUnitLabel()` function for proper Ukrainian unit display
+- **Category Fetching**: Dynamic category loading from product store
+- **Icon Mapping**: Intelligent category icon assignment based on keywords
+
+### 📦 Deployment
+- **Frontend**: Deployed to Netlify with all improvements
+- **Status**: ✅ LIVE - AI chat, product pages, and reviews fully translated to Ukrainian
+
+---
+
 ## Version 1.4.0 - 2025-09-28
 
 ### 🎨 MAJOR UPDATE: Enhanced Product Name Formatting

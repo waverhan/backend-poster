@@ -55,11 +55,11 @@
           @change="applyFilters"
           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="highest_rating">Highest Rating</option>
-          <option value="lowest_rating">Lowest Rating</option>
-          <option value="most_helpful">Most Helpful</option>
+          <option value="newest">Спочатку нові</option>
+          <option value="oldest">Спочатку старі</option>
+          <option value="highest_rating">Найвищий рейтинг</option>
+          <option value="lowest_rating">Найнижчий рейтинг</option>
+          <option value="most_helpful">Найкорисніші</option>
         </select>
 
         <select
@@ -67,12 +67,12 @@
           @change="applyFilters"
           class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option :value="undefined">All Ratings</option>
-          <option :value="5">5 Stars</option>
-          <option :value="4">4 Stars</option>
-          <option :value="3">3 Stars</option>
-          <option :value="2">2 Stars</option>
-          <option :value="1">1 Star</option>
+          <option :value="undefined">Всі оцінки</option>
+          <option :value="5">5 зірок</option>
+          <option :value="4">4 зірки</option>
+          <option :value="3">3 зірки</option>
+          <option :value="2">2 зірки</option>
+          <option :value="1">1 зірка</option>
         </select>
 
         <label class="flex items-center gap-2 text-sm">
@@ -82,7 +82,7 @@
             type="checkbox"
             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
-          Verified purchases only
+          Тільки підтверджені покупки
         </label>
 
         <label class="flex items-center gap-2 text-sm">
@@ -92,7 +92,7 @@
             type="checkbox"
             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
-          With photos
+          З фото
         </label>
       </div>
     </div>
@@ -116,7 +116,7 @@
               <div class="flex items-center gap-2">
                 <h4 class="font-medium text-gray-900">{{ review.customer_name }}</h4>
                 <span v-if="review.verified_purchase" class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                  ✓ Verified Purchase
+                  ✓ Підтверджена покупка
                 </span>
               </div>
               <div class="flex items-center gap-2 mt-1">
@@ -205,15 +205,15 @@
         :disabled="isLoading"
         class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200"
       >
-        {{ isLoading ? 'Loading...' : 'Load More Reviews' }}
+        {{ isLoading ? 'Завантаження...' : 'Завантажити більше відгуків' }}
       </button>
     </div>
 
     <!-- Empty State -->
     <div v-if="!isLoading && reviews.length === 0" class="text-center py-12">
       <div class="text-4xl mb-4">📝</div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No reviews yet</h3>
-      <p class="text-gray-600">Be the first to review this product!</p>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Поки що немає відгуків</h3>
+      <p class="text-gray-600">Будьте першим, хто залишить відгук про цей товар!</p>
     </div>
 
     <!-- Image Modal -->

@@ -7,23 +7,23 @@
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          Back to Shop
+          Назад до магазину
         </router-link>
       </div>
 
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-16">
         <div class="spinner w-8 h-8 mx-auto mb-4"></div>
-        <p class="text-gray-600">Loading product details...</p>
+        <p class="text-gray-600">Завантаження деталей товару...</p>
       </div>
 
       <!-- Product Not Found -->
       <div v-else-if="!product" class="text-center py-16">
         <div class="text-6xl mb-4">❌</div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-        <p class="text-gray-600 mb-8">The product you're looking for doesn't exist.</p>
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Товар не знайдено</h1>
+        <p class="text-gray-600 mb-8">Товар, який ви шукаєте, не існує.</p>
         <router-link to="/shop" class="btn-primary">
-          Back to Shop
+          Назад до магазину
         </router-link>
       </div>
 
@@ -58,12 +58,12 @@
                   {{ formatPrice(product.original_price) }} ₴
                 </span>
               </div>
-              <p class="text-gray-600">per {{ product.unit || 'pcs' }}</p>
+              <p class="text-gray-600">{{ getUnitLabel(product.unit) }}</p>
             </div>
 
             <!-- Product Attributes -->
             <div v-if="product.attributes && product.attributes.length > 0" class="space-y-4">
-              <h3 class="text-base font-semibold text-gray-900">Product Specifications</h3>
+              <h3 class="text-base font-semibold text-gray-900">Характеристики товару</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                   v-for="attribute in product.attributes"
@@ -96,18 +96,18 @@
 
             <!-- Description -->
             <div v-if="product.description">
-              <h3 class="text-base font-semibold text-gray-900 mb-2">Description</h3>
+              <h3 class="text-base font-semibold text-gray-900 mb-2">Опис</h3>
               <p class="text-gray-600">{{ product.description }}</p>
             </div>
 
             <!-- Stock Info -->
             <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="text-base font-semibold text-gray-900 mb-2">Availability</h3>
+              <h3 class="text-base font-semibold text-gray-900 mb-2">Наявність</h3>
               <div class="flex items-center justify-between">
-                <span class="text-gray-600">Stock: {{ product.quantity }} {{ product.unit || 'pcs' }}</span>
+                <span class="text-gray-600">Залишок: {{ product.quantity }} {{ product.unit || 'шт' }}</span>
                 <span class="text-sm px-3 py-1 rounded-full"
                       :class="product.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                  {{ product.available ? 'Available' : 'Out of Stock' }}
+                  {{ product.available ? 'В наявності' : 'Немає в наявності' }}
                 </span>
               </div>
             </div>
@@ -118,13 +118,13 @@
               :disabled="!product.available"
               class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              {{ product.available ? 'Купити' : 'Out of Stock' }}
+              {{ product.available ? 'Купити' : 'Немає в наявності' }}
             </button>
           </div>
         </div>
 
         <!-- Reviews Section -->
-        <div class="mt-8 border-t border-gray-200 pt-8">
+        <div class="mt-8 border-t border-gray-200 pt-8 px-8">
           <ReviewList
             v-if="product"
             :product-id="product.id"
@@ -134,16 +134,15 @@
         </div>
       </div>
 
-      <!-- Recommendations Section -->
-      <div v-if="showRecommendations" class="mt-8">
+      <!-- Related Products Section -->
+      <div v-if="product" class="mt-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Схожі товари</h2>
         <ProductRecommendations
-          v-if="product"
           context="product"
           :current-product="product"
           :max-recommendations="4"
-          :show-reasons="true"
+          :show-reasons="false"
           @product-selected="navigateToProduct"
-          @hide-recommendations="hideRecommendations"
         />
       </div>
     </div>
@@ -175,9 +174,6 @@ const notificationStore = useNotificationStore()
 const loading = ref(true)
 const product = ref<Product | null>(null)
 
-// Recommendations state
-const showRecommendations = ref(true)
-
 const getImageUrl = (imagePath: string): string => {
   return backendApi.getImageUrl(imagePath)
 }
@@ -192,6 +188,22 @@ const handleImageError = (event: Event) => {
 
 const formatPrice = (price: number): string => {
   return price.toFixed(2)
+}
+
+const getUnitLabel = (unit: string | undefined): string => {
+  if (!unit) return 'за шт'
+
+  const unitMap: Record<string, string> = {
+    'kg': 'за кг',
+    'g': 'за г',
+    'l': 'за л',
+    'ml': 'за мл',
+    'p': 'за шт',
+    'pcs': 'за шт',
+    'piece': 'за шт'
+  }
+
+  return unitMap[unit.toLowerCase()] || `за ${unit}`
 }
 
 const getColorClass = (color: string): string => {
@@ -241,18 +253,8 @@ const addToCart = () => {
 
 const navigateToProduct = (selectedProduct: Product) => {
   router.push(`/product/${selectedProduct.id}`)
-}
-
-const hideRecommendations = () => {
-  
-  showRecommendations.value = false
-
-  notificationStore.add({
-    type: 'info',
-    title: 'Recommendations hidden',
-    message: 'Refresh the page to show recommendations again',
-    duration: 3000
-  })
+  // Reload to show new product
+  window.location.reload()
 }
 
 onMounted(async () => {
