@@ -149,8 +149,9 @@ const error = ref('')
 
 // Methods
 const loadReviews = async () => {
-  if (!untappdService.isConfigured()) {
-    error.value = 'Untappd API не налаштовано'
+  const isConfigured = await untappdService.isConfigured()
+  if (!isConfigured) {
+    error.value = 'Сервіс Untappd недоступний. Перевірте підключення до бекенду.'
     return
   }
 

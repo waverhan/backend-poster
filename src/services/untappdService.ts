@@ -1,117 +1,59 @@
 import type { UntappdBeer, UntappdReview, UntappdBeerInfo } from '@/types/untappd'
 
 class UntappdService {
-  private baseUrl = 'https://api.untappd.com/v4'
-  private clientId = process.env.VITE_UNTAPPD_CLIENT_ID || ''
-  private clientSecret = process.env.VITE_UNTAPPD_CLIENT_SECRET || ''
+  private backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
 
-  // Get beer information by beer ID
+  // Get beer information by beer ID using web scraping
   async getBeerInfo(beerId: string): Promise<UntappdBeerInfo | null> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/beer/info/${beerId}?client_id=${this.clientId}&client_secret=${this.clientSecret}`
-      )
+      const response = await fetch(`${this.backendUrl}/api/untappd/beer/${beerId}`)
 
       if (!response.ok) {
-        console.error('Failed to fetch beer info from Untappd:', response.status)
+        console.error('Failed to fetch beer info from backend:', response.status)
         return null
       }
 
       const data = await response.json()
-      
-      if (data.response && data.response.beer) {
-        const beer = data.response.beer
-        return {
-          beer_id: beer.bid,
-          beer_name: beer.beer_name,
-          beer_description: beer.beer_description,
-          beer_abv: beer.beer_abv,
-          beer_ibu: beer.beer_ibu,
-          beer_style: beer.beer_style,
-          brewery_name: beer.brewery?.brewery_name || '',
-          rating_score: beer.rating_score,
-          rating_count: beer.rating_count,
-          beer_label: beer.beer_label,
-          created_at: beer.created_at
-        }
-      }
-
-      return null
+      return data.beer || null
     } catch (error) {
-      console.error('Error fetching beer info from Untappd:', error)
+      console.error('Error fetching beer info:', error)
       return null
     }
   }
 
-  // Get beer reviews/checkins by beer ID
+  // Get beer reviews/checkins by beer ID using web scraping
   async getBeerReviews(beerId: string, limit: number = 25): Promise<UntappdReview[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/beer/checkins/${beerId}?client_id=${this.clientId}&client_secret=${this.clientSecret}&limit=${limit}`
-      )
+      const response = await fetch(`${this.backendUrl}/api/untappd/beer/${beerId}/reviews?limit=${limit}`)
 
       if (!response.ok) {
-        console.error('Failed to fetch beer reviews from Untappd:', response.status)
+        console.error('Failed to fetch beer reviews from backend:', response.status)
         return []
       }
 
       const data = await response.json()
-      
-      if (data.response && data.response.checkins && data.response.checkins.items) {
-        return data.response.checkins.items
-          .filter((checkin: any) => checkin.checkin_comment && checkin.checkin_comment.trim().length > 0)
-          .map((checkin: any) => ({
-            checkin_id: checkin.checkin_id,
-            user_name: checkin.user?.first_name || 'Anonymous',
-            user_avatar: checkin.user?.user_avatar || '',
-            rating_score: checkin.rating_score,
-            checkin_comment: checkin.checkin_comment,
-            created_at: checkin.created_at,
-            beer_name: checkin.beer?.beer_name || '',
-            brewery_name: checkin.brewery?.brewery_name || ''
-          }))
-      }
-
-      return []
+      return data.reviews || []
     } catch (error) {
-      console.error('Error fetching beer reviews from Untappd:', error)
+      console.error('Error fetching beer reviews:', error)
       return []
     }
   }
 
-  // Search for beer by name and brewery
+  // Search for beer by name and brewery using web scraping
   async searchBeer(beerName: string, breweryName?: string): Promise<UntappdBeer[]> {
     try {
       const query = breweryName ? `${beerName} ${breweryName}` : beerName
-      const response = await fetch(
-        `${this.baseUrl}/search/beer?q=${encodeURIComponent(query)}&client_id=${this.clientId}&client_secret=${this.clientSecret}`
-      )
+      const response = await fetch(`${this.backendUrl}/api/untappd/search?q=${encodeURIComponent(query)}`)
 
       if (!response.ok) {
-        console.error('Failed to search beer on Untappd:', response.status)
+        console.error('Failed to search beer on backend:', response.status)
         return []
       }
 
       const data = await response.json()
-      
-      if (data.response && data.response.beers && data.response.beers.items) {
-        return data.response.beers.items.map((item: any) => ({
-          beer_id: item.beer.bid,
-          beer_name: item.beer.beer_name,
-          beer_description: item.beer.beer_description,
-          beer_abv: item.beer.beer_abv,
-          beer_ibu: item.beer.beer_ibu,
-          beer_style: item.beer.beer_style,
-          brewery_name: item.brewery?.brewery_name || '',
-          rating_score: item.beer.rating_score,
-          rating_count: item.beer.rating_count,
-          beer_label: item.beer.beer_label
-        }))
-      }
-
-      return []
+      return data.beers || []
     } catch (error) {
-      console.error('Error searching beer on Untappd:', error)
+      console.error('Error searching beer:', error)
       return []
     }
   }
@@ -134,26 +76,29 @@ class UntappdService {
     }
   }
 
-  // Check if API credentials are configured
-  isConfigured(): boolean {
-    return !!(this.clientId && this.clientSecret)
+  // Check if backend scraping service is available
+  async isConfigured(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.backendUrl}/api/untappd/status`)
+      return response.ok
+    } catch (error) {
+      return false
+    }
   }
 
-  // Get API usage info
-  async getApiInfo(): Promise<any> {
+  // Get scraping service status
+  async getServiceStatus(): Promise<any> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/auth/authorize?client_id=${this.clientId}&client_secret=${this.clientSecret}`
-      )
+      const response = await fetch(`${this.backendUrl}/api/untappd/status`)
 
       if (!response.ok) {
-        return null
+        return { available: false, error: 'Service unavailable' }
       }
 
       return await response.json()
     } catch (error) {
-      console.error('Error checking Untappd API info:', error)
-      return null
+      console.error('Error checking Untappd service status:', error)
+      return { available: false, error: error.message }
     }
   }
 }

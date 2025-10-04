@@ -2,8 +2,9 @@
 
 ## Version 1.4.6 - 2025-09-28
 
-### 🍺 Untappd API Integration
-- **UntappdService**: Complete service for fetching beer information and reviews from Untappd API
+### 🍺 Untappd Web Scraping Integration (No API Keys Required!)
+- **Web Scraping Service**: Complete Node.js service for scraping Untappd data without API keys
+- **UntappdService**: Updated to use web scraping backend instead of official API
 - **UntappdReviews Component**: Displays beer reviews from Untappd with user avatars, ratings, and comments
 - **UntappdManager**: Admin panel component for managing product-to-Untappd mappings
 - **Beer Detection**: Automatic detection of beer products for Untappd integration
@@ -15,20 +16,24 @@
 - **Production Ready**: reCAPTCHA now configured for production use with proper validation
 
 ### 🛠️ Technical Implementation
+- **Web Scraping Backend**: Complete Node.js service with Express, Cheerio, and Axios
+- **No API Keys**: Works by scraping public Untappd pages (respectful rate limiting)
 - **Type Definitions**: Added comprehensive TypeScript types for Untappd data structures
-- **API Service**: Robust Untappd API service with error handling and rate limiting awareness
 - **Admin Integration**: Untappd management tab added to admin panel for easy configuration
-- **Environment Variables**: Added VITE_UNTAPPD_CLIENT_ID and VITE_UNTAPPD_CLIENT_SECRET configuration
 - **Product Mapping**: System for linking local products to Untappd beer entries
 - **Auto-sync**: Optional automatic synchronization of beer information from Untappd
+- **Docker Support**: Ready for deployment with Docker and Railway
 
 ### 📋 Features Added
-- **Beer Search**: Search Untappd database by beer name and brewery
+- **Beer Search**: Search Untappd database by beer name and brewery (web scraping)
 - **Review Display**: Show Untappd user reviews with ratings and comments (reviewer names only, not linked)
 - **Beer Information**: Display ABV, IBU, beer style, and descriptions from Untappd
 - **Mapping Management**: Admin interface for creating and managing product-to-Untappd links
 - **Bulk Operations**: Sync all mapped products with Untappd data at once
 - **URL Support**: Support for Untappd URLs like https://untappd.com/b/opillya-opillia-korifej-nefiltrovane/6371222
+- **Backend Scraping Service**: Standalone Node.js service for Untappd data extraction
+- **Rate Limited**: Respectful 1-second delays between requests to Untappd
+- **Error Handling**: Comprehensive error handling and service status monitoring
 
 ## Version 1.4.5 - 2025-09-28
 

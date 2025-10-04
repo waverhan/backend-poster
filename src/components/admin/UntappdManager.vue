@@ -6,21 +6,24 @@
       <!-- API Status -->
       <div class="mb-6">
         <div class="flex items-center gap-3 mb-2">
-          <h4 class="font-medium text-gray-900">Статус API</h4>
+          <h4 class="font-medium text-gray-900">Статус сервісу</h4>
           <div
             :class="[
               'px-2 py-1 rounded-full text-xs font-medium',
-              apiConfigured ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              serviceStatus.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
             ]"
           >
-            {{ apiConfigured ? 'Налаштовано' : 'Не налаштовано' }}
+            {{ serviceStatus.available ? 'Доступний' : 'Недоступний' }}
           </div>
         </div>
         <p class="text-sm text-gray-600">
-          {{ apiConfigured 
-            ? 'Untappd API налаштовано і готове до використання' 
-            : 'Додайте VITE_UNTAPPD_CLIENT_ID та VITE_UNTAPPD_CLIENT_SECRET в .env файл' 
+          {{ serviceStatus.available
+            ? 'Сервіс веб-скрапінгу Untappd працює і готовий до використання'
+            : 'Сервіс веб-скрапінгу недоступний. Перевірте підключення до бекенду.'
           }}
+        </p>
+        <p v-if="serviceStatus.note" class="text-xs text-blue-600 mt-1">
+          {{ serviceStatus.note }}
         </p>
       </div>
 
@@ -214,9 +217,9 @@ const mappings = ref<ProductUntappdMapping[]>([])
 const searching = ref(false)
 const linking = ref(false)
 const syncing = ref(false)
+const serviceStatus = ref({ available: false, note: '' })
 
 // Computed
-const apiConfigured = computed(() => untappdService.isConfigured())
 const beerProducts = computed(() => 
   productStore.products.filter(p => 
     p.category_name?.toLowerCase().includes('пиво') || 
@@ -375,6 +378,15 @@ const formatDate = (dateString: string): string => {
 // Lifecycle
 onMounted(async () => {
   await productStore.fetchProducts()
+
+  // Check service status
+  try {
+    serviceStatus.value = await untappdService.getServiceStatus()
+  } catch (error) {
+    console.error('Failed to check service status:', error)
+    serviceStatus.value = { available: false, note: 'Помилка підключення до сервісу' }
+  }
+
   // Load existing mappings from backend
   // mappings.value = await loadMappingsFromBackend()
 })
