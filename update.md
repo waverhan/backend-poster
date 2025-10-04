@@ -1,5 +1,39 @@
 # PWA POS System - Version History
 
+## Version 1.4.7 - 2025-10-04
+
+### 🔧 **FIXED: Untappd Mappings Persistence Issue**
+**Problem**: Untappd product mappings were only stored in frontend memory and disappeared on page refresh
+**Solution**: Implemented complete backend database storage with persistent mappings
+
+### 🗄️ **Database Schema Updates**
+- **New Table**: `untappd_mappings` with proper foreign key relations to products
+- **Migration**: Automatic database migration on Railway deployment
+- **Fields**: product_id, untappd_beer_id, untappd_url, auto_sync_enabled, last_synced
+
+### 🔄 **Backend API Endpoints**
+- **GET** `/api/untappd/mappings` - Retrieve all mappings with product details
+- **POST** `/api/untappd/mappings` - Create/update product-to-Untappd mappings
+- **DELETE** `/api/untappd/mappings/:product_id` - Remove mappings
+- **POST** `/api/untappd/mappings/:product_id/sync` - Sync beer info to product
+
+### 🎯 **Frontend Updates**
+- **Persistent Storage**: All mappings now saved to and loaded from backend database
+- **Real-time Updates**: Mappings persist across page refreshes and browser sessions
+- **Error Handling**: Proper error messages for failed operations
+- **Auto Reload**: Mappings automatically reload after create/update/delete operations
+
+### ✅ **Verified Working Features**
+- ✅ **Mapping Creation**: Successfully tested with "OPILLIA EXPORT LAGER" → Untappd beer ID 6371222
+- ✅ **Mapping Persistence**: Mappings survive page refreshes and browser restarts
+- ✅ **Sync Functionality**: Beer info (ABV, IBU, style, ratings) synced to product attributes
+- ✅ **Admin Interface**: Status shows "Доступний" (Available) instead of "Недоступний" (Unavailable)
+
+### 🚀 **Deployment Status**
+- **Backend**: Railway deployment successful with Node 20 and database migration
+- **Frontend**: Netlify deployment successful with updated Untappd integration
+- **Database**: PostgreSQL on Railway with new untappd_mappings table
+
 ## Version 1.4.6 - 2025-09-28
 
 ### 🍺 Untappd Web Scraping Integration (No API Keys Required!)
