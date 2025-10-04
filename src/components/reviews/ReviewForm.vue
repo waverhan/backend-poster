@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
     <h3 class="text-lg font-semibold text-gray-900 mb-4">
-      {{ isEditing ? 'Edit Your Review' : 'Write a Review' }}
+      {{ isEditing ? 'Редагувати відгук' : 'Написати відгук' }}
     </h3>
 
     <form @submit.prevent="submitReview" class="space-y-6">
@@ -9,25 +9,56 @@
       <div v-if="product" class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
         <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
           <img
-            v-if="product.image_url"
-            :src="product.image_url"
-            :alt="product.name"
+            v-if="getImageUrl(product)"
+            :src="getImageUrl(product)"
+            :alt="product.display_name || product.name"
             class="w-full h-full object-cover"
+            @error="handleImageError"
           />
           <div v-else class="w-full h-full flex items-center justify-center text-2xl">
             🍽️
           </div>
         </div>
         <div>
-          <h4 class="font-medium text-gray-900">{{ product.name }}</h4>
+          <h4 class="font-medium text-gray-900">{{ product.display_name || product.name }}</h4>
           <p class="text-sm text-gray-600">{{ product.category_name }}</p>
+        </div>
+      </div>
+
+      <!-- Contact Information -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Електронна пошта *
+          </label>
+          <input
+            v-model="form.email"
+            type="email"
+            placeholder="your@email.com"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Номер телефону *
+          </label>
+          <input
+            v-model="form.phone"
+            type="tel"
+            placeholder="+380..."
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
         </div>
       </div>
 
       <!-- Rating -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
-          Overall Rating *
+          Загальна оцінка *
         </label>
         <div class="flex items-center gap-2">
           <div class="flex items-center">
@@ -52,94 +83,37 @@
       <!-- Review Title -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
-          Review Title
+          Заголовок відгуку
         </label>
         <input
           v-model="form.title"
           type="text"
-          placeholder="Summarize your experience..."
+          placeholder="Коротко опишіть ваш досвід..."
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           maxlength="100"
         />
-        <p class="text-xs text-gray-500 mt-1">{{ form.title?.length || 0 }}/100 characters</p>
+        <p class="text-xs text-gray-500 mt-1">{{ form.title?.length || 0 }}/100 символів</p>
       </div>
 
       <!-- Review Comment -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
-          Your Review
+          Ваш відгук
         </label>
         <textarea
           v-model="form.comment"
           rows="4"
-          placeholder="Tell others about your experience with this product..."
+          placeholder="Розкажіть іншим про ваш досвід з цим товаром..."
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           maxlength="1000"
         ></textarea>
-        <p class="text-xs text-gray-500 mt-1">{{ form.comment?.length || 0 }}/1000 characters</p>
+        <p class="text-xs text-gray-500 mt-1">{{ form.comment?.length || 0 }}/1000 символів</p>
       </div>
 
-      <!-- Image Upload -->
+      <!-- reCAPTCHA -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Add Photos (Optional)
-        </label>
-        <div class="space-y-3">
-          <!-- Upload Area -->
-          <div
-            @drop="handleDrop"
-            @dragover.prevent
-            @dragenter.prevent
-            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-          >
-            <input
-              ref="fileInput"
-              type="file"
-              multiple
-              accept="image/*"
-              @change="handleFileSelect"
-              class="hidden"
-            />
-            <div class="text-gray-600">
-              <span class="text-2xl block mb-2">📷</span>
-              <p class="text-sm">
-                Drag and drop photos here, or
-                <button
-                  type="button"
-                  @click="$refs.fileInput.click()"
-                  class="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  browse
-                </button>
-              </p>
-              <p class="text-xs text-gray-500 mt-1">
-                Max 5 images, 5MB each (JPG, PNG, WebP)
-              </p>
-            </div>
-          </div>
-
-          <!-- Preview Images -->
-          <div v-if="selectedImages.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div
-              v-for="(image, index) in selectedImages"
-              :key="index"
-              class="relative group"
-            >
-              <img
-                :src="image.preview"
-                :alt="`Preview ${index + 1}`"
-                class="w-full h-24 object-cover rounded-lg border border-gray-200"
-              />
-              <button
-                type="button"
-                @click="removeImage(index)"
-                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
+        <div id="recaptcha-container" class="flex justify-center"></div>
+        <p v-if="errors.recaptcha" class="text-red-500 text-xs mt-1 text-center">{{ errors.recaptcha }}</p>
       </div>
 
       <!-- Submit Button -->
@@ -149,7 +123,7 @@
           :disabled="isSubmitting || !isFormValid"
           class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
         >
-          {{ isSubmitting ? 'Submitting...' : (isEditing ? 'Update Review' : 'Submit Review') }}
+          {{ isSubmitting ? 'Надсилання...' : (isEditing ? 'Оновити відгук' : 'Надіслати відгук') }}
         </button>
         <button
           v-if="showCancel"
@@ -157,18 +131,18 @@
           @click="$emit('cancel')"
           class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
         >
-          Cancel
+          Скасувати
         </button>
       </div>
 
       <!-- Guidelines -->
       <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-        <p class="font-medium mb-1">Review Guidelines:</p>
+        <p class="font-medium mb-1">Правила написання відгуків:</p>
         <ul class="space-y-1">
-          <li>• Be honest and helpful to other customers</li>
-          <li>• Focus on the product quality and your experience</li>
-          <li>• Avoid personal information or inappropriate content</li>
-          <li>• Reviews are moderated and may take 24-48 hours to appear</li>
+          <li>• Будьте чесними та корисними для інших покупців</li>
+          <li>• Зосередьтеся на якості товару та вашому досвіді</li>
+          <li>• Уникайте особистої інформації або неприйнятного контенту</li>
+          <li>• Відгуки модеруються і можуть з'явитися через 24-48 годин</li>
         </ul>
       </div>
     </form>
@@ -176,10 +150,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import reviewService from '@/services/reviewService'
+import { backendApi } from '@/services/backendApi'
 import type { Product } from '@/types'
 import type { ReviewFormData } from '@/types/review'
+
+// Global reCAPTCHA declarations
+declare global {
+  interface Window {
+    grecaptcha: any
+    onRecaptchaLoad: () => void
+  }
+}
 
 interface Props {
   product?: Product
@@ -204,17 +187,23 @@ const form = ref<ReviewFormData>({
   rating: 0,
   title: '',
   comment: '',
+  email: '',
+  phone: '',
   images: []
 })
 
-const selectedImages = ref<Array<{ file: File; preview: string }>>([])
 const isSubmitting = ref(false)
 const errors = ref<Record<string, string>>({})
-const fileInput = ref<HTMLInputElement>()
+const recaptchaWidget = ref<any>(null)
 
 // Computed
 const isEditing = computed(() => !!props.existingReview)
-const isFormValid = computed(() => form.value.rating > 0)
+const isFormValid = computed(() =>
+  form.value.rating > 0 &&
+  form.value.email &&
+  form.value.phone &&
+  recaptchaWidget.value
+)
 
 // Methods
 const setRating = (rating: number) => {
@@ -224,72 +213,104 @@ const setRating = (rating: number) => {
 
 const getRatingText = (rating: number): string => {
   const texts = {
-    0: 'Select rating',
-    1: 'Poor',
-    2: 'Fair',
-    3: 'Good',
-    4: 'Very Good',
-    5: 'Excellent'
+    0: 'Оберіть оцінку',
+    1: 'Погано',
+    2: 'Задовільно',
+    3: 'Добре',
+    4: 'Дуже добре',
+    5: 'Відмінно'
   }
   return texts[rating as keyof typeof texts] || ''
 }
 
-const handleFileSelect = (event: Event) => {
-  const files = (event.target as HTMLInputElement).files
-  if (files) {
-    addImages(Array.from(files))
+const getImageUrl = (product: Product): string => {
+  const primaryImage = product.display_image_url || product.image_url
+  if (!primaryImage) return ''
+  return backendApi.getImageUrl(primaryImage)
+}
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  if (img.src.includes('/images/') && props.product?.poster_product_id) {
+    img.src = backendApi.getPosterImageUrl(props.product.poster_product_id)
+  } else {
+    img.style.display = 'none'
   }
 }
 
-const handleDrop = (event: DragEvent) => {
-  event.preventDefault()
-  const files = event.dataTransfer?.files
-  if (files) {
-    addImages(Array.from(files))
+// reCAPTCHA functions
+const loadRecaptcha = () => {
+  if (window.grecaptcha) {
+    renderRecaptcha()
+    return
   }
+
+  // Load reCAPTCHA script
+  const script = document.createElement('script')
+  script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit'
+  script.async = true
+  script.defer = true
+  document.head.appendChild(script)
+
+  // Set global callback
+  window.onRecaptchaLoad = renderRecaptcha
 }
 
-const addImages = (files: File[]) => {
-  const maxImages = 5
-  const maxSize = 5 * 1024 * 1024 // 5MB
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
-
-  files.forEach(file => {
-    if (selectedImages.value.length >= maxImages) {
-      alert(`Maximum ${maxImages} images allowed`)
-      return
-    }
-
-    if (file.size > maxSize) {
-      alert(`Image ${file.name} is too large. Maximum size is 5MB.`)
-      return
-    }
-
-    if (!allowedTypes.includes(file.type)) {
-      alert(`Image ${file.name} has unsupported format. Use JPG, PNG, or WebP.`)
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      selectedImages.value.push({
-        file,
-        preview: e.target?.result as string
-      })
-    }
-    reader.readAsDataURL(file)
-  })
-}
-
-const removeImage = (index: number) => {
-  selectedImages.value.splice(index, 1)
+const renderRecaptcha = () => {
+  if (window.grecaptcha && document.getElementById('recaptcha-container')) {
+    recaptchaWidget.value = window.grecaptcha.render('recaptcha-container', {
+      sitekey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI', // Test key - replace with your actual key
+      callback: (response: string) => {
+        delete errors.value.recaptcha
+      },
+      'expired-callback': () => {
+        errors.value.recaptcha = 'reCAPTCHA expired. Please verify again.'
+      }
+    })
+  }
 }
 
 const validateForm = (): boolean => {
   errors.value = {}
 
   if (form.value.rating === 0) {
-    errors.value.rating = 'Please select a rating'
+    errors.value.rating = 'Будь ласка, оберіть оцінку'
+    return false
+  }
+
+  if (!form.value.email) {
+    errors.value.email = 'Електронна пошта обов\'язкова'
+    return false
+  }
+
+  if (!form.value.phone) {
+    errors.value.phone = 'Номер телефону обов\'язковий'
+    return false
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(form.value.email)) {
+    errors.value.email = 'Невірний формат електронної пошти'
+    return false
+  }
+
+  // Validate phone format (Ukrainian)
+  const phoneRegex = /^\+380\d{9}$/
+  if (!phoneRegex.test(form.value.phone)) {
+    errors.value.phone = 'Невірний формат телефону (приклад: +380981234567)'
+    return false
+  }
+
+  // Validate reCAPTCHA
+  if (!window.grecaptcha || !recaptchaWidget.value) {
+    errors.value.recaptcha = 'Будь ласка, підтвердіть, що ви не робот'
+    return false
+  }
+
+  const recaptchaResponse = window.grecaptcha.getResponse(recaptchaWidget.value)
+  if (!recaptchaResponse) {
+    errors.value.recaptcha = 'Будь ласка, підтвердіть, що ви не робот'
     return false
   }
 
@@ -302,10 +323,14 @@ const submitReview = async () => {
   isSubmitting.value = true
 
   try {
-    // Prepare form data with images
+    // Get reCAPTCHA response
+    const recaptchaResponse = window.grecaptcha.getResponse(recaptchaWidget.value)
+
+    // Prepare form data
     const reviewData = {
       ...form.value,
-      images: selectedImages.value.map(img => img.file)
+      recaptcha_response: recaptchaResponse,
+      images: [] // No images for now
     }
 
     const review = await reviewService.submitReview(reviewData)
@@ -319,13 +344,19 @@ const submitReview = async () => {
       rating: 0,
       title: '',
       comment: '',
+      email: '',
+      phone: '',
       images: []
     }
-    selectedImages.value = []
+
+    // Reset reCAPTCHA
+    if (window.grecaptcha && recaptchaWidget.value) {
+      window.grecaptcha.reset(recaptchaWidget.value)
+    }
 
   } catch (error) {
     console.error('Failed to submit review:', error)
-    alert('Failed to submit review. Please try again.')
+    alert('Не вдалося надіслати відгук. Спробуйте ще раз.')
   } finally {
     isSubmitting.value = false
   }
@@ -338,8 +369,20 @@ onMounted(() => {
       ...form.value,
       rating: props.existingReview.rating,
       title: props.existingReview.title || '',
-      comment: props.existingReview.comment || ''
+      comment: props.existingReview.comment || '',
+      email: props.existingReview.email || '',
+      phone: props.existingReview.phone || ''
     }
+  }
+
+  // Load reCAPTCHA
+  loadRecaptcha()
+})
+
+onUnmounted(() => {
+  // Clean up global callback
+  if (window.onRecaptchaLoad) {
+    delete window.onRecaptchaLoad
   }
 })
 </script>

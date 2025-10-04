@@ -69,6 +69,12 @@ import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
+import {
+  isDraftBeverage,
+  getDefaultBottleSelection,
+  calculateBottleCost,
+  getBottleCartItems
+} from '@/utils/bottleUtils'
 import type { Product } from '@/types'
 
 interface Props {
@@ -142,25 +148,72 @@ const navigateToProduct = (product: Product) => {
 
 const addToCart = (product: Product) => {
   if (!isProductAvailable(product)) return
-  
+
   try {
-    cartStore.addItem({
-      product_id: product.id,
-      poster_product_id: product.poster_product_id,
-      name: product.display_name || product.name,
-      price: product.price,
-      quantity: 1,
-      image_url: product.display_image_url || product.image_url,
-      unit: product.unit || 'шт',
-      max_quantity: product.max_quantity
-    })
-    
-    notificationStore.add({
-      type: 'success',
-      title: 'Товар додано',
-      message: `${product.display_name || product.name} додано до кошика`,
-      duration: 2000
-    })
+    // Check if this is a draft beverage that requires bottles
+    if (isDraftBeverage(product)) {
+      // For draft beverages, use default 1L quantity and auto bottle selection
+      const quantity = 1 // Default 1L
+      const autoBottles = getDefaultBottleSelection(quantity)
+      const bottleCost = calculateBottleCost(autoBottles)
+
+      // Try to get bottle products for cart
+      const bottleCartItems = getBottleCartItems(autoBottles)
+
+      // Create cart item for the beverage
+      const cartItem: any = {
+        product_id: product.id,
+        poster_product_id: product.poster_product_id,
+        name: product.display_name || product.name,
+        price: product.price,
+        quantity: quantity,
+        image_url: product.display_image_url || product.image_url,
+        unit: product.unit || 'L',
+        max_quantity: product.max_quantity,
+        is_draft_beverage: true
+      }
+
+      // Add bottle information if using fallback mode
+      if (bottleCartItems.length === 0) {
+        cartItem.bottles = autoBottles
+        cartItem.bottle_cost = bottleCost
+      }
+
+      cartStore.addItem(cartItem)
+
+      // Add bottle products to cart as separate items if available
+      if (bottleCartItems.length > 0) {
+        for (const bottleItem of bottleCartItems) {
+          cartStore.addItem(bottleItem)
+        }
+      }
+
+      notificationStore.add({
+        type: 'success',
+        title: 'Товар додано',
+        message: `${product.display_name || product.name} (${quantity}L) з пляшками додано до кошика`,
+        duration: 2000
+      })
+    } else {
+      // Regular product (non-draft)
+      cartStore.addItem({
+        product_id: product.id,
+        poster_product_id: product.poster_product_id,
+        name: product.display_name || product.name,
+        price: product.price,
+        quantity: 1,
+        image_url: product.display_image_url || product.image_url,
+        unit: product.unit || 'шт',
+        max_quantity: product.max_quantity
+      })
+
+      notificationStore.add({
+        type: 'success',
+        title: 'Товар додано',
+        message: `${product.display_name || product.name} додано до кошика`,
+        duration: 2000
+      })
+    }
   } catch (error) {
     console.error('Failed to add product to cart:', error)
     notificationStore.add({

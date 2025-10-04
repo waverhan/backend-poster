@@ -46,7 +46,10 @@ export interface ReviewFormData {
   rating: number
   title?: string
   comment?: string
+  email: string
+  phone: string
   images?: File[]
+  recaptcha_response?: string
 }
 
 export interface ReviewFilters {

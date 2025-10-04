@@ -1,5 +1,34 @@
 # PWA POS System - Version History
 
+## Version 1.4.5 - 2025-09-28
+
+### 🔧 Draft Beverage Quantity Fix
+- **ProductDetailView**: Changed default quantity from 2L to 1L for draft beverages
+- **User Experience**: More reasonable default quantity when adding draft products to cart
+
+### 🍺 Related Products Bottle Addition
+- **RelatedProducts Component**: Added proper bottle handling for draft beverages
+- **Bottle Utilities**: Imported and integrated bottle selection logic
+- **Cart Integration**: Now adds both beverage and bottle products when adding draft items from related products
+- **Consistency**: Same bottle handling logic as main product detail page
+
+### 📝 Review Form Complete Overhaul
+- **Contact Fields**: Added required phone number and email address fields
+- **Google reCAPTCHA**: Integrated spam protection with reCAPTCHA validation
+- **Image Upload Removed**: Removed image upload functionality as requested
+- **Ukrainian Translation**: Translated all form text to Ukrainian language
+- **Product Image Fix**: Fixed product image display with proper backend API integration
+- **Enhanced Validation**: Added email regex and Ukrainian phone number format validation
+- **Error Handling**: Improved error messages and user feedback in Ukrainian
+- **Form Structure**: Cleaner form layout with contact info, rating, title, and comment sections
+
+### 🛠️ Technical Improvements
+- **Type Definitions**: Updated ReviewFormData interface with email, phone, and recaptcha_response fields
+- **Service Layer**: Enhanced reviewService to handle new fields and reCAPTCHA token
+- **Image Handling**: Added proper image URL handling with backendApi and fallback system
+- **Validation Logic**: Comprehensive form validation with Ukrainian phone format (+380XXXXXXXXX)
+- **reCAPTCHA Integration**: Added global reCAPTCHA declarations and lifecycle management
+
 ## Version 1.4.4 - 2025-09-28
 
 ### 🔧 Related Products Improvements

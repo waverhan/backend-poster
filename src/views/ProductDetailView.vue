@@ -252,8 +252,8 @@ const addToCart = () => {
 
   // Check if this is a draft beverage that requires bottles
   if (isDraftBeverage(product.value)) {
-    // For draft beverages, use default 2L quantity and auto bottle selection
-    const quantity = 2 // Default 2L
+    // For draft beverages, use default 1L quantity and auto bottle selection
+    const quantity = 1 // Default 1L
     const autoBottles = getDefaultBottleSelection(quantity)
     const bottleCost = calculateBottleCost(autoBottles)
 

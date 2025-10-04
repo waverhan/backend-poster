@@ -6,16 +6,19 @@ class ReviewService {
   // Submit a new review
   async submitReview(reviewData: ReviewFormData): Promise<Review> {
     const formData = new FormData()
-    
+
     formData.append('product_id', reviewData.product_id)
     formData.append('order_id', reviewData.order_id)
     formData.append('rating', reviewData.rating.toString())
-    
+    formData.append('email', reviewData.email)
+    formData.append('phone', reviewData.phone)
+
     if (reviewData.title) formData.append('title', reviewData.title)
     if (reviewData.comment) formData.append('comment', reviewData.comment)
-    
-    // Add images if any
-    if (reviewData.images) {
+    if (reviewData.recaptcha_response) formData.append('recaptcha_response', reviewData.recaptcha_response)
+
+    // Add images if any (currently disabled)
+    if (reviewData.images && reviewData.images.length > 0) {
       reviewData.images.forEach((image, index) => {
         formData.append(`images[${index}]`, image)
       })
