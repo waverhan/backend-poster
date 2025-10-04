@@ -350,18 +350,7 @@
           </div>
         </div>
 
-        <!-- AI Recommendations Section -->
-        <div v-if="!loading.products && displayedProducts.length > 0 && showRecommendations && selectedCategory?.id !== 'deals'" class="card p-6 mt-6">
-          <ProductRecommendations
-            context="shop"
-            :max-recommendations="4"
-            :show-reasons="true"
-            :show-actions="true"
-            :use-ai="true"
-            @product-selected="navigateToProduct"
-            @hide-recommendations="hideRecommendations"
-          />
-        </div>
+
       </section>
 
       <!-- No Branch Selected Fallback -->
@@ -465,8 +454,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
 
@@ -491,7 +480,6 @@ import { isDraftBeverage } from '@/utils/bottleUtils'
 import ProductCard from '@/components/product/ProductCard.vue'
 import AddressAutocomplete from '@/components/AddressAutocomplete.vue'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import BannerSlider from '@/components/BannerSlider.vue'
 
 // Types
@@ -499,6 +487,7 @@ import type { Branch, Category, Product, FulfillmentType, LocationData } from '@
 import type { AddressSuggestion } from '@/services/addressAutocomplete'
 
 const router = useRouter()
+const route = useRoute()
 
 // Translation
 const { t } = useI18n()
@@ -536,8 +525,7 @@ const branchesLoaded = ref(false)
 const showDeliveryModal = ref(false)
 const showPickupModal = ref(false)
 
-// Recommendations state
-const showRecommendations = ref(true)
+
 
 // Search state
 const searchQuery = ref('')
@@ -1064,23 +1052,41 @@ const calculateDeliveryFee = (distanceKm: number): number => {
   }
 }
 
-const navigateToProduct = (product: Product) => {
-  router.push(`/product/${product.id}`)
+
+
+
+
+// Handle category query parameter
+const handleCategoryFromURL = () => {
+  const categoryParam = route.query.category as string
+  if (categoryParam && categoriesWithProducts.value.length > 0) {
+    // Find category by display_name (URL uses display names like "Сидр")
+    const category = categoriesWithProducts.value.find(cat =>
+      cat.display_name === categoryParam ||
+      cat.name === categoryParam ||
+      cat.display_name.toLowerCase() === categoryParam.toLowerCase()
+    )
+
+    if (category) {
+      console.log('🔗 Selecting category from URL:', category.display_name)
+      productStore.selectCategory(category)
+    } else {
+      console.warn('⚠️ Category not found for URL parameter:', categoryParam)
+    }
+  }
 }
 
-const hideRecommendations = () => {
-  
-  showRecommendations.value = false
+// Watch for route changes to handle category parameter
+watch(() => route.query.category, () => {
+  handleCategoryFromURL()
+}, { immediate: false })
 
-  notificationStore.add({
-    type: 'info',
-    title: 'Recommendations hidden',
-    message: 'Refresh the page to show recommendations again',
-    duration: 3000
-  })
-}
-
-
+// Watch for categories to be loaded, then handle URL parameter
+watch(() => categoriesWithProducts.value.length, (newLength) => {
+  if (newLength > 0) {
+    handleCategoryFromURL()
+  }
+}, { immediate: true })
 
 // Lifecycle
 onMounted(async () => {
@@ -1093,6 +1099,9 @@ onMounted(async () => {
 
     // Load default branch (Branch 4) and show products immediately for better UX
     await loadDefaultBranch()
+
+    // Handle category from URL after data is loaded
+    handleCategoryFromURL()
 
     // Track product list view when products are loaded
     if (products.value.length > 0) {

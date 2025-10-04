@@ -159,13 +159,9 @@
 
       <!-- Related Products Section -->
       <div v-if="product" class="mt-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Схожі товари</h2>
-        <ProductRecommendations
-          context="product"
+        <RelatedProducts
           :current-product="product"
-          :max-recommendations="4"
-          :show-reasons="false"
-          @product-selected="navigateToProduct"
+          :max-products="4"
         />
       </div>
     </div>
@@ -182,7 +178,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
-import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
+import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import type { Product } from '@/types'
 
 const route = useRoute()
@@ -276,11 +272,7 @@ const addToCart = () => {
   })
 }
 
-const navigateToProduct = (selectedProduct: Product) => {
-  router.push(`/product/${selectedProduct.id}`)
-  // Reload to show new product
-  window.location.reload()
-}
+
 
 const handleReviewSubmitted = (review: any) => {
   showReviewForm.value = false

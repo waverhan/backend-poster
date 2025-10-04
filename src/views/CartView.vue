@@ -261,18 +261,7 @@
           </div>
         </div>
 
-        <!-- AI Recommendations Section -->
-        <div v-if="cartStore.items.length > 0 && showRecommendations && isRecommendationsEnabled" class="card p-6">
-          <ProductRecommendations
-            context="cart"
-            :max-recommendations="4"
-            :show-reasons="true"
-            :show-actions="true"
-            :use-ai="true"
-            @product-selected="navigateToProduct"
-            @hide-recommendations="hideRecommendations"
-          />
-        </div>
+
       </div>
     </div>
   </div>
@@ -290,7 +279,6 @@ import { useSiteConfigStore } from '@/stores/siteConfig'
 import { getBottleSelectionSummary, getDefaultBottleSelection, getBottleProduct } from '@/utils/bottleUtils'
 import { useProductStore } from '@/stores/product'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import ProductAvailabilityService from '@/services/productAvailabilityService'
 import { backendApi } from '@/services/backendApi'
 import type { Branch, LocationData, Product } from '@/types'
@@ -322,15 +310,8 @@ const selectedMethod = ref<{
   fee: number
 } | null>(null)
 
-// Recommendations state
-const showRecommendations = ref(true)
-
 // Computed
 const selectedMethodFee = computed(() => selectedMethod.value?.fee || 0)
-
-const isRecommendationsEnabled = computed(() => {
-  return siteConfigStore.currentConfig.enable_recommendations !== false
-})
 
 // Methods
 const handleMethodSelected = async (data: any) => {
@@ -560,21 +541,7 @@ const clearCart = () => {
   }
 }
 
-const navigateToProduct = (product: Product) => {
-  router.push(`/product/${product.id}`)
-}
 
-const hideRecommendations = () => {
-  
-  showRecommendations.value = false
-
-  notificationStore.add({
-    type: 'info',
-    title: 'Recommendations hidden',
-    message: 'Refresh the page to show recommendations again',
-    duration: 3000
-  })
-}
 
 // Helper functions for cart item display
 const formatItemPrice = (item: any): string => {

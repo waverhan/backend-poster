@@ -437,23 +437,7 @@
         </div>
       </div>
 
-      <!-- Last Chance Recommendations -->
-      <div v-if="cartItems.length > 0 && isRecommendationsEnabled" class="mt-8">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">🛒 Last Chance to Add More!</h2>
-            <p class="text-gray-600">Don't miss these great additions to your order</p>
-          </div>
-          <ProductRecommendations
-            context="checkout"
-            :max-recommendations="3"
-            :show-reasons="true"
-            :show-actions="true"
-            :use-ai="true"
-            @product-selected="navigateToProduct"
-          />
-        </div>
-      </div>
+
     </div>
 
     <!-- Edit Delivery Method Modal -->
@@ -495,7 +479,6 @@ import { ProductAvailabilityService } from '@/services/productAvailabilityServic
 import wayforpayService from '@/services/wayforpayService'
 import { getDefaultBottleSelection, getBottleCartItems, getBottleProduct } from '@/utils/bottleUtils'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import ProductRecommendations from '@/components/recommendations/ProductRecommendations.vue'
 import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
 import type { Branch, LocationData, Product } from '@/types'
 import type { OrderFormData } from '@/stores/orders'
@@ -603,10 +586,6 @@ const isCustomerFormValid = computed(() => {
 const hasInventoryIssues = computed(() => {
   return inventoryValidationResult.value &&
     (inventoryValidationResult.value.hasUnavailableItems || inventoryValidationResult.value.hasAdjustedItems)
-})
-
-const isRecommendationsEnabled = computed(() => {
-  return siteConfigStore.currentConfig.enable_recommendations !== false
 })
 
 const isOnlinePaymentEnabled = computed(() => {
@@ -816,9 +795,7 @@ const goBack = () => {
   router.push('/cart')
 }
 
-const navigateToProduct = (product: Product) => {
-  router.push(`/product/${product.id}`)
-}
+
 
 // Helper function to recalculate bottles for draft beverages when quantities are adjusted
 const recalculateBottlesForDraftBeverage = async (newBeerQuantity: number) => {

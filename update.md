@@ -1,5 +1,39 @@
 # PWA POS System - Version History
 
+## Version 1.4.3 - 2025-09-28
+
+### 🔗 Category URL Routing Fixed
+- **URL Parameters**: Fixed category query parameter handling in ShopView
+- **Deep Links**: URLs like `/shop?category=Сидр` now work correctly
+- **Route Watching**: Added watchers for route changes and category loading
+- **Auto Selection**: Categories are automatically selected when URL contains category parameter
+
+### 🎯 Simple Related Products System
+- **New Component**: Created RelatedProducts.vue component
+- **Category-Based**: Shows products from the same category as current product
+- **Clean Design**: Simple grid layout with product images, names, and prices
+- **Add to Cart**: Direct add to cart functionality with notifications
+- **Popularity Sorting**: Products sorted by popularity score
+
+### 🚫 Removed AI Recommendations
+- **ProductDetailView**: Replaced AI recommendations with simple related products
+- **CheckoutView**: Removed "Last Chance to Add More" AI recommendations section
+- **CartView**: Removed AI recommendations section
+- **ShopView**: Removed AI recommendations section
+- **Cleaner Code**: Removed unused functions and imports related to AI recommendations
+
+### 🧹 Code Cleanup
+- **Removed Functions**: Cleaned up `navigateToProduct`, `hideRecommendations`, `showRecommendations` functions
+- **Import Cleanup**: Removed ProductRecommendations component imports
+- **State Cleanup**: Removed recommendation-related state variables
+- **Performance**: Reduced bundle size by removing AI recommendation dependencies
+
+### 📦 Deployment
+- **Frontend**: Deployed to Netlify with all improvements
+- **Status**: ✅ LIVE - Category URLs working, simple related products implemented
+
+---
+
 ## Version 1.4.2 - 2025-09-28
 
 ### ✍️ Review System Enhancements
