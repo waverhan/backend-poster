@@ -176,6 +176,12 @@ import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
+import {
+  isDraftBeverage,
+  getDefaultBottleSelection,
+  calculateBottleCost,
+  getBottleCartItems
+} from '@/utils/bottleUtils'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
 import RelatedProducts from '@/components/product/RelatedProducts.vue'
@@ -244,32 +250,79 @@ const getColorClass = (color: string): string => {
 const addToCart = () => {
   if (!product.value) return
 
-  const cartItem: any = {
-    product_id: product.value.id,
-    poster_product_id: product.value.poster_product_id,
-    name: product.value.display_name,
-    price: product.value.price,
-    quantity: 1,
-    image_url: product.value.display_image_url,
-    unit: product.value.unit,
-    max_quantity: product.value.quantity
+  // Check if this is a draft beverage that requires bottles
+  if (isDraftBeverage(product.value)) {
+    // For draft beverages, use default 2L quantity and auto bottle selection
+    const quantity = 2 // Default 2L
+    const autoBottles = getDefaultBottleSelection(quantity)
+    const bottleCost = calculateBottleCost(autoBottles)
+
+    // Try to get bottle products for cart
+    const bottleCartItems = getBottleCartItems(autoBottles)
+
+    // Create cart item for the beverage
+    const cartItem: any = {
+      product_id: product.value.id,
+      poster_product_id: product.value.poster_product_id,
+      name: product.value.display_name,
+      price: product.value.price,
+      quantity: quantity,
+      image_url: product.value.display_image_url,
+      unit: product.value.unit || 'L',
+      max_quantity: product.value.quantity,
+      is_draft_beverage: true
+    }
+
+    // Add bottle information if using fallback mode
+    if (bottleCartItems.length === 0) {
+      cartItem.bottles = autoBottles
+      cartItem.bottle_cost = bottleCost
+    }
+
+    cartStore.addItem(cartItem)
+
+    // Add bottle products to cart as separate items if available
+    if (bottleCartItems.length > 0) {
+      for (const bottleItem of bottleCartItems) {
+        cartStore.addItem(bottleItem)
+      }
+    }
+
+    notificationStore.add({
+      type: 'success',
+      title: t('cart.addedToCart'),
+      message: `${product.value.display_name} (${quantity}L) з пляшками додано до кошика`,
+      duration: 3000
+    })
+  } else {
+    // Regular product (non-draft)
+    const cartItem: any = {
+      product_id: product.value.id,
+      poster_product_id: product.value.poster_product_id,
+      name: product.value.display_name,
+      price: product.value.price,
+      quantity: 1,
+      image_url: product.value.display_image_url,
+      unit: product.value.unit,
+      max_quantity: product.value.quantity
+    }
+
+    // Add custom quantity information for weight-based products
+    if (product.value.custom_quantity) {
+      cartItem.custom_quantity = product.value.custom_quantity
+      cartItem.custom_unit = product.value.custom_unit
+      cartItem.quantity_step = product.value.quantity_step || product.value.custom_quantity
+    }
+
+    cartStore.addItem(cartItem)
+
+    notificationStore.add({
+      type: 'success',
+      title: t('cart.addedToCart'),
+      message: `${product.value.display_name} ${t('cart.addedToCart')}`,
+      duration: 3000
+    })
   }
-
-  // Add custom quantity information for weight-based products
-  if (product.value.custom_quantity) {
-    cartItem.custom_quantity = product.value.custom_quantity
-    cartItem.custom_unit = product.value.custom_unit
-    cartItem.quantity_step = product.value.quantity_step || product.value.custom_quantity
-  }
-
-  cartStore.addItem(cartItem)
-
-  notificationStore.add({
-    type: 'success',
-    title: t('cart.addedToCart'),
-    message: `${product.value.display_name} ${t('cart.addedToCart')}`,
-    duration: 3000
-  })
 }
 
 

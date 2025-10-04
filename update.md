@@ -1,5 +1,31 @@
 # PWA POS System - Version History
 
+## Version 1.4.4 - 2025-09-28
+
+### 🔧 Related Products Improvements
+- **Stock Filtering**: Out-of-stock products now hidden from related products section
+- **Proper Availability Check**: Uses same logic as main product store for inventory validation
+- **Image Display Fixed**: Related products now show images correctly with proper fallback handling
+- **Better Product Names**: Uses display_name with fallback to name for consistency
+
+### 🍺 Draft Beverage Bottle Addition Fixed
+- **ProductDetailView**: Added proper bottle handling for draft beverages
+- **Auto Bottle Selection**: Automatically adds 2L of beverage with appropriate bottles
+- **Bottle Products**: Adds both beverage and bottle products to cart separately
+- **Fallback Support**: Maintains compatibility with old bottle cost system
+
+### 🖼️ Image Display Improvements
+- **Backend API Integration**: Proper image URL handling using backendApi.getImageUrl()
+- **Fallback System**: Images fallback to Poster API URLs when local images fail
+- **Error Handling**: Graceful image error handling with proper display/hide logic
+- **Consistent Display**: Same image handling across all product components
+
+### 📦 Deployment
+- **Frontend**: Deployed to Netlify with all fixes
+- **Status**: ✅ LIVE - Related products working, bottles adding correctly, images displaying
+
+---
+
 ## Version 1.4.3 - 2025-09-28
 
 ### 🔗 Category URL Routing Fixed
