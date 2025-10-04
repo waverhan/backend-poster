@@ -259,7 +259,7 @@ const loadRecaptcha = () => {
 const renderRecaptcha = () => {
   if (window.grecaptcha && document.getElementById('recaptcha-container')) {
     recaptchaWidget.value = window.grecaptcha.render('recaptcha-container', {
-      sitekey: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI', // Test key - replace with your actual key
+      sitekey: '6LeYK94rAAAAAIKY4bYJkHJl4lN23vKv-r6eISfl', // Your actual reCAPTCHA v3 site key
       callback: (response: string) => {
         delete errors.value.recaptcha
       },

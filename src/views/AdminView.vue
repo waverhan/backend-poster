@@ -864,6 +864,11 @@
       <div v-if="activeTab === 'analytics'">
         <RecommendationAnalytics />
       </div>
+
+      <!-- Untappd Tab Content -->
+      <div v-if="activeTab === 'untappd'">
+        <UntappdManager />
+      </div>
     </div>
 
     <!-- Branch Edit Modal -->
@@ -927,6 +932,7 @@ import BulkEditModal from '@/components/admin/BulkEditModal.vue'
 import BannerManagement from '@/components/admin/BannerManagement.vue'
 import InventoryStatus from '@/components/inventory/InventoryStatus.vue'
 import RecommendationAnalytics from '@/components/admin/RecommendationAnalytics.vue'
+import UntappdManager from '@/components/admin/UntappdManager.vue'
 import LicenseStatus from '@/components/license/LicenseStatus.vue'
 import AdminLogin from '@/components/auth/AdminLogin.vue'
 import type { Category, Product, Branch, SiteConfig } from '@/types'
@@ -955,7 +961,8 @@ const tabs = [
   { id: 'price-sync', name: 'Price Sync', icon: '💰' },
   { id: 'banners', name: 'Banners', icon: '🎨' },
   { id: 'inventory', name: 'Inventory Status', icon: '📋' },
-  { id: 'analytics', name: 'AI Analytics', icon: '🤖' }
+  { id: 'analytics', name: 'AI Analytics', icon: '🤖' },
+  { id: 'untappd', name: 'Untappd', icon: '🍺' }
 ]
 
 // Enhanced filtering and sorting

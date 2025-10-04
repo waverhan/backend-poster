@@ -135,8 +135,16 @@
             </button>
           </div>
 
+          <!-- Untappd Reviews (for beer products) -->
+          <UntappdReviews
+            v-if="isBeerProduct && product"
+            :product="product"
+            :untappd-url="getUntappdUrl()"
+          />
+
           <!-- Review Form -->
           <div v-if="showReviewForm" class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Ваш відгук</h3>
             <ReviewForm
               v-if="product"
               :product="product"
@@ -148,12 +156,15 @@
           </div>
 
           <!-- Review List -->
-          <ReviewList
-            v-if="product"
-            :product-id="product.id"
-            :show-summary="true"
-            :show-filters="true"
-          />
+          <div class="mt-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Відгуки покупців</h3>
+            <ReviewList
+              v-if="product"
+              :product-id="product.id"
+              :show-summary="true"
+              :show-filters="true"
+            />
+          </div>
         </div>
       </div>
 
@@ -169,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useProductStore } from '@/stores/product'
@@ -184,6 +195,7 @@ import {
 } from '@/utils/bottleUtils'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
+import UntappdReviews from '@/components/reviews/UntappdReviews.vue'
 import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import type { Product } from '@/types'
 
@@ -200,6 +212,17 @@ const notificationStore = useNotificationStore()
 const loading = ref(true)
 const product = ref<Product | null>(null)
 const showReviewForm = ref(false)
+
+// Computed properties
+const isBeerProduct = computed(() => {
+  if (!product.value) return false
+  const categoryName = product.value.category_name?.toLowerCase() || ''
+  const productName = product.value.name.toLowerCase()
+  return categoryName.includes('пиво') ||
+         categoryName.includes('beer') ||
+         productName.includes('пиво') ||
+         productName.includes('beer')
+})
 
 const getImageUrl = (imagePath: string): string => {
   return backendApi.getImageUrl(imagePath)
@@ -326,6 +349,22 @@ const addToCart = () => {
 }
 
 
+
+const getUntappdUrl = (): string => {
+  if (!product.value) return ''
+
+  // Check if product has Untappd URL in description or custom field
+  // For now, we'll use a mapping based on product name
+  const productName = product.value.name.toLowerCase()
+
+  // Example mapping for Opillia products
+  if (productName.includes('коріфей') || productName.includes('korifej')) {
+    return 'https://untappd.com/b/opillya-opillia-korifej-nefiltrovane/6371222'
+  }
+
+  // Add more mappings as needed
+  return ''
+}
 
 const handleReviewSubmitted = (review: any) => {
   showReviewForm.value = false
