@@ -9,5 +9,8 @@ node scripts/migrate-payment-fields.js || echo "⚠️ Migration script failed o
 echo "🔄 Running new product features migration..."
 node migrations/add-new-product-features.js || echo "⚠️ New product features migration failed or already applied"
 
+echo "🔄 Running Untappd mappings migration..."
+node migrations/add-untappd-mappings.js || echo "⚠️ Untappd mappings migration failed or already applied"
+
 echo "🚀 Starting the application..."
 node index.js

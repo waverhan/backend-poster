@@ -55,6 +55,7 @@ model Product {
   cart_items        CartItem[]
   inventory         ProductInventory[]
   order_items       OrderItem[]
+  untappd_mapping   UntappdMapping?
   category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
   @@map("products")
@@ -289,4 +290,20 @@ model SiteConfig {
   updated_at                DateTime @updatedAt
 
   @@map("site_config")
+}
+
+model UntappdMapping {
+  id                String   @id @default(cuid())
+  product_id        String   @unique
+  untappd_beer_id   Int
+  untappd_url       String?
+  auto_sync_enabled Boolean  @default(true)
+  last_synced       DateTime @default(now())
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relation to Product
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@map("untappd_mappings")
 }

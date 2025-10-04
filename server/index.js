@@ -20,6 +20,7 @@ import feedRoutes from './routes/feeds.js'
 import sitemapRoutes from './routes/sitemap.js'
 import wayforpayRoutes from './routes/wayforpay.js'
 import salesRouter from './routes/sales.js'
+import untappdRouter from './routes/untappd.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -101,6 +102,7 @@ app.use('/api/feeds', feedRoutes)
 app.use('/api', sitemapRoutes)
 app.use('/api/wayforpay', wayforpayRoutes)
 app.use('/api/sales', salesRouter)
+app.use('/api/untappd', untappdRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

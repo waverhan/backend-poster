@@ -229,6 +229,18 @@ const beerProducts = computed(() =>
 )
 
 // Methods
+const loadMappings = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/untappd/mappings`)
+    if (response.ok) {
+      const data = await response.json()
+      mappings.value = data.mappings || []
+    }
+  } catch (error) {
+    console.error('Error loading mappings:', error)
+  }
+}
+
 const searchUntappd = async () => {
   if (!selectedProductId.value) return
 
@@ -268,22 +280,28 @@ const linkProduct = async () => {
       beerId = parseInt(untappdInput.value)
     }
 
-    // Create mapping (this would typically be saved to backend)
-    const mapping: ProductUntappdMapping = {
+    // Save mapping to backend
+    const mappingData = {
       product_id: selectedProductId.value,
       untappd_beer_id: beerId,
       untappd_url: untappdInput.value.includes('untappd.com') ? untappdInput.value : undefined,
-      last_synced: new Date().toISOString(),
       auto_sync_enabled: true
     }
 
-    // Add to local mappings (in real app, save to backend)
-    const existingIndex = mappings.value.findIndex(m => m.product_id === selectedProductId.value)
-    if (existingIndex >= 0) {
-      mappings.value[existingIndex] = mapping
-    } else {
-      mappings.value.push(mapping)
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/untappd/mappings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(mappingData)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to save mapping')
     }
+
+    // Reload mappings from backend
+    await loadMappings()
 
     // Clear form
     selectedProductId.value = ''
@@ -299,33 +317,45 @@ const linkProduct = async () => {
   }
 }
 
-const toggleAutoSync = (productId: string, enabled: boolean) => {
-  const mapping = mappings.value.find(m => m.product_id === productId)
-  if (mapping) {
-    mapping.auto_sync_enabled = enabled
-    // Save to backend
+const toggleAutoSync = async (productId: string, enabled: boolean) => {
+  try {
+    const mapping = mappings.value.find(m => m.product_id === productId)
+    if (mapping) {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/untappd/mappings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          untappd_beer_id: mapping.untappd_beer_id,
+          untappd_url: mapping.untappd_url,
+          auto_sync_enabled: enabled
+        })
+      })
+
+      if (response.ok) {
+        await loadMappings()
+      }
+    }
+  } catch (error) {
+    console.error('Error updating auto sync:', error)
   }
 }
 
 const syncMapping = async (mapping: ProductUntappdMapping) => {
   try {
-    // Sync beer info and update product description
-    const beerInfo = await untappdService.getBeerInfo(mapping.untappd_beer_id.toString())
-    if (beerInfo) {
-      // Update product with Untappd info
-      const product = productStore.products.find(p => p.id === mapping.product_id)
-      if (product) {
-        // This would typically update the backend
-        console.log('Would update product with:', {
-          description: beerInfo.beer_description,
-          abv: beerInfo.beer_abv,
-          ibu: beerInfo.beer_ibu,
-          style: beerInfo.beer_style
-        })
-      }
-      
-      mapping.last_synced = new Date().toISOString()
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/untappd/mappings/${mapping.product_id}/sync`, {
+      method: 'POST'
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      await loadMappings() // Reload to get updated sync time
+      await productStore.fetchProducts() // Reload products to get updated info
       alert('Синхронізація завершена!')
+    } else {
+      throw new Error('Failed to sync mapping')
     }
   } catch (error) {
     console.error('Error syncing mapping:', error)
@@ -333,10 +363,23 @@ const syncMapping = async (mapping: ProductUntappdMapping) => {
   }
 }
 
-const removeMapping = (productId: string) => {
+const removeMapping = async (productId: string) => {
   if (confirm('Видалити прив\'язку до Untappd?')) {
-    mappings.value = mappings.value.filter(m => m.product_id !== productId)
-    // Remove from backend
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/untappd/mappings/${productId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        await loadMappings()
+        alert('Прив\'язку видалено!')
+      } else {
+        throw new Error('Failed to delete mapping')
+      }
+    } catch (error) {
+      console.error('Error removing mapping:', error)
+      alert('Помилка видалення прив\'язки')
+    }
   }
 }
 
@@ -388,6 +431,6 @@ onMounted(async () => {
   }
 
   // Load existing mappings from backend
-  // mappings.value = await loadMappingsFromBackend()
+  await loadMappings()
 })
 </script>
