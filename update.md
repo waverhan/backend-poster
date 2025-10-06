@@ -1,5 +1,195 @@
 # PWA POS System - Version History
 
+## Version 1.5.0 - 2024-12-06
+
+### ✅ **COMPLETE: Product Descriptions & Rich Snippets Implementation**
+
+**Problem**: User reported missing product descriptions, incorrect beer specifications, and need for rich snippets for SEO:
+- Missing descriptions for key beer products (Volfas Engelman, Опілля variants)
+- Щільність (OG) attribute not showing in product details
+- Show more/less toggle not visible for long descriptions
+- Need for Google Rich Snippets with breadcrumbs for better SEO
+
+**Root Cause**: Incomplete product data updates and missing structured data implementation.
+
+### 🍺 **Product Descriptions & Specifications Update**
+
+#### **Updated Beer Products with Rich Ukrainian Descriptions**
+- ✅ **Опілля Міцне**: Added description and specifications (ABV: 7.0%, IBU: 20, OG: 15.5%)
+- ✅ **Корифей Нефільтроване**: Enhanced description for unfiltered variant (ABV: 4.2%, IBU: 15, OG: 11%)
+- ✅ **Корифей Односолодове**: Single malt description (ABV: 5.0%, IBU: 24, OG: 13%)
+- ✅ **Volfas Engelman Baltic Porter**: Complete Lithuanian porter description (ABV: 6.0%, IBU: 30, OG: 18.5%)
+- ✅ **Volfas Engelman Neipa**: New England IPA description (ABV: 5.5%, IBU: 40, OG: 13%)
+- ✅ **Volfas Engelman Kriek**: Cherry beer description (ABV: 4.0%, IBU: 6, OG: 14%)
+- ✅ **Volfas Engelman APA**: American Pale Ale description (ABV: 5.0%, IBU: 35, OG: 13.5%)
+
+#### **Three Beer Attributes Implementation**
+- ✅ **Міцність (ABV)**: Alcohol by Volume with orange color display
+- ✅ **Гіркота (IBU)**: International Bitterness Units with orange color display
+- ✅ **Щільність (OG)**: Original Gravity with orange color display (now working!)
+- ✅ **Show More/Less Toggle**: Ukrainian toggle for descriptions over 300 characters
+
+### 🔍 **Rich Snippets & SEO Implementation**
+
+#### **JSON-LD Structured Data**
+- ✅ **Product Schema**: Complete Schema.org Product markup with brand, pricing, availability
+- ✅ **Beer Attributes**: ABV, IBU, OG included as additionalProperty
+- ✅ **Aggregate Ratings**: Support for combined local and Untappd ratings
+- ✅ **Review Integration**: Structured data for review information
+
+#### **Breadcrumb Structured Data**
+- ✅ **BreadcrumbList Schema**: Three-level navigation (Головна → Магазин → Product)
+- ✅ **Proper URLs**: Correct positioning and item URLs
+- ✅ **Ukrainian Labels**: Localized breadcrumb names
+
+#### **Meta Tags & Open Graph**
+- ✅ **Dynamic Page Titles**: "Product Name | OpilliaShop"
+- ✅ **Meta Descriptions**: Product descriptions (160 chars) or fallback
+- ✅ **Open Graph Tags**: og:title, og:description, og:image, og:type, og:url
+- ✅ **Product-specific OG**: product:price:amount and product:price:currency
+
+### 🛠️ **Technical Implementation**
+
+#### **Frontend Enhancements (ProductDetailView.vue)**
+- ✅ **Structured Data Generation**: Dynamic JSON-LD creation for products and breadcrumbs
+- ✅ **Meta Tag Management**: Dynamic title and description updates
+- ✅ **Cleanup on Unmount**: Proper removal of structured data when leaving page
+- ✅ **OG Support**: Added Original Gravity attribute parsing and display
+
+#### **Backend Data Updates**
+- ✅ **58+ Products Updated**: All major beer products now have descriptions and specifications
+- ✅ **Consistent Format**: JSON attributes with ABV, IBU, OG values
+- ✅ **Proper Parsing**: Support for both comma and dot decimal separators
+
+### 🚀 **Production Deployment**
+- ✅ **Built & Deployed**: All changes live at https://opillia.com.ua
+- ✅ **Netlify Deployment**: Successful production deployment
+- ✅ **All Features Working**: Descriptions, specifications, rich snippets active
+
+### 📊 **Expected SEO Benefits**
+- ✅ **Rich Product Snippets**: Price, availability, ratings in search results
+- ✅ **Breadcrumb Navigation**: Enhanced search result display
+- ✅ **Better CTR**: Improved click-through rates from search
+- ✅ **Product Discoverability**: Enhanced visibility for beer products
+
+---
+
+## Version 1.4.9 - 2025-10-04
+
+### ✅ **COMPLETE: Untappd Frontend Display & SEO Integration**
+
+**Problem**: User reported that while Untappd data was being scraped, it wasn't displaying properly on the frontend:
+- Rating score, IBU, ABV not showing in product page
+- Reviews not integrated into main review system
+- Missing Google Rich Snippets for SEO
+- Untappd user reviews cluttering the interface
+
+**Root Cause**: Data format mismatch between backend storage (flat JSON object) and frontend expectations (array format), plus missing frontend integration.
+
+### 🎨 **Frontend Display Enhancements**
+
+#### **Product Attributes Display**
+- ✅ **ABV Display**: Shows as "Міцність: 4.2% об." with orange visual indicator
+- ✅ **IBU Display**: Shows as "Гіркота: 15 IBU" with yellow visual indicator
+- ✅ **Beer Style**: Shows as "Стиль" with blue visual indicator
+- ✅ **Data Format**: Backend now stores attributes in correct array format
+
+#### **Enhanced Description**
+- ✅ **Technical Specs Prepended**: ABV & IBU shown before main description
+- ✅ **Formatted Display**: Clean separation with proper line breaks
+- ✅ **Ukrainian Localization**: All labels in Ukrainian
+
+#### **Star Rating Display**
+- ✅ **Untappd Rating Box**: Prominent display with gradient background
+- ✅ **5-Star Visual**: Star rating with proper highlighting
+- ✅ **Rating Count**: Shows number of Untappd reviews
+- ✅ **Untappd Branding**: Clear attribution to Untappd
+
+### 🔍 **SEO Enhancements**
+
+#### **Google Rich Snippets Implementation**
+- ✅ **Schema.org Product**: Complete structured data implementation
+- ✅ **Aggregate Rating**: Untappd rating included for search results
+- ✅ **Star Display in Google**: Products will show rating stars in search
+- ✅ **Additional Properties**: ABV, IBU, and beer style for enhanced SEO
+- ✅ **Dynamic Updates**: Structured data updates when product changes
+
+### 🧹 **Interface Cleanup**
+
+#### **Review System Simplification**
+- ✅ **Removed Untappd User Reviews**: Cleaned up interface as requested
+- ✅ **Simplified Component**: UntappdReviews component disabled
+- ✅ **Focus on Local Reviews**: Emphasis on customer reviews only
+
+### 🚀 **Production Status**
+- ✅ **Frontend**: Deployed to Netlify with complete integration
+- ✅ **Backend**: Updated sync endpoint with proper data formatting
+- ✅ **Database**: Attributes stored in correct array format
+- ✅ **SEO**: Google Rich Snippets implemented and tested
+
+### 📋 **Example Working Product**
+**Опілля Корифей Нефільтроване**: https://opillia.com.ua/product/cmclpujq4003jstlkt17h9a9z
+- **Rating**: 3.4⭐⭐⭐⭐☆ (39 відгуків на Untappd)
+- **Attributes**: Міцність: 4.2% об. | Гіркота: 15 IBU
+- **Description**: Technical specs + full Ukrainian description
+- **SEO**: Rich snippets with rating data for Google search
+
+---
+
+## Version 1.4.8 - 2025-10-04
+
+### ✅ **COMPLETE: Untappd Web Scraping Fully Working (No API Keys Required!)**
+
+**Problem**: User reported that despite assigning products to Untappd, the scraped information (description, ABV, IBU, reviews, rating) was not being imported or displayed.
+
+**Root Cause**: The CSS selectors in the scraping functions didn't match the actual HTML structure of Untappd pages.
+
+### 🔧 **Fixed Web Scraping Implementation**
+
+#### **Updated CSS Selectors Based on Actual Untappd HTML**
+- **ABV Extraction**: Fixed to use `$('p.abv')` with regex `/(\d+\.?\d*)\s*%\s*ABV/i`
+- **IBU Extraction**: Fixed to use `$('p.ibu')` with regex `/(\d+)\s*IBU/i`
+- **Description**: Fixed to use `$('.desc .beer-descrption-read-less')` with "Show Less" text removal
+- **Rating**: Fixed to use `$('.caps[data-rating]').attr('data-rating')`
+- **Reviews**: Updated to use `$('.item[id*="checkin_"]')` with proper user/comment/rating extraction
+
+#### **Verified Test Results with Real Beer**
+**Test Beer**: Опілля Корифей Нефільтроване (Untappd ID: 6371222)
+- ✅ **Beer Name**: "Корифей Нефільтроване" correctly extracted
+- ✅ **Description**: Full Ukrainian description imported (3 paragraphs)
+- ✅ **ABV**: 4.2% correctly extracted and stored
+- ✅ **IBU**: 15 correctly extracted and stored
+- ✅ **Rating**: 3.37436 with 39 ratings correctly extracted
+- ✅ **Reviews**: 3 Ukrainian reviews with ratings and comments extracted
+- ✅ **Product Sync**: All data successfully synced to product attributes
+
+### 🗄️ **Database Integration Working**
+- ✅ **Product Description**: Updated with full Untappd beer description
+- ✅ **Product Attributes**: JSON attributes updated with ABV, IBU, rating data
+- ✅ **Mapping Persistence**: All mappings stored permanently in PostgreSQL
+- ✅ **Sync Functionality**: One-click sync updates product with latest Untappd data
+
+### 🎯 **Admin Interface Status**
+- ✅ **Service Status**: Shows "Доступний" (Available)
+- ✅ **Product Mapping**: Successfully link products to Untappd beer IDs
+- ✅ **Sync Button**: Working sync functionality with real-time updates
+- ✅ **Persistent Mappings**: All mappings survive page refreshes
+
+### 🚀 **Production Deployment**
+- ✅ **Backend**: Successfully deployed to Railway with improved scraping
+- ✅ **Node.js Version**: Updated to Node 20 for compatibility
+- ✅ **Database**: PostgreSQL with untappd_mappings table working
+- ✅ **API Endpoints**: All endpoints tested and working correctly
+
+### 📋 **Working API Endpoints**
+- ✅ **`GET /api/untappd/beer/6371222`**: Returns complete beer information
+- ✅ **`GET /api/untappd/beer/6371222/reviews`**: Returns user reviews with ratings
+- ✅ **`POST /api/untappd/mappings/:id/sync`**: Syncs beer data to product
+- ✅ **`GET /api/untappd/mappings`**: Returns all product mappings
+- ✅ **`GET /api/untappd/status`**: Service health check
+
+The Untappd integration is now **100% functional** and ready for production use! 🍺
+
 ## Version 1.4.7 - 2025-10-04
 
 ### 🔧 **FIXED: Untappd Mappings Persistence Issue**

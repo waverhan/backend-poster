@@ -1,7 +1,7 @@
 import type { Review, ReviewFormData, ReviewFilters, ReviewStats, ReviewSummary } from '@/types/review'
 
 class ReviewService {
-  private baseUrl = '/api/reviews'
+  private baseUrl = `${import.meta.env.VITE_BACKEND_URL}/api/reviews`
 
   // Submit a new review
   async submitReview(reviewData: ReviewFormData): Promise<Review> {

@@ -16,10 +16,10 @@
         <NewProductBadge :product="product" />
 
         <!-- Product Attributes Overlay -->
-        <div v-if="product.attributes && product.attributes.length > 0"
+        <div v-if="parsedAttributes && parsedAttributes.length > 0"
              class="absolute top-1 right-1 space-y-1">
           <div
-            v-for="attribute in product.attributes.slice(0, 3)"
+            v-for="attribute in parsedAttributes.slice(0, 3)"
             :key="attribute.name"
             class="bg-white bg-opacity-75 backdrop-blur-sm rounded px-2 py-1 text-right shadow-sm min-w-0"
           >
@@ -49,6 +49,41 @@
       <p v-if="product.description" class="text-gray-600 text-sm mb-3 line-clamp-2">
         {{ product.description }}
       </p>
+
+      <!-- Rating -->
+      <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-3">
+        <div class="flex">
+          <span
+            v-for="star in 5"
+            :key="star"
+            class="text-sm"
+            :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
+          >
+            ⭐
+          </span>
+        </div>
+        <span class="text-sm text-gray-600">
+          {{ combinedRating.averageRating.toFixed(1) }} ({{ combinedRating.totalReviews }})
+        </span>
+        <div v-if="combinedRating.hasUntappdRating && combinedRating.hasLocalReviews"
+             class="text-xs bg-orange-100 text-orange-600 px-1 rounded">
+          Змішано
+        </div>
+        <div v-else-if="combinedRating.hasUntappdRating"
+             class="text-xs bg-orange-100 text-orange-600 px-1 rounded">
+          Untappd
+        </div>
+      </div>
+
+      <!-- Like Button -->
+      <div class="flex justify-end mb-2">
+        <LikeButton
+          :product="product"
+          size="small"
+          variant="minimal"
+          :show-count="true"
+        />
+      </div>
 
       <!-- Price -->
       <div class="flex items-center justify-between mb-3">
@@ -172,9 +207,12 @@ import {
   formatQuantityDisplay
 } from '@/utils/quantityUtils'
 import { formatProductName } from '@/utils/productNameFormatter'
+import ratingService from '@/services/ratingService'
+import type { CombinedRating } from '@/services/ratingService'
 import BottleSelector from './BottleSelector.vue'
 import SaleCountdown from '../SaleCountdown.vue'
 import NewProductBadge from '../NewProductBadge.vue'
+import LikeButton from './LikeButton.vue'
 
 interface Props {
   product: Product
@@ -207,6 +245,10 @@ const branchInventory = ref<{
 const selectedQuantity = ref(2) // Default 2L
 const selectedBottles = ref<BottleSelection>(createEmptyBottleSelection())
 const showBottleSelector = ref(false)
+
+// State for rating
+const combinedRating = ref<CombinedRating | null>(null)
+const ratingLoading = ref(false)
 
 // Computed properties
 const isDraft = computed(() => {
@@ -305,6 +347,28 @@ const formatDisplayPrice = (price: number): string => {
   }
   return price.toFixed(2)
 }
+
+// Parse attributes from JSON string to array
+const parsedAttributes = computed(() => {
+  if (!props.product.attributes) return []
+
+  try {
+    // If it's already an array, return it
+    if (Array.isArray(props.product.attributes)) {
+      return props.product.attributes
+    }
+
+    // If it's a string, parse it
+    if (typeof props.product.attributes === 'string') {
+      return JSON.parse(props.product.attributes)
+    }
+
+    return []
+  } catch (error) {
+    console.warn('Failed to parse product attributes:', error)
+    return []
+  }
+})
 
 // Computed image URL with fallback logic
 const imageUrl = computed(() => {
@@ -519,10 +583,26 @@ const handleSaleExpired = (product: Product) => {
   // We could emit an event to parent components if needed
 }
 
+// Load combined rating
+const loadCombinedRating = async () => {
+  if (ratingLoading.value) return
+
+  ratingLoading.value = true
+  try {
+    const rating = await ratingService.getCombinedRating(props.product)
+    combinedRating.value = rating
+  } catch (error) {
+    console.error('Error loading combined rating:', error)
+  } finally {
+    ratingLoading.value = false
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   loadBranchInventory()
   initializeQuantity()
+  loadCombinedRating()
 })
 </script>
 

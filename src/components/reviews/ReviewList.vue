@@ -175,26 +175,7 @@
         </div>
 
         <!-- Review Actions -->
-        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-          <div class="flex items-center gap-4">
-            <button
-              @click="markHelpful(review.id, true)"
-              class="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              👍 Helpful ({{ review.helpful_votes }})
-            </button>
-            <button
-              @click="markHelpful(review.id, false)"
-              class="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              👎 Not helpful
-            </button>
-          </div>
-          
-          <div class="text-xs text-gray-500">
-            {{ review.total_votes }} people found this helpful
-          </div>
-        </div>
+
       </div>
     </div>
 
@@ -358,7 +339,7 @@ const getRatingPercentage = (rating: number): number => {
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString('uk-UA', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'

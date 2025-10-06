@@ -48,67 +48,70 @@
 
           <!-- Product Info -->
           <div class="space-y-6">
-            <!-- Title and Price -->
+            <!-- Title -->
             <div>
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ product.display_name }}</h1>
-              <div class="flex items-center gap-4 mb-4">
-                <span class="text-xl font-bold text-blue-600">{{ formatPrice(product.price) }} ₴</span>
-                <span v-if="product.original_price && product.original_price > product.price"
-                      class="text-base text-gray-500 line-through">
-                  {{ formatPrice(product.original_price) }} ₴
-                </span>
-              </div>
-              <p class="text-gray-600">{{ getUnitLabel(product.unit) }}</p>
-            </div>
+              <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ product.display_name }}</h1>
 
-            <!-- Product Attributes -->
-            <div v-if="product.attributes && product.attributes.length > 0" class="space-y-4">
-              <h3 class="text-base font-semibold text-gray-900">Характеристики товару</h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div
-                  v-for="attribute in product.attributes"
-                  :key="attribute.name"
-                  class="bg-gray-50 rounded-lg p-4"
-                >
-                  <div class="flex justify-between items-center mb-2">
-                    <span class="text-sm font-medium text-gray-700">{{ attribute.name }}</span>
-                    <span class="text-lg font-bold text-gray-900">
-                      {{ attribute.value }}{{ attribute.unit }}
+              <!-- Rating and Like Button Row -->
+              <div class="flex items-center justify-between mb-4">
+                <!-- Rating on the left -->
+                <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2">
+                  <div class="flex">
+                    <span
+                      v-for="star in 5"
+                      :key="star"
+                      class="text-lg"
+                      :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
+                    >
+                      ⭐
                     </span>
                   </div>
-                  <!-- Visual indicator -->
-                  <div v-if="attribute.color" class="flex gap-1">
-                    <div
-                      v-for="i in Math.min(5, Math.ceil(parseFloat(attribute.value) / 2))"
-                      :key="i"
-                      class="w-4 h-2 rounded-sm"
-                      :class="getColorClass(attribute.color)"
-                    ></div>
-                    <div
-                      v-for="i in Math.max(0, 5 - Math.ceil(parseFloat(attribute.value) / 2))"
-                      :key="`empty-${i}`"
-                      class="w-4 h-2 rounded-sm bg-gray-200"
-                    ></div>
-                  </div>
+                  <a
+                    href="#reviews-section"
+                    class="text-sm text-gray-600 hover:text-blue-600 underline cursor-pointer"
+                    @click="scrollToReviews"
+                  >
+                    ({{ combinedRating.totalReviews }})
+                  </a>
                 </div>
+
+                <!-- Like Button on the right -->
+                <LikeButton
+                  :product="product"
+                  size="normal"
+                  variant="default"
+                  :show-count="true"
+                />
               </div>
             </div>
 
-            <!-- Description -->
-            <div v-if="product.description">
-              <h3 class="text-base font-semibold text-gray-900 mb-2">Опис</h3>
-              <p class="text-gray-600">{{ product.description }}</p>
+            <!-- Price -->
+            <div class="flex items-center gap-4 mb-4">
+              <span class="text-xl font-bold text-blue-600">{{ formatPrice(product.price) }} ₴</span>
+              <span v-if="product.original_price && product.original_price > product.price"
+                    class="text-base text-gray-500 line-through">
+                {{ formatPrice(product.original_price) }} ₴
+              </span>
             </div>
+            <p class="text-gray-600">{{ getUnitLabel(product.unit) }}</p>
 
-            <!-- Stock Info -->
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="text-base font-semibold text-gray-900 mb-2">Наявність</h3>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600">Залишок: {{ product.quantity }} {{ product.unit || 'шт' }}</span>
-                <span class="text-sm px-3 py-1 rounded-full"
-                      :class="product.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                  {{ product.available ? 'В наявності' : 'Немає в наявності' }}
-                </span>
+            <!-- Product Attributes -->
+            <div v-if="displayAttributes && displayAttributes.length > 0" class="space-y-4">
+              <div class="grid grid-cols-3 gap-4">
+                <div
+                  v-for="attribute in displayAttributes"
+                  :key="attribute.name"
+                  class="text-center"
+                >
+                  <div class="text-sm text-gray-600 mb-1">{{ attribute.name }}</div>
+                  <div
+                    class="text-lg font-bold"
+                    :class="attribute.color === 'orange' ? 'text-orange-500' : 'text-gray-900'"
+                  >
+                    {{ attribute.value }}{{ attribute.unit }}
+                  </div>
+                  <div v-if="attribute.color === 'orange'" class="w-full h-1 bg-orange-500 rounded mt-1"></div>
+                </div>
               </div>
             </div>
 
@@ -118,13 +121,28 @@
               :disabled="!product.available"
               class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
-              {{ product.available ? 'Купити' : 'Немає в наявності' }}
+              {{ product.available ? 'КУПИТИ' : 'Немає в наявності' }}
             </button>
+
+            <!-- Description -->
+            <div v-if="displayDescription" class="mt-6">
+              <div class="text-gray-600 whitespace-pre-line">
+                <span v-if="!isLongDescription || showFullDescription">{{ displayDescription }}</span>
+                <span v-else>{{ truncatedDescription }}</span>
+              </div>
+              <button
+                v-if="isLongDescription"
+                @click="showFullDescription = !showFullDescription"
+                class="text-blue-600 hover:text-blue-800 text-sm mt-2 underline"
+              >
+                {{ showFullDescription ? 'Показати менше' : 'Показати більше' }}
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Reviews Section -->
-        <div class="mt-8 border-t border-gray-200 pt-8 px-8">
+        <div id="reviews-section" v-if="siteConfigStore.currentConfig.enable_reviews" class="mt-8 border-t border-gray-200 pt-8 px-8">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Відгуки</h2>
             <button
@@ -134,13 +152,6 @@
               {{ showReviewForm ? 'Скасувати' : 'Написати відгук' }}
             </button>
           </div>
-
-          <!-- Untappd Reviews (for beer products) -->
-          <UntappdReviews
-            v-if="isBeerProduct && product"
-            :product="product"
-            :untappd-url="getUntappdUrl()"
-          />
 
           <!-- Review Form -->
           <div v-if="showReviewForm" class="mb-8">
@@ -157,12 +168,11 @@
 
           <!-- Review List -->
           <div class="mt-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Відгуки покупців</h3>
             <ReviewList
               v-if="product"
               :product-id="product.id"
-              :show-summary="true"
-              :show-filters="true"
+              :show-summary="false"
+              :show-filters="false"
             />
           </div>
         </div>
@@ -180,13 +190,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
+import { useSiteConfigStore } from '@/stores/siteConfig'
 import { backendApi } from '@/services/backendApi'
+import ratingService from '@/services/ratingService'
+import type { CombinedRating } from '@/services/ratingService'
 import {
   isDraftBeverage,
   getDefaultBottleSelection,
@@ -195,8 +208,8 @@ import {
 } from '@/utils/bottleUtils'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
-import UntappdReviews from '@/components/reviews/UntappdReviews.vue'
 import RelatedProducts from '@/components/product/RelatedProducts.vue'
+import LikeButton from '@/components/product/LikeButton.vue'
 import type { Product } from '@/types'
 
 const route = useRoute()
@@ -208,10 +221,13 @@ const { t } = useI18n()
 const productStore = useProductStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
+const siteConfigStore = useSiteConfigStore()
 
 const loading = ref(true)
 const product = ref<Product | null>(null)
 const showReviewForm = ref(false)
+const combinedRating = ref<CombinedRating | null>(null)
+const showFullDescription = ref(false)
 
 // Computed properties
 const isBeerProduct = computed(() => {
@@ -223,6 +239,317 @@ const isBeerProduct = computed(() => {
          productName.includes('пиво') ||
          productName.includes('beer')
 })
+
+// Parse product attributes from JSON string or array
+const parsedAttributes = computed(() => {
+  if (!product.value?.attributes) return {}
+
+  // If attributes is already an array (old format), convert to object
+  if (Array.isArray(product.value.attributes)) {
+    const obj: Record<string, any> = {}
+    product.value.attributes.forEach(attr => {
+      obj[attr.name] = attr.value
+    })
+    return obj
+  }
+
+  // If attributes is a JSON string, parse it
+  if (typeof product.value.attributes === 'string') {
+    try {
+      return JSON.parse(product.value.attributes)
+    } catch (e) {
+      console.error('Failed to parse product attributes:', e)
+      return {}
+    }
+  }
+
+  // If attributes is already an object, return as is
+  return product.value.attributes || {}
+})
+
+// Extract Untappd rating
+const untappdRating = computed(() => {
+  const attrs = parsedAttributes.value
+  return attrs.untappd_rating ? parseFloat(attrs.untappd_rating) : null
+})
+
+// Extract Untappd rating count
+const untappdRatingCount = computed(() => {
+  const attrs = parsedAttributes.value
+  return attrs.untappd_rating_count ? parseInt(attrs.untappd_rating_count) : null
+})
+
+// Format description (clean, without ABV/IBU since they're shown as attributes)
+const displayDescription = computed(() => {
+  return product.value?.description || ''
+})
+
+// Check if description is long (more than 300 characters)
+const isLongDescription = computed(() => {
+  return displayDescription.value.length > 300
+})
+
+// Truncated description for show more/less functionality
+const truncatedDescription = computed(() => {
+  if (displayDescription.value.length <= 300) return displayDescription.value
+  return displayDescription.value.substring(0, 300) + '...'
+})
+
+// Convert attributes to display format for the UI
+const displayAttributes = computed(() => {
+  if (!product.value?.attributes) return []
+
+  let attrs = []
+
+  // Parse attributes if it's a JSON string
+  if (typeof product.value.attributes === 'string') {
+    try {
+      attrs = JSON.parse(product.value.attributes)
+    } catch (error) {
+      console.error('Error parsing attributes:', error)
+      return []
+    }
+  } else if (Array.isArray(product.value.attributes)) {
+    attrs = product.value.attributes
+  } else {
+    return []
+  }
+
+  // Filter and format attributes for display
+  const result = []
+
+  attrs.forEach(attr => {
+    // Show ABV, IBU, and OG with orange color
+    if (attr.name === 'ABV' && attr.value && parseFloat(attr.value) > 0) {
+      result.push({
+        name: 'Міцність',
+        value: attr.value,
+        unit: attr.unit || '%',
+        color: 'orange'
+      })
+    } else if (attr.name === 'IBU' && attr.value && parseInt(attr.value) > 0) {
+      result.push({
+        name: 'Гіркота',
+        value: attr.value,
+        unit: ' IBU',
+        color: 'orange'
+      })
+    } else if (attr.name === 'OG' && attr.value && parseFloat(attr.value) > 0) {
+      result.push({
+        name: 'Щільність',
+        value: attr.value,
+        unit: attr.unit || '%',
+        color: 'orange'
+      })
+    }
+  })
+
+  return result
+})
+
+// Add Google Rich Snippets structured data for SEO
+const addStructuredData = () => {
+  if (!product.value) return
+
+  // Remove existing structured data
+  const existingProductScript = document.querySelector('script[type="application/ld+json"][data-product-schema]')
+  if (existingProductScript) {
+    existingProductScript.remove()
+  }
+
+  const existingBreadcrumbScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb-schema]')
+  if (existingBreadcrumbScript) {
+    existingBreadcrumbScript.remove()
+  }
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.value.display_name,
+    "description": product.value.description || '',
+    "image": product.value.display_image_url ? backendApi.getImageUrl(product.value.display_image_url) : undefined,
+    "brand": {
+      "@type": "Brand",
+      "name": "Опілля"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": product.value.price.toString(),
+      "priceCurrency": "UAH",
+      "availability": product.value.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Опілля"
+      }
+    }
+  }
+
+  // Add combined rating if available
+  if (combinedRating.value && combinedRating.value.totalReviews > 0) {
+    structuredData.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": combinedRating.value.averageRating.toString(),
+      "ratingCount": combinedRating.value.totalReviews.toString(),
+      "bestRating": "5",
+      "worstRating": "1"
+    }
+
+    // Add review information if available
+    if (combinedRating.value.hasLocalReviews || combinedRating.value.hasUntappdRating) {
+      structuredData.review = []
+
+      // Add a summary review indicating the source of ratings
+      let reviewText = `Середня оцінка ${combinedRating.value.averageRating.toFixed(1)} з 5 зірок`
+      if (combinedRating.value.hasLocalReviews && combinedRating.value.hasUntappdRating) {
+        reviewText += ` на основі ${combinedRating.value.localReviewCount} місцевих відгуків та ${combinedRating.value.untappdReviewCount} відгуків з Untappd`
+      } else if (combinedRating.value.hasLocalReviews) {
+        reviewText += ` на основі ${combinedRating.value.localReviewCount} місцевих відгуків`
+      } else if (combinedRating.value.hasUntappdRating) {
+        reviewText += ` на основі ${combinedRating.value.untappdReviewCount} відгуків з Untappd`
+      }
+
+      structuredData.review.push({
+        "@type": "Review",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": combinedRating.value.averageRating.toString(),
+          "bestRating": "5",
+          "worstRating": "1"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "Opillia"
+        },
+        "reviewBody": reviewText
+      })
+    }
+  }
+
+  // Add additional properties for beer products
+  if (isBeerProduct.value) {
+    const attrs = parsedAttributes.value
+    structuredData.category = "Alcoholic Beverage"
+    structuredData.additionalProperty = []
+
+    if (attrs.abv) {
+      structuredData.additionalProperty.push({
+        "@type": "PropertyValue",
+        "name": "Alcohol by Volume",
+        "value": `${attrs.abv}%`
+      })
+    }
+
+    if (attrs.ibu) {
+      structuredData.additionalProperty.push({
+        "@type": "PropertyValue",
+        "name": "International Bitterness Units",
+        "value": attrs.ibu.toString()
+      })
+    }
+
+    if (attrs.og) {
+      structuredData.additionalProperty.push({
+        "@type": "PropertyValue",
+        "name": "Original Gravity",
+        "value": `${attrs.og}%`
+      })
+    }
+
+    if (attrs.style) {
+      structuredData.additionalProperty.push({
+        "@type": "PropertyValue",
+        "name": "Beer Style",
+        "value": attrs.style
+      })
+    }
+  }
+
+  // Update page title and meta tags
+  const productTitle = product.value.display_name
+  const productDescription = product.value.description ?
+    product.value.description.substring(0, 160) + (product.value.description.length > 160 ? '...' : '') :
+    `${productTitle} - Замовляйте найкращі напої, пиво, м'ясо та делікатеси з доставкою по Києву.`
+
+  // Update page title
+  document.title = `${productTitle} | OpilliaShop`
+
+  // Update or create meta description
+  let metaDescription = document.querySelector('meta[name="description"]')
+  if (!metaDescription) {
+    metaDescription = document.createElement('meta')
+    metaDescription.setAttribute('name', 'description')
+    document.head.appendChild(metaDescription)
+  }
+  metaDescription.setAttribute('content', productDescription)
+
+  // Update or create Open Graph meta tags
+  const ogTags = [
+    { property: 'og:title', content: productTitle },
+    { property: 'og:description', content: productDescription },
+    { property: 'og:type', content: 'product' },
+    { property: 'og:url', content: window.location.href },
+    { property: 'og:site_name', content: 'OpilliaShop' },
+    { property: 'product:price:amount', content: product.value.price.toString() },
+    { property: 'product:price:currency', content: 'UAH' }
+  ]
+
+  if (product.value.display_image_url) {
+    ogTags.push({
+      property: 'og:image',
+      content: backendApi.getImageUrl(product.value.display_image_url)
+    })
+  }
+
+  ogTags.forEach(tag => {
+    let metaTag = document.querySelector(`meta[property="${tag.property}"]`)
+    if (!metaTag) {
+      metaTag = document.createElement('meta')
+      metaTag.setAttribute('property', tag.property)
+      document.head.appendChild(metaTag)
+    }
+    metaTag.setAttribute('content', tag.content)
+  })
+
+  // Create breadcrumb structured data
+  const breadcrumbData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Головна",
+        "item": "https://opillia.com.ua/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Магазин",
+        "item": "https://opillia.com.ua/shop"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.value.display_name,
+        "item": window.location.href
+      }
+    ]
+  }
+
+  // Create and append product structured data script tag
+  const productScript = document.createElement('script')
+  productScript.type = 'application/ld+json'
+  productScript.setAttribute('data-product-schema', 'true')
+  productScript.textContent = JSON.stringify(structuredData, null, 2)
+  document.head.appendChild(productScript)
+
+  // Create and append breadcrumb structured data script tag
+  const breadcrumbScript = document.createElement('script')
+  breadcrumbScript.type = 'application/ld+json'
+  breadcrumbScript.setAttribute('data-breadcrumb-schema', 'true')
+  breadcrumbScript.textContent = JSON.stringify(breadcrumbData, null, 2)
+  document.head.appendChild(breadcrumbScript)
+}
 
 const getImageUrl = (imagePath: string): string => {
   return backendApi.getImageUrl(imagePath)
@@ -268,6 +595,19 @@ const getColorClass = (color: string): string => {
     gray: 'bg-gray-500'
   }
   return colorMap[color] || 'bg-gray-500'
+}
+
+// Get Untappd URL for this product (if mapped)
+const getUntappdUrl = (): string | null => {
+  const attrs = parsedAttributes.value
+  return attrs.untappd_url || null
+}
+
+const scrollToReviews = () => {
+  const reviewsSection = document.getElementById('reviews-section')
+  if (reviewsSection) {
+    reviewsSection.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 
 const addToCart = () => {
@@ -350,22 +690,6 @@ const addToCart = () => {
 
 
 
-const getUntappdUrl = (): string => {
-  if (!product.value) return ''
-
-  // Check if product has Untappd URL in description or custom field
-  // For now, we'll use a mapping based on product name
-  const productName = product.value.name.toLowerCase()
-
-  // Example mapping for Opillia products
-  if (productName.includes('коріфей') || productName.includes('korifej')) {
-    return 'https://untappd.com/b/opillya-opillia-korifej-nefiltrovane/6371222'
-  }
-
-  // Add more mappings as needed
-  return ''
-}
-
 const handleReviewSubmitted = (review: any) => {
   showReviewForm.value = false
   notificationStore.add({
@@ -374,9 +698,31 @@ const handleReviewSubmitted = (review: any) => {
     message: 'Ваш відгук успішно надіслано. Він з\'явиться після модерації.',
     duration: 5000
   })
-  // Reload reviews
+  // Reload reviews and rating
+  loadCombinedRating()
   window.location.reload()
 }
+
+// Load combined rating
+const loadCombinedRating = async () => {
+  if (!product.value) return
+
+  try {
+    const rating = await ratingService.getCombinedRating(product.value)
+    combinedRating.value = rating
+  } catch (error) {
+    console.error('Error loading combined rating:', error)
+  }
+}
+
+// Watch for product changes to update structured data
+watch(product, (newProduct) => {
+  if (newProduct) {
+    nextTick(() => {
+      addStructuredData()
+    })
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   try {
@@ -387,6 +733,11 @@ onMounted(async () => {
     if (existingProduct) {
       product.value = existingProduct
       loading.value = false
+      // Load combined rating and add structured data after product is loaded
+      await loadCombinedRating()
+      nextTick(() => {
+        addStructuredData()
+      })
       return
     }
 
@@ -394,6 +745,11 @@ onMounted(async () => {
     const fetchedProduct = await productStore.fetchProduct(productId)
     if (fetchedProduct) {
       product.value = fetchedProduct
+      // Load combined rating and add structured data after product is loaded
+      await loadCombinedRating()
+      nextTick(() => {
+        addStructuredData()
+      })
     }
   } catch (error) {
     console.error('Failed to load product:', error)
@@ -406,5 +762,23 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+// Cleanup meta tags when component is unmounted
+onUnmounted(() => {
+  // Remove product-specific structured data
+  const existingProductScript = document.querySelector('script[type="application/ld+json"][data-product-schema]')
+  if (existingProductScript) {
+    existingProductScript.remove()
+  }
+
+  // Remove breadcrumb structured data
+  const existingBreadcrumbScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb-schema]')
+  if (existingBreadcrumbScript) {
+    existingBreadcrumbScript.remove()
+  }
+
+  // Reset page title to default
+  document.title = 'OpilliaShop - Найкращі напої та делікатеси'
 })
 </script>

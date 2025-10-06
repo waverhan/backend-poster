@@ -432,6 +432,8 @@ export interface SiteConfig {
 
   // Features
   enable_reviews: boolean
+  enable_untappd: boolean
+  enable_likes: boolean
   enable_ai_chat: boolean
   enable_recommendations: boolean
   enable_notifications: boolean

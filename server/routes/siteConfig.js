@@ -51,6 +51,8 @@ const defaultConfig = {
 
   // Features
   enable_reviews: true,
+  enable_untappd: true,
+  enable_likes: true,
   enable_ai_chat: true,
   enable_recommendations: true,
   enable_notifications: true,

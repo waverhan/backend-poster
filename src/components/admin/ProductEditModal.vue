@@ -218,6 +218,78 @@
           />
         </div>
 
+        <!-- Product Attributes -->
+        <div class="mb-4">
+          <div class="flex justify-between items-center mb-4">
+            <label class="block text-sm font-medium text-gray-700">Additional Information</label>
+            <button
+              type="button"
+              @click="addAttribute"
+              class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Add Attribute
+            </button>
+          </div>
+
+          <div v-if="formData.attributes.length === 0" class="text-gray-500 text-sm italic">
+            No attributes added. Click "Add Attribute" to add product specifications like alcohol content, bitterness, etc.
+          </div>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="(attribute, index) in formData.attributes"
+              :key="index"
+              class="flex gap-3 items-center p-3 bg-gray-50 rounded-md"
+            >
+              <div class="flex-1">
+                <input
+                  v-model="attribute.name"
+                  type="text"
+                  placeholder="Attribute name (e.g., Міцність)"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="flex-1">
+                <input
+                  v-model="attribute.value"
+                  type="text"
+                  placeholder="Value (e.g., 6.5)"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="w-20">
+                <input
+                  v-model="attribute.unit"
+                  type="text"
+                  placeholder="Unit (e.g., °)"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div class="w-20">
+                <select
+                  v-model="attribute.color"
+                  class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Color</option>
+                  <option value="red">Red</option>
+                  <option value="orange">Orange</option>
+                  <option value="yellow">Yellow</option>
+                  <option value="green">Green</option>
+                  <option value="blue">Blue</option>
+                  <option value="purple">Purple</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                @click="removeAttribute(index)"
+                class="px-2 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Active Status -->
         <div class="mb-4">
           <label class="flex items-center">
@@ -348,7 +420,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import type { Product, Category } from '@/types'
+import type { Product, Category, ProductAttribute } from '@/types'
 import { backendApi } from '@/services/backendApi'
 
 interface Props {
@@ -397,13 +469,28 @@ const formData = ref({
   custom_unit: '',
   quantity_step: null as number | null,
   min_quantity: null as number | null,
-  max_quantity: null as number | null
+  max_quantity: null as number | null,
+  attributes: [] as ProductAttribute[]
 })
 
 // Watch for product changes to populate form
 watch(() => props.product, (newProduct) => {
-  
+
   if (newProduct) {
+    // Parse attributes if they exist
+    let attributes = []
+    if (newProduct.attributes) {
+      try {
+        if (typeof newProduct.attributes === 'string') {
+          attributes = JSON.parse(newProduct.attributes)
+        } else if (Array.isArray(newProduct.attributes)) {
+          attributes = newProduct.attributes
+        }
+      } catch (e) {
+        console.warn('Failed to parse product attributes:', e)
+        attributes = []
+      }
+    }
 
     formData.value = {
       poster_product_id: newProduct.poster_product_id || '',
@@ -424,10 +511,11 @@ watch(() => props.product, (newProduct) => {
       custom_unit: newProduct.custom_unit || '',
       quantity_step: newProduct.quantity_step || null,
       min_quantity: newProduct.min_quantity || null,
-      max_quantity: newProduct.max_quantity || null
+      max_quantity: newProduct.max_quantity || null,
+      attributes: attributes
     }
 
-    
+
   } else {
     // Reset form for new product
     formData.value = {
@@ -449,7 +537,8 @@ watch(() => props.product, (newProduct) => {
       custom_unit: '',
       quantity_step: null,
       min_quantity: null,
-      max_quantity: null
+      max_quantity: null,
+      attributes: []
     }
   }
 }, { immediate: true })
@@ -469,7 +558,7 @@ watch(() => formData.value.image_url, (newImageUrl) => {
 })
 
 const handleSubmit = async () => {
-  
+
   isLoading.value = true
 
   try {
@@ -477,10 +566,11 @@ const handleSubmit = async () => {
       ...formData.value,
       name: formData.value.name || formData.value.display_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
       display_image_url: formData.value.display_image_url || formData.value.image_url,
-      original_price: formData.value.original_price || formData.value.price
+      original_price: formData.value.original_price || formData.value.price,
+      attributes: formData.value.attributes // Send as array, backend will stringify
     }
 
-    
+
     emit('save', productData)
   } finally {
     isLoading.value = false
@@ -489,6 +579,20 @@ const handleSubmit = async () => {
 
 const handleCancel = () => {
   emit('close')
+}
+
+// Attribute management methods
+const addAttribute = () => {
+  formData.value.attributes.push({
+    name: '',
+    value: '',
+    unit: '',
+    color: ''
+  })
+}
+
+const removeAttribute = (index: number) => {
+  formData.value.attributes.splice(index, 1)
 }
 
 const handleImageUpload = async (event: Event) => {

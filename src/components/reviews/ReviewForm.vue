@@ -245,7 +245,7 @@ const loadRecaptcha = () => {
     return
   }
 
-  // Load reCAPTCHA script
+  // Load reCAPTCHA v2 script
   const script = document.createElement('script')
   script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit'
   script.async = true
@@ -259,7 +259,7 @@ const loadRecaptcha = () => {
 const renderRecaptcha = () => {
   if (window.grecaptcha && document.getElementById('recaptcha-container')) {
     recaptchaWidget.value = window.grecaptcha.render('recaptcha-container', {
-      sitekey: '6LeYK94rAAAAAIKY4bYJkHJl4lN23vKv-r6eISfl', // Your actual reCAPTCHA v3 site key
+      sitekey: '6LfM8N4rAAAAAGUmEkBZZmrn5JPKjey2dhJwmHxU', // reCAPTCHA v2 site key
       callback: (response: string) => {
         delete errors.value.recaptcha
       },

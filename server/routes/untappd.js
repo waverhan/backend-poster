@@ -39,42 +39,95 @@ async function makeRequest(url) {
 // Extract beer information from Untappd beer page
 function extractBeerInfo($, beerId) {
   try {
-    const beerName = $('.beer-name').text().trim() || $('h1').first().text().trim();
-    const breweryName = $('.brewery-name').text().trim() || $('.brewery a').text().trim();
-    const beerStyle = $('.beer-style').text().trim() || $('.style').text().trim();
-    
-    // Extract ABV and IBU
+    // Extract beer name - try multiple selectors
+    const beerName = $('h1').first().text().trim() ||
+                     $('.beer-name').text().trim() ||
+                     $('title').text().split(' | ')[0].trim();
+
+    // Extract brewery name - look for links to brewery pages
+    const breweryName = $('a[href*="/brewery/"]').first().text().trim() ||
+                        $('a[href*="Opillia"]').first().text().trim() ||
+                        $('.brewery-name').text().trim() ||
+                        'Unknown Brewery';
+
+    // Extract beer style - look for style information
+    const beerStyle = $('.beer-style').text().trim() ||
+                      $('*:contains("Lager")').first().text().trim() ||
+                      $('*:contains("Ale")').first().text().trim() ||
+                      'Unknown Style';
+
+    // Extract ABV - look for pattern like "4.2% ABV"
     let abv = 0;
+    const abvElement = $('p.abv');
+    if (abvElement.length) {
+      const abvText = abvElement.text();
+      const abvMatch = abvText.match(/(\d+\.?\d*)\s*%\s*ABV/i);
+      if (abvMatch) {
+        abv = parseFloat(abvMatch[1]);
+      }
+    }
+
+    // Extract IBU - look for pattern like "15 IBU"
     let ibu = 0;
-    
-    $('.beer-details .details').each((i, el) => {
-      const text = $(el).text().toLowerCase();
-      if (text.includes('abv')) {
-        const abvMatch = text.match(/(\d+\.?\d*)%?\s*abv/);
-        if (abvMatch) abv = parseFloat(abvMatch[1]);
+    const ibuElement = $('p.ibu');
+    if (ibuElement.length) {
+      const ibuText = ibuElement.text();
+      const ibuMatch = ibuText.match(/(\d+)\s*IBU/i);
+      if (ibuMatch) {
+        ibu = parseInt(ibuMatch[1]);
       }
-      if (text.includes('ibu')) {
-        const ibuMatch = text.match(/(\d+)\s*ibu/);
-        if (ibuMatch) ibu = parseInt(ibuMatch[1]);
+    }
+
+    // Extract description - look for beer description
+    let description = '';
+    const descElement = $('.desc .beer-descrption-read-less');
+    if (descElement.length) {
+      description = descElement.text().trim();
+      // Remove "Show Less" link text
+      description = description.replace(/Show Less$/, '').trim();
+    } else {
+      description = $('.desc').text().trim() || $('.beer-description').text().trim();
+    }
+
+    // Extract rating score - look for data-rating attribute
+    let rating = 0;
+    const ratingElement = $('.caps[data-rating]').first();
+    if (ratingElement.length) {
+      const ratingValue = ratingElement.attr('data-rating');
+      if (ratingValue) {
+        rating = parseFloat(ratingValue);
       }
-    });
-    
-    // Extract rating
-    const ratingText = $('.rating-score').text().trim() || $('.caps').text().trim();
-    const ratingMatch = ratingText.match(/(\d+\.?\d*)/);
-    const rating = ratingMatch ? parseFloat(ratingMatch[1]) : 0;
-    
-    // Extract rating count
-    const ratingCountText = $('.rating-count').text().trim() || $('.raters').text().trim();
-    const ratingCountMatch = ratingCountText.match(/(\d+)/);
-    const ratingCount = ratingCountMatch ? parseInt(ratingCountMatch[1]) : 0;
-    
-    // Extract description
-    const description = $('.beer-description').text().trim() || $('.beer-info .description').text().trim();
-    
+    }
+
+    // Extract rating count - look for "X Ratings" text
+    let ratingCount = 0;
+    const ratingCountText = $('body').text();
+    const ratingCountMatch = ratingCountText.match(/(\d+)\s*Ratings/i);
+    if (ratingCountMatch) {
+      ratingCount = parseInt(ratingCountMatch[1]);
+    }
+
     // Extract beer label image
-    const beerLabel = $('.beer-label img').attr('src') || $('.label img').attr('src') || '';
-    
+    let beerLabel = '';
+    const labelImg = $('img[src*="beer_logos"]').first();
+    if (labelImg.length) {
+      beerLabel = labelImg.attr('src') || '';
+      if (beerLabel.startsWith('//')) {
+        beerLabel = 'https:' + beerLabel;
+      }
+    }
+
+    console.log('Extracted beer info:', {
+      beer_name: beerName,
+      brewery_name: breweryName,
+      beer_style: beerStyle,
+      beer_abv: abv,
+      beer_ibu: ibu,
+      rating_score: rating,
+      rating_count: ratingCount,
+      description_length: description.length
+    });
+
     return {
       beer_id: parseInt(beerId),
       beer_name: beerName,
@@ -97,56 +150,72 @@ function extractBeerInfo($, beerId) {
 // Extract reviews from Untappd beer page
 function extractReviews($) {
   const reviews = [];
-  
+
   try {
-    $('.checkin-item, .activity-item').each((i, el) => {
+    // Look for checkin items with the structure from your HTML
+    $('#main-stream .item[id*="checkin_"]').each((i, el) => {
       const $item = $(el);
-      
-      // Extract user info
-      const userName = $item.find('.user-name').text().trim() || 
-                      $item.find('.username').text().trim() || 
-                      $item.find('a[href*="/user/"]').text().trim() || 
-                      'Anonymous';
-      
-      const userAvatar = $item.find('.user-avatar img').attr('src') || 
-                        $item.find('.avatar img').attr('src') || '';
-      
-      // Extract rating
-      const ratingElement = $item.find('.rating-score, .caps');
+
+      // Extract user info - look for user link in the text paragraph
+      const userLink = $item.find('.text .user').first();
+      const userName = userLink.text().trim() || 'Anonymous';
+
+      // Extract user avatar from avatar-holder
+      const userAvatar = $item.find('.avatar-holder img').attr('src') || '';
+
+      // Extract rating from caps with data-rating
       let rating = 0;
+      const ratingElement = $item.find('.caps[data-rating]');
       if (ratingElement.length) {
-        const ratingText = ratingElement.text().trim();
-        const ratingMatch = ratingText.match(/(\d+\.?\d*)/);
-        if (ratingMatch) rating = parseFloat(ratingMatch[1]);
+        const ratingValue = ratingElement.attr('data-rating');
+        if (ratingValue) {
+          rating = parseFloat(ratingValue);
+        }
       }
-      
-      // Extract comment
-      const comment = $item.find('.checkin-comment').text().trim() || 
-                     $item.find('.comment-text').text().trim() || 
-                     $item.find('.activity-comment').text().trim();
-      
-      // Extract date
-      const dateElement = $item.find('.checkin-date, .date');
-      const createdAt = dateElement.length ? dateElement.attr('title') || dateElement.text().trim() : '';
-      
-      // Only include reviews with comments
-      if (comment && comment.length > 10) {
+
+      // Extract comment from comment-text paragraph
+      const commentElement = $item.find('.checkin-comment .comment-text');
+      const comment = commentElement.text().trim();
+
+      // Extract date from time element with data-gregtime
+      const timeElement = $item.find('.time[data-gregtime]');
+      let createdAt = new Date().toISOString();
+      if (timeElement.length) {
+        const gregTime = timeElement.attr('data-gregtime');
+        if (gregTime) {
+          createdAt = new Date(gregTime).toISOString();
+        }
+      }
+
+      // Extract checkin ID from the item ID
+      const checkinId = $item.attr('id')?.replace('checkin_', '') || (i + 1).toString();
+
+      // Extract beer and brewery info from the text
+      const beerLink = $item.find('.text a[href*="/b/"]').first();
+      const breweryLink = $item.find('.text a[href*="/"]').last();
+      const beerName = beerLink.text().trim() || '';
+      const breweryName = breweryLink.text().trim() || '';
+
+      // Only include reviews with meaningful comments and ratings
+      if (comment && comment.length > 10 && rating > 0) {
         reviews.push({
-          checkin_id: i + 1,
+          checkin_id: checkinId,
           user_name: userName,
-          user_avatar: userAvatar,
+          user_avatar: userAvatar.startsWith('//') ? 'https:' + userAvatar : userAvatar,
           rating_score: rating,
           checkin_comment: comment,
-          created_at: createdAt || new Date().toISOString(),
-          beer_name: '',
-          brewery_name: ''
+          created_at: createdAt,
+          beer_name: beerName,
+          brewery_name: breweryName
         });
       }
     });
+
+    console.log(`Extracted ${reviews.length} reviews with comments`);
   } catch (error) {
     console.error('Error extracting reviews:', error);
   }
-  
+
   return reviews;
 }
 
@@ -394,20 +463,85 @@ router.post('/mappings/:product_id/sync', async (req, res) => {
       return res.status(404).json({ error: 'Beer not found on Untappd' });
     }
 
+    // Parse existing attributes
+    let existingAttributes = [];
+    try {
+      const attributesData = mapping.product.attributes;
+      if (attributesData) {
+        if (typeof attributesData === 'string') {
+          const parsed = JSON.parse(attributesData);
+          // If it's an array, keep it; if it's an object, convert to array
+          if (Array.isArray(parsed)) {
+            existingAttributes = parsed;
+          } else {
+            // Convert object to array format
+            existingAttributes = Object.entries(parsed).map(([key, value]) => ({
+              name: key,
+              value: value.toString(),
+              unit: ''
+            }));
+          }
+        } else if (Array.isArray(attributesData)) {
+          existingAttributes = attributesData;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing existing attributes:', e);
+      existingAttributes = [];
+    }
+
+    // Remove existing Untappd attributes to avoid duplicates
+    existingAttributes = existingAttributes.filter(attr =>
+      !['Міцність', 'Гіркота', 'Стиль', 'ABV', 'IBU', 'Style', 'untappd_rating', 'untappd_rating_count'].includes(attr.name)
+    );
+
+    // Only store rating data in attributes (ABV, IBU, and style go in description)
+    if (beerInfo.rating_score) {
+      existingAttributes.push({
+        name: 'untappd_rating',
+        value: beerInfo.rating_score.toString(),
+        unit: '',
+        color: ''
+      });
+    }
+
+    if (beerInfo.rating_count) {
+      existingAttributes.push({
+        name: 'untappd_rating_count',
+        value: beerInfo.rating_count.toString(),
+        unit: '',
+        color: ''
+      });
+    }
+
+    // Prepare description with ABV, IBU, and Untappd description
+    const descriptionParts = [];
+
+    // Add ABV if available
+    if (beerInfo.beer_abv && parseFloat(beerInfo.beer_abv) > 0) {
+      descriptionParts.push(`ABV: ${beerInfo.beer_abv}%`);
+    }
+
+    // Add IBU if available
+    if (beerInfo.beer_ibu && parseInt(beerInfo.beer_ibu) > 0) {
+      descriptionParts.push(`IBU: ${beerInfo.beer_ibu}`);
+    }
+
+    // Add Untappd description if available, otherwise keep original
+    if (beerInfo.beer_description) {
+      descriptionParts.push(beerInfo.beer_description);
+    } else if (mapping.product.description) {
+      descriptionParts.push(mapping.product.description);
+    }
+
+    const fullDescription = descriptionParts.join('\n\n');
+
     // Update product with beer information
     const updatedProduct = await prisma.product.update({
       where: { id: product_id },
       data: {
-        description: beerInfo.beer_description || mapping.product.description,
-        // You can add more fields here like ABV, IBU in attributes
-        attributes: JSON.stringify({
-          ...JSON.parse(mapping.product.attributes || '{}'),
-          abv: beerInfo.beer_abv,
-          ibu: beerInfo.beer_ibu,
-          style: beerInfo.beer_style,
-          untappd_rating: beerInfo.rating_score,
-          untappd_rating_count: beerInfo.rating_count
-        })
+        description: fullDescription,
+        attributes: JSON.stringify(existingAttributes)
       }
     });
 

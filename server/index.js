@@ -21,6 +21,9 @@ import sitemapRoutes from './routes/sitemap.js'
 import wayforpayRoutes from './routes/wayforpay.js'
 import salesRouter from './routes/sales.js'
 import untappdRouter from './routes/untappd.js'
+import reviewsRouter from './routes/reviews.js'
+import likesRouter from './routes/likes.js'
+import aiReviewsRouter from './routes/aiReviews.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -103,6 +106,9 @@ app.use('/api', sitemapRoutes)
 app.use('/api/wayforpay', wayforpayRoutes)
 app.use('/api/sales', salesRouter)
 app.use('/api/untappd', untappdRouter)
+app.use('/api/reviews', reviewsRouter)
+app.use('/api/likes', likesRouter)
+app.use('/api/ai-reviews', aiReviewsRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
