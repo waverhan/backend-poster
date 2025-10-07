@@ -57,6 +57,91 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Set password for user
+   */
+  const setPassword = async (password: string) => {
+    try {
+      setLoading(true)
+      clearError()
+
+      if (!token.value) {
+        throw new Error('No authentication token')
+      }
+
+      const response = await fetch(`${backendApi.baseUrl}/auth/set-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token.value}`
+        },
+        body: JSON.stringify({ password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to set password')
+      }
+
+      console.log('✅ Password set successfully')
+
+      // Update user to reflect password is set
+      if (user.value) {
+        user.value.force_password_setup = false
+        user.value.is_password_set = true
+      }
+
+      return data
+    } catch (err: any) {
+      console.error('❌ Set password error:', err)
+      setError(err.message || 'Failed to set password')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Login with phone and password
+   */
+  const loginWithPassword = async (phone: string, password: string) => {
+    try {
+      setLoading(true)
+      clearError()
+
+      const response = await fetch(`${backendApi.baseUrl}/auth/login-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Login failed')
+      }
+
+      // Store authentication data
+      token.value = data.token
+      user.value = data.user
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('user_data', JSON.stringify(data.user))
+
+      console.log('✅ Password login successful:', data.user.name)
+
+      return data
+    } catch (err: any) {
+      console.error('❌ Password login error:', err)
+      setError(err.message || 'Login failed')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
    * Send SMS verification code
    */
   const sendVerificationCode = async (phoneNumber: string) => {
@@ -397,6 +482,8 @@ export const useAuthStore = defineStore('auth', () => {
     validatePhoneNumber,
     formatPhoneNumber,
     setError,
-    clearError
+    clearError,
+    setPassword,
+    loginWithPassword
   }
 })

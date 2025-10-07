@@ -26,6 +26,32 @@
 
       <!-- Phone input step -->
       <div v-if="step === 'phone'" class="space-y-4">
+        <!-- Login method selection -->
+        <div class="flex space-x-2 mb-4">
+          <button
+            @click="loginMethod = 'sms'"
+            :class="[
+              'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors',
+              loginMethod === 'sms'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            SMS код
+          </button>
+          <button
+            @click="loginMethod = 'password'"
+            :class="[
+              'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors',
+              loginMethod === 'password'
+                ? 'bg-orange-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            Пароль
+          </button>
+        </div>
+
         <div>
           <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
             Номер телефону
@@ -39,13 +65,44 @@
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             :class="{ 'border-red-500': phoneError }"
             @input="onPhoneInput"
-            @keyup.enter="sendCode"
+            @keyup.enter="loginMethod === 'sms' ? sendCode() : loginWithPassword()"
           />
           <p v-if="phoneError" class="text-red-500 text-sm mt-1">{{ phoneError }}</p>
           <p class="text-gray-500 text-xs mt-1">Введіть номер у форматі 0XX XXX XX XX</p>
         </div>
 
+        <!-- Password input for password login -->
+        <div v-if="loginMethod === 'password'">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            Пароль
+          </label>
+          <div class="relative">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Введіть пароль"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              @keyup.enter="loginWithPassword"
+            />
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+            >
+              <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+              </svg>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <button
+          v-if="loginMethod === 'sms'"
           @click="sendCode"
           :disabled="!isPhoneValid || authStore.isLoading"
           class="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
@@ -58,6 +115,22 @@
             Надсилання...
           </span>
           <span v-else>Отримати код</span>
+        </button>
+
+        <button
+          v-if="loginMethod === 'password'"
+          @click="loginWithPassword"
+          :disabled="!isPhoneValid || !password || authStore.isLoading"
+          class="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+        >
+          <span v-if="authStore.isLoading" class="flex items-center justify-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Вхід...
+          </span>
+          <span v-else>Увійти</span>
         </button>
       </div>
 
@@ -152,7 +225,7 @@ import { useAuthStore } from '@/stores/auth'
 // Emits
 const emit = defineEmits<{
   close: []
-  success: [user: any]
+  success: [user: any, requiresPasswordSetup?: boolean]
 }>()
 
 // Store
@@ -160,7 +233,10 @@ const authStore = useAuthStore()
 
 // State
 const step = ref<'phone' | 'verification'>('phone')
+const loginMethod = ref<'sms' | 'password'>('sms')
 const phoneNumber = ref('')
+const password = ref('')
+const showPassword = ref(false)
 const verificationCode = ref('')
 const userName = ref('')
 const phoneError = ref('')
@@ -251,12 +327,17 @@ const verifyCode = async () => {
   
   try {
     const result = await authStore.verifyCodeAndLogin(
-      phoneNumber.value, 
+      phoneNumber.value,
       verificationCode.value,
       userName.value.trim() || undefined
     )
-    
-    emit('success', result.user)
+
+    // Check if user needs to set up password
+    if (result.requiresPasswordSetup) {
+      emit('success', result.user, true) // true indicates password setup needed
+    } else {
+      emit('success', result.user)
+    }
     emit('close')
   } catch (error: any) {
     codeError.value = error.message
@@ -274,6 +355,36 @@ const resendCode = async () => {
     startResendCountdown()
   } catch (error: any) {
     codeError.value = error.message
+  }
+}
+
+const loginWithPassword = async () => {
+  if (!isPhoneValid.value || !password.value) return
+
+  try {
+    phoneError.value = ''
+    const result = await authStore.loginWithPassword(phoneNumber.value, password.value)
+
+    // Check if user needs to set up password
+    if (result.requiresPasswordSetup) {
+      // This shouldn't happen for password login, but handle it just in case
+      emit('success', result.user)
+    } else {
+      emit('success', result.user)
+    }
+  } catch (error: any) {
+    console.error('Password login failed:', error)
+
+    if (error.message.includes('Password not set')) {
+      phoneError.value = 'Пароль не встановлено. Використайте SMS для входу.'
+      loginMethod.value = 'sms'
+    } else if (error.message.includes('Invalid password')) {
+      phoneError.value = 'Невірний пароль'
+    } else if (error.message.includes('User not found')) {
+      phoneError.value = 'Користувач не знайдений. Спочатку зареєструйтесь.'
+    } else {
+      phoneError.value = 'Помилка входу. Спробуйте ще раз.'
+    }
   }
 }
 

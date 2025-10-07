@@ -63,7 +63,7 @@ router.get('/orders', authenticateToken, async (req, res) => {
       items: order.items.map(item => ({
         id: item.id,
         product_id: item.product_id,
-        name: item.product?.name || 'Unknown Product',
+        name: item.product_name || item.product?.name || 'Unknown Product',
         quantity: item.quantity,
         unit_price: item.unit_price,
         total_price: item.total_price,
@@ -163,7 +163,7 @@ router.get('/orders/:id', authenticateToken, async (req, res) => {
       items: order.items.map(item => ({
         id: item.id,
         product_id: item.product_id,
-        name: item.product?.name || 'Unknown Product',
+        name: item.product_name || item.product?.name || 'Unknown Product',
         quantity: item.quantity,
         unit_price: item.unit_price,
         total_price: item.total_price,
@@ -259,8 +259,8 @@ router.post('/orders/:id/reorder', authenticateToken, async (req, res) => {
         })
       } else {
         unavailableItems.push({
-          name: item.product?.name || 'Unknown Product',
-          reason: !item.product ? 'Product no longer exists' : 
+          name: item.product_name || item.product?.name || 'Unknown Product',
+          reason: !item.product ? 'Product no longer exists' :
                   !item.product.is_active ? 'Product is no longer available' :
                   'Product category is no longer active'
         })

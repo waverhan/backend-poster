@@ -114,14 +114,20 @@
                   <label class="block text-sm font-medium text-gray-700 mb-2">
                     {{ $t('checkout.phone') }} *
                   </label>
-                  <UkrainianPhoneInput
+                  <input
                     v-model="customerForm.customer_phone"
+                    type="tel"
+                    placeholder="0XX XXX XX XX"
+                    maxlength="10"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    :class="{ 'border-red-500': !isPhoneValid && customerForm.customer_phone }"
+                    @input="onPhoneInput"
                     required
-                    placeholder="+38(0___) ___-__-__"
                   />
-                  <div v-if="customerForm.customer_phone && (!customerForm.customer_phone.startsWith('380') || customerForm.customer_phone.length !== 12)" class="text-red-500 text-sm mt-1">
-                    Номер телефону повинен містити 9 цифр
+                  <div v-if="!isPhoneValid && customerForm.customer_phone" class="text-red-500 text-sm mt-1">
+                    Введіть номер у форматі 0XX XXX XX XX
                   </div>
+                  <p class="text-gray-500 text-xs mt-1">Введіть номер у форматі 0XX XXX XX XX</p>
                 </div>
               </div>
 
@@ -567,7 +573,6 @@ import { ProductAvailabilityService } from '@/services/productAvailabilityServic
 import wayforpayService from '@/services/wayforpayService'
 import { getDefaultBottleSelection, getBottleCartItems, getBottleProduct } from '@/utils/bottleUtils'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
 import type { Branch, LocationData, Product } from '@/types'
 import type { OrderFormData } from '@/stores/orders'
@@ -685,13 +690,16 @@ const finalTotal = computed(() => {
   return Math.max(0, orderTotal.value - bonusDiscount.value)
 })
 
-const isCustomerFormValid = computed(() => {
+const isPhoneValid = computed(() => {
   const phone = customerForm.value.customer_phone
-  const isPhoneValid = phone.startsWith('380') && phone.length === 12
+  return phone.length === 10 && phone.startsWith('0') && /^\d{10}$/.test(phone)
+})
+
+const isCustomerFormValid = computed(() => {
   return customerForm.value.customer_name.trim() !== '' &&
          customerForm.value.customer_email.trim() !== '' &&
          customerForm.value.customer_phone.trim() !== '' &&
-         isPhoneValid
+         isPhoneValid.value
 })
 
 const hasInventoryIssues = computed(() => {
@@ -1120,6 +1128,10 @@ const placeOrder = async () => {
     // Prepare order data with bonus information
     const orderData = {
       ...customerForm.value,
+      // Convert phone from 0XXXXXXXXX to 380XXXXXXXXX format for backend
+      customer_phone: customerForm.value.customer_phone.startsWith('0') && customerForm.value.customer_phone.length === 10
+        ? '380' + customerForm.value.customer_phone.slice(1)
+        : customerForm.value.customer_phone,
       bonusUsed: bonusDiscount.value,
       bonusPoints: authStore.isAuthenticated ? authStore.userBonusPoints : 0,
       userId: authStore.user?.id,
@@ -1133,6 +1145,32 @@ const placeOrder = async () => {
       deliveryFee.value,
       paymentMethod.value
     )
+
+    // Update user profile with order information if authenticated
+    if (authStore.isAuthenticated && authStore.user) {
+      try {
+        const profileUpdateData: any = {}
+
+        // Update name if it's different from current profile
+        if (customerForm.value.customer_name && customerForm.value.customer_name !== authStore.user.name) {
+          profileUpdateData.name = customerForm.value.customer_name
+        }
+
+        // Update email if it's different from current profile
+        if (customerForm.value.customer_email && customerForm.value.customer_email !== authStore.user.email) {
+          profileUpdateData.email = customerForm.value.customer_email
+        }
+
+        // Only update if there are changes
+        if (Object.keys(profileUpdateData).length > 0) {
+          console.log('📝 Updating user profile with order information:', profileUpdateData)
+          await authStore.updateProfile(profileUpdateData)
+        }
+      } catch (error) {
+        console.error('Failed to update user profile:', error)
+        // Don't fail the order if profile update fails
+      }
+    }
 
     // Process bonus usage if applicable
     if (authStore.isAuthenticated && bonusDiscount.value > 0) {
@@ -1249,8 +1287,40 @@ watch(() => authStore.isAuthenticated, (newValue) => {
   if (!newValue) {
     useBonuses.value = false
     bonusesToUse.value = 0
+  } else {
+    // Pre-fill form when user logs in
+    prefillUserData()
   }
 })
+
+// Watch for user data changes
+watch(() => authStore.user, (newUser) => {
+  if (newUser && authStore.isAuthenticated) {
+    prefillUserData()
+  }
+}, { deep: true })
+
+// Function to pre-fill user data
+const prefillUserData = () => {
+  const user = authStore.user
+  if (!user) return
+
+  // Only pre-fill if fields are empty to avoid overwriting user input
+  if (!customerForm.value.customer_name && user.name) {
+    customerForm.value.customer_name = user.name
+  }
+  if (!customerForm.value.customer_email && user.email) {
+    customerForm.value.customer_email = user.email
+  }
+  if (!customerForm.value.customer_phone && user.phone) {
+    // Convert from 380XXXXXXXXX format to 0XXXXXXXXX format
+    if (user.phone.startsWith('380') && user.phone.length === 12) {
+      customerForm.value.customer_phone = '0' + user.phone.slice(3)
+    } else {
+      customerForm.value.customer_phone = user.phone.replace(/^\+/, '')
+    }
+  }
+}
 
 // Lifecycle
 onMounted(async () => {
@@ -1336,6 +1406,11 @@ onMounted(async () => {
 
   // Validate inventory after setup
   await validateInventoryOnLoad()
+
+  // Pre-fill user data if already authenticated
+  if (authStore.isAuthenticated && authStore.user) {
+    prefillUserData()
+  }
 })
 
 // Login success handler
@@ -1350,8 +1425,29 @@ const onLoginSuccess = (user: any) => {
     customerForm.value.customer_email = user.email
   }
   if (user.phone) {
-    customerForm.value.customer_phone = user.phone.replace(/^\+/, '')
+    // Convert from 380XXXXXXXXX format to 0XXXXXXXXX format
+    if (user.phone.startsWith('380') && user.phone.length === 12) {
+      customerForm.value.customer_phone = '0' + user.phone.slice(3)
+    } else {
+      customerForm.value.customer_phone = user.phone.replace(/^\+/, '')
+    }
   }
+}
+
+// Phone input handler
+const onPhoneInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  let value = target.value.replace(/[^\d]/g, '')
+
+  // Ensure it starts with 0 and is max 10 digits
+  if (value.length > 0 && !value.startsWith('0')) {
+    value = '0' + value.slice(0, 9) // Prepend 0 and limit to 10 total
+  }
+  if (value.length > 10) {
+    value = value.slice(0, 10)
+  }
+
+  customerForm.value.customer_phone = value
 }
 
 // Watch for cart changes and re-validate inventory

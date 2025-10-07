@@ -111,6 +111,9 @@ model User {
   email             String?
   role              String   @default("user") // user, admin
   poster_client_id  String?  // Link to Poster POS client
+  password_hash     String?  // Hashed password for login
+  is_password_set   Boolean  @default(false) // Whether user has set a password
+  force_password_setup Boolean @default(true) // Force user to set password on first login
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
@@ -173,6 +176,7 @@ model OrderItem {
   id              String   @id @default(cuid())
   order_id        String
   product_id      String
+  product_name    String?  // Store product name at time of order
   quantity        Int
   unit_price      Float
   total_price     Float

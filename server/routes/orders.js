@@ -123,7 +123,7 @@ router.get('/', async (req, res) => {
       } : undefined,
       items: order.items.map(item => ({
         product_id: item.product_id,
-        name: `Product ${item.product_id}`, // We'll need to join with products table for actual name
+        name: item.product_name || item.product?.name || `Product ${item.product_id}`,
         price: item.unit_price,
         quantity: item.quantity
       })),
@@ -566,6 +566,7 @@ router.post('/', optionalAuth, async (req, res) => {
           items: {
             create: items.map(item => ({
               product_id: item.product_id,
+              product_name: item.name, // Store product name directly
               quantity: item.quantity,
               unit_price: item.price,
               total_price: item.price * item.quantity,
@@ -608,7 +609,7 @@ router.post('/', optionalAuth, async (req, res) => {
       } : undefined,
       items: order.items.map(item => ({
         product_id: item.product_id,
-        name: item.product?.name || items.find(i => i.product_id === item.product_id)?.name || `Product ${item.product_id}`,
+        name: item.product_name || item.product?.name || items.find(i => i.product_id === item.product_id)?.name || `Product ${item.product_id}`,
         price: item.unit_price,
         quantity: item.quantity,
         custom_quantity: item.custom_quantity,

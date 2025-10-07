@@ -172,6 +172,14 @@
       @close="showLoginModal = false"
       @success="onLoginSuccess"
     />
+
+    <!-- Password Setup Modal -->
+    <PasswordSetupModal
+      v-if="showPasswordSetup"
+      @close="showPasswordSetup = false"
+      @skip="showPasswordSetup = false"
+      @success="onPasswordSetupSuccess"
+    />
   </header>
 </template>
 
@@ -183,6 +191,7 @@ import { useAuthStore } from '@/stores/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
+import PasswordSetupModal from '@/components/auth/PasswordSetupModal.vue'
 
 const cartStore = useCartStore()
 const siteConfigStore = useSiteConfigStore()
@@ -192,6 +201,7 @@ const cartCount = computed(() => cartStore.totalItems || 0)
 const siteConfig = computed(() => siteConfigStore.currentConfig)
 const showFallbackLogo = ref(false)
 const showLoginModal = ref(false)
+const showPasswordSetup = ref(false)
 const showUserMenu = ref(false)
 
 // Methods
@@ -204,9 +214,18 @@ const handleLogout = async () => {
   await authStore.logout()
 }
 
-const onLoginSuccess = (user: any) => {
+const onLoginSuccess = (user: any, requiresPasswordSetup?: boolean) => {
   console.log('Login successful:', user)
-  // Optionally show a success message or redirect
+  showLoginModal.value = false
+
+  if (requiresPasswordSetup) {
+    showPasswordSetup.value = true
+  }
+}
+
+const onPasswordSetupSuccess = () => {
+  showPasswordSetup.value = false
+  console.log('Password setup completed')
 }
 
 // Close user menu when clicking outside

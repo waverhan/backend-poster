@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 import { prisma } from '../index.js'
 import smsFlyService from './smsFlyService.js'
 import posterClientService from './posterClientService.js'
@@ -140,7 +141,8 @@ class AuthService {
           ...bonusInfo
         },
         token,
-        isNewUser: !posterClient
+        isNewUser: !posterClient,
+        requiresPasswordSetup: user.force_password_setup || !user.is_password_set
       }
     } catch (error) {
       console.error('❌ Error verifying code and login:', error)
@@ -289,6 +291,100 @@ class AuthService {
     const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
     const codeData = this.verificationCodes.get(formattedPhone)
     return codeData && Date.now() < codeData.expiresAt
+  }
+
+  /**
+   * Hash password using bcrypt
+   * @param {string} password - Plain text password
+   * @returns {Promise<string>} - Hashed password
+   */
+  async hashPassword(password) {
+    const saltRounds = 12
+    return await bcrypt.hash(password, saltRounds)
+  }
+
+  /**
+   * Verify password against hash
+   * @param {string} password - Plain text password
+   * @param {string} hash - Hashed password
+   * @returns {Promise<boolean>} - Whether password matches
+   */
+  async verifyPassword(password, hash) {
+    return await bcrypt.compare(password, hash)
+  }
+
+  /**
+   * Set password for user
+   * @param {string} userId - User ID
+   * @param {string} password - Plain text password
+   */
+  async setUserPassword(userId, password) {
+    try {
+      const hashedPassword = await this.hashPassword(password)
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          password_hash: hashedPassword,
+          is_password_set: true,
+          force_password_setup: false
+        }
+      })
+
+      console.log(`🔐 Password set for user: ${userId}`)
+      return { success: true, user: updatedUser }
+    } catch (error) {
+      console.error('❌ Error setting password:', error)
+      throw new Error('Failed to set password')
+    }
+  }
+
+  /**
+   * Login with phone and password
+   * @param {string} phoneNumber - Phone number
+   * @param {string} password - Password
+   */
+  async loginWithPassword(phoneNumber, password) {
+    try {
+      const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
+
+      // Find user by phone
+      const user = await prisma.user.findUnique({
+        where: { phone: formattedPhone }
+      })
+
+      if (!user) {
+        throw new Error('User not found')
+      }
+
+      if (!user.is_password_set || !user.password_hash) {
+        throw new Error('Password not set. Please use SMS verification.')
+      }
+
+      // Verify password
+      const isPasswordValid = await this.verifyPassword(password, user.password_hash)
+      if (!isPasswordValid) {
+        throw new Error('Invalid password')
+      }
+
+      // Generate JWT token
+      const token = this.generateToken(user.id)
+
+      // Get user profile with bonus info
+      const profile = await this.getUserProfile(user.id)
+
+      console.log(`🔐 Password login successful for user: ${user.id}`)
+
+      return {
+        success: true,
+        token,
+        user: profile,
+        requiresPasswordSetup: user.force_password_setup
+      }
+    } catch (error) {
+      console.error('❌ Password login error:', error)
+      throw error
+    }
   }
 }
 

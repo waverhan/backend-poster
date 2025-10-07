@@ -215,9 +215,78 @@ router.get('/test-services', async (req, res) => {
     })
   } catch (error) {
     console.error('❌ Service test error:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Service test failed',
-      details: error.message 
+      details: error.message
+    })
+  }
+})
+
+// POST /api/auth/set-password - Set password for user
+router.post('/set-password', authenticateToken, async (req, res) => {
+  try {
+    const { password } = req.body
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long'
+      })
+    }
+
+    const result = await authService.setUserPassword(req.user.userId, password)
+
+    res.json({
+      success: true,
+      message: 'Password set successfully'
+    })
+  } catch (error) {
+    console.error('❌ Set password error:', error)
+    res.status(500).json({
+      error: 'Failed to set password',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/auth/login-password - Login with phone and password
+router.post('/login-password', async (req, res) => {
+  try {
+    const { phone, password } = req.body
+
+    if (!phone || !password) {
+      return res.status(400).json({
+        error: 'Phone and password are required'
+      })
+    }
+
+    const result = await authService.loginWithPassword(phone, password)
+
+    res.json(result)
+  } catch (error) {
+    console.error('❌ Password login error:', error)
+
+    if (error.message === 'User not found') {
+      return res.status(404).json({
+        error: 'User not found. Please register first.'
+      })
+    }
+
+    if (error.message === 'Password not set. Please use SMS verification.') {
+      return res.status(400).json({
+        error: 'Password not set',
+        requiresSmsLogin: true
+      })
+    }
+
+    if (error.message === 'Invalid password') {
+      return res.status(401).json({
+        error: 'Invalid password'
+      })
+    }
+
+    res.status(500).json({
+      error: 'Login failed',
+      details: error.message
     })
   }
 })
