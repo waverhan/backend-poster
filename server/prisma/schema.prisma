@@ -104,6 +104,22 @@ model ProductInventory {
   @@map("product_inventory")
 }
 
+model User {
+  id                String   @id @default(cuid())
+  phone             String   @unique
+  name              String
+  email             String?
+  role              String   @default("user") // user, admin
+  poster_client_id  String?  // Link to Poster POS client
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  // Relations
+  orders            Order[]
+
+  @@map("users")
+}
+
 model Customer {
   id         String   @id @default(cuid())
   name       String
@@ -122,6 +138,7 @@ model Customer {
 model Order {
   id                      String      @id @default(cuid())
   customer_id             String?
+  user_id                 String?     // Link to authenticated user
   branch_id               String
   order_number            String      @unique
   status                  String      @default("PENDING")
@@ -147,6 +164,7 @@ model Order {
   reviews                 Review[]
   branch                  Branch      @relation(fields: [branch_id], references: [id])
   customer                Customer?   @relation(fields: [customer_id], references: [id])
+  user                    User?       @relation(fields: [user_id], references: [id])
 
   @@map("orders")
 }

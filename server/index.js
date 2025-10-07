@@ -24,6 +24,8 @@ import untappdRouter from './routes/untappd.js'
 import reviewsRouter from './routes/reviews.js'
 import likesRouter from './routes/likes.js'
 import aiReviewsRouter from './routes/aiReviews.js'
+import authRouter from './routes/auth.js'
+import userOrdersRouter from './routes/userOrders.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -109,6 +111,8 @@ app.use('/api/untappd', untappdRouter)
 app.use('/api/reviews', reviewsRouter)
 app.use('/api/likes', likesRouter)
 app.use('/api/ai-reviews', aiReviewsRouter)
+app.use('/api/auth', authRouter)
+app.use('/api/user', userOrdersRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

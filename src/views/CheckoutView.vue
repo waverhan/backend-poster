@@ -337,6 +337,79 @@
 
             <hr class="my-4">
 
+            <!-- Bonus Section -->
+            <div v-if="authStore.isAuthenticated" class="mb-4">
+              <!-- Current Bonus Display -->
+              <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span class="text-sm font-medium text-orange-800">Доступно бонусів:</span>
+                  </div>
+                  <span class="text-sm font-bold text-orange-800">{{ authStore.userBonusPoints }} балів</span>
+                </div>
+              </div>
+
+              <!-- Bonus Usage -->
+              <div v-if="authStore.userBonusPoints > 0" class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <label class="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      v-model="useBonuses"
+                      type="checkbox"
+                      class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                    />
+                    <span class="text-sm font-medium text-gray-700">Використати бонуси</span>
+                  </label>
+                </div>
+
+                <div v-if="useBonuses" class="space-y-2">
+                  <div class="flex items-center space-x-2">
+                    <input
+                      v-model.number="bonusesToUse"
+                      type="number"
+                      :min="0"
+                      :max="maxBonusesToUse"
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      placeholder="Кількість бонусів"
+                    />
+                    <button
+                      @click="bonusesToUse = maxBonusesToUse"
+                      class="px-3 py-2 text-xs bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors"
+                    >
+                      Максимум
+                    </button>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    Максимум: {{ maxBonusesToUse }} балів ({{ maxBonusesToUse }} ₴)
+                  </div>
+                  <div v-if="bonusesToUse > 0" class="text-xs text-green-600">
+                    Знижка: {{ bonusesToUse }} ₴
+                  </div>
+                </div>
+              </div>
+
+              <!-- Login Prompt for Bonuses -->
+              <div v-if="!authStore.isAuthenticated" class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span class="text-sm text-blue-800">Увійдіть для використання бонусів</span>
+                  </div>
+                  <button
+                    @click="showLoginModal = true"
+                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
+                  >
+                    Увійти
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Totals -->
             <div class="space-y-2 text-sm">
               <!-- Show breakdown if there are inventory issues -->
@@ -364,10 +437,17 @@
                 <span>{{ $t('cart.deliveryFee') }}:</span>
                 <span>{{ deliveryFee.toFixed(2) }} ₴</span>
               </div>
+              <div v-if="bonusDiscount > 0" class="flex justify-between text-orange-600">
+                <span>Знижка бонусами:</span>
+                <span>-{{ bonusDiscount.toFixed(2) }} ₴</span>
+              </div>
               <hr class="my-2">
               <div class="flex justify-between font-semibold text-lg">
                 <span>{{ $t('cart.total') }}:</span>
-                <span class="text-green-600">{{ orderTotal.toFixed(2) }} ₴</span>
+                <span class="text-green-600">{{ finalTotal.toFixed(2) }} ₴</span>
+              </div>
+              <div v-if="bonusDiscount > 0" class="text-xs text-orange-600 mt-1">
+                Заощаджено бонусами: {{ bonusDiscount.toFixed(2) }} ₴
               </div>
 
               <!-- Show savings if items were removed/adjusted -->
@@ -462,6 +542,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Login Modal -->
+    <PhoneLoginModal
+      v-if="showLoginModal"
+      @close="showLoginModal = false"
+      @success="onLoginSuccess"
+    />
   </div>
 </template>
 
@@ -474,12 +561,14 @@ import { useLocationStore } from '@/stores/location'
 import { useBranchStore } from '@/stores/branch'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useNotificationStore } from '@/stores/notification'
+import { useAuthStore } from '@/stores/auth'
 import { capacitorService } from '@/services/capacitor'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
 import wayforpayService from '@/services/wayforpayService'
 import { getDefaultBottleSelection, getBottleCartItems, getBottleProduct } from '@/utils/bottleUtils'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import UkrainianPhoneInput from '@/components/ui/UkrainianPhoneInput.vue'
+import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
 import type { Branch, LocationData, Product } from '@/types'
 import type { OrderFormData } from '@/stores/orders'
 
@@ -493,6 +582,7 @@ const locationStore = useLocationStore()
 const branchStore = useBranchStore()
 const siteConfigStore = useSiteConfigStore()
 const notificationStore = useNotificationStore()
+const authStore = useAuthStore()
 
 // State
 const selectedMethod = ref<{
@@ -521,6 +611,11 @@ const cartUpdateTrigger = ref(0) // Force reactive updates
 
 // Payment state
 const paymentMethod = ref<'cash' | 'online'>('cash')
+
+// Bonus state
+const useBonuses = ref(false)
+const bonusesToUse = ref(0)
+const showLoginModal = ref(false)
 
 // Constants
 const MINIMUM_ORDER_AMOUNT = 300
@@ -573,6 +668,22 @@ const cartSubtotal = computed(() => {
 
 const deliveryFee = computed(() => selectedMethod.value?.fee || 0)
 const orderTotal = computed(() => cartSubtotal.value + deliveryFee.value)
+
+// Bonus computeds
+const maxBonusesToUse = computed(() => {
+  if (!authStore.isAuthenticated) return 0
+  // Can't use more bonuses than available or more than the order total
+  return Math.min(authStore.userBonusPoints, Math.floor(orderTotal.value))
+})
+
+const bonusDiscount = computed(() => {
+  if (!useBonuses.value || !authStore.isAuthenticated) return 0
+  return Math.min(bonusesToUse.value, maxBonusesToUse.value)
+})
+
+const finalTotal = computed(() => {
+  return Math.max(0, orderTotal.value - bonusDiscount.value)
+})
 
 const isCustomerFormValid = computed(() => {
   const phone = customerForm.value.customer_phone
@@ -1006,13 +1117,37 @@ const placeOrder = async () => {
       return
     }
 
+    // Prepare order data with bonus information
+    const orderData = {
+      ...customerForm.value,
+      bonusUsed: bonusDiscount.value,
+      bonusPoints: authStore.isAuthenticated ? authStore.userBonusPoints : 0,
+      userId: authStore.user?.id,
+      posterClientId: authStore.user?.posterClientId
+    }
+
     // Create the order
     const order = await ordersStore.createOrder(
-      customerForm.value,
+      orderData,
       orderItems,
       deliveryFee.value,
       paymentMethod.value
     )
+
+    // Process bonus usage if applicable
+    if (authStore.isAuthenticated && bonusDiscount.value > 0) {
+      try {
+        // Deduct bonus points from user account
+        await authStore.getBonusInfo() // Refresh current bonus info
+        console.log(`💰 Processing bonus usage: ${bonusDiscount.value} points for order ${order.id}`)
+
+        // Note: Actual bonus deduction will be handled by the backend when the order is processed
+        // For now, we just log the usage and refresh the user's bonus info after order completion
+      } catch (error) {
+        console.error('Failed to process bonus usage:', error)
+        // Don't fail the order if bonus processing fails
+      }
+    }
 
     // Handle payment method
     if (paymentMethod.value === 'online') {
@@ -1086,11 +1221,36 @@ watch(
   async (newLength, oldLength) => {
     // Only re-validate if items were added (not removed)
     if (newLength > oldLength && selectedMethod.value?.branch) {
-      
+
       await validateInventoryOnLoad()
     }
   }
 )
+
+// Watch for bonus usage changes
+watch(useBonuses, (newValue) => {
+  if (!newValue) {
+    bonusesToUse.value = 0
+  }
+})
+
+// Watch for bonus amount changes to ensure it doesn't exceed maximum
+watch(bonusesToUse, (newValue) => {
+  if (newValue > maxBonusesToUse.value) {
+    bonusesToUse.value = maxBonusesToUse.value
+  }
+  if (newValue < 0) {
+    bonusesToUse.value = 0
+  }
+})
+
+// Watch for authentication changes
+watch(() => authStore.isAuthenticated, (newValue) => {
+  if (!newValue) {
+    useBonuses.value = false
+    bonusesToUse.value = 0
+  }
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -1177,6 +1337,22 @@ onMounted(async () => {
   // Validate inventory after setup
   await validateInventoryOnLoad()
 })
+
+// Login success handler
+const onLoginSuccess = (user: any) => {
+  showLoginModal.value = false
+  console.log('Login successful in checkout:', user)
+  // Optionally pre-fill customer form with user data
+  if (user.name) {
+    customerForm.value.customer_name = user.name
+  }
+  if (user.email) {
+    customerForm.value.customer_email = user.email
+  }
+  if (user.phone) {
+    customerForm.value.customer_phone = user.phone.replace(/^\+/, '')
+  }
+}
 
 // Watch for cart changes and re-validate inventory
 watch([cartItems, selectedMethod], async () => {

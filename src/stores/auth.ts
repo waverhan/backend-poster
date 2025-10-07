@@ -1,6 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { User, LoginForm, RegisterForm } from '@/types'
+import { backendApi } from '@/services/backendApi'
+
+export interface User {
+  id: string
+  phone: string
+  name: string
+  email?: string
+  role?: string
+  posterClientId?: string
+  bonusPoints: number
+  totalPaidSum: number
+}
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -10,9 +21,9 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   // Getters
-  const isAuthenticated = computed(() => {
-    return user.value !== null && token.value !== null
-  })
+  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const userBonusPoints = computed(() => user.value?.bonusPoints || 0)
+  const userTotalSpent = computed(() => user.value?.totalPaidSum || 0)
 
   const isAdmin = computed(() => {
     return user.value?.role === 'admin' || user.value?.email === 'admin@opillia.com.ua'
@@ -33,38 +44,99 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Actions
-  const login = async (credentials: LoginForm): Promise<boolean> => {
-    isLoading.value = true
-    error.value = null
+  const setError = (message: string | null) => {
+    error.value = message
+  }
 
+  const clearError = () => {
+    error.value = null
+  }
+
+  const setLoading = (loading: boolean) => {
+    isLoading.value = loading
+  }
+
+  /**
+   * Send SMS verification code
+   */
+  const sendVerificationCode = async (phoneNumber: string) => {
     try {
-      // Mock login - in real app, call your API
-      
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Mock successful login
-      const mockUser: User = {
-        id: '1',
-        email: credentials.email,
-        name: 'John Doe',
-        phone: '+380501234567',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      setLoading(true)
+      clearError()
+
+      const response = await fetch(`${backendApi.baseUrl}/auth/send-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone: phoneNumber })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to send verification code')
       }
-      
-      const mockToken = 'mock_jwt_token_' + Date.now()
-      
-      setUser(mockUser)
-      setToken(mockToken)
-      
-      return true
+
+      return {
+        success: true,
+        phone: data.phone,
+        expiresIn: data.expiresIn
+      }
     } catch (err: any) {
-      error.value = err.message || 'Login failed'
-      return false
+      const errorMessage = err.message || 'Failed to send verification code'
+      setError(errorMessage)
+      throw new Error(errorMessage)
     } finally {
-      isLoading.value = false
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Verify SMS code and login
+   */
+  const verifyCodeAndLogin = async (phoneNumber: string, code: string, name?: string) => {
+    try {
+      setLoading(true)
+      clearError()
+
+      const response = await fetch(`${backendApi.baseUrl}/auth/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          code: code,
+          ...(name && { name })
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Verification failed')
+      }
+
+      // Store authentication data
+      token.value = data.token
+      user.value = data.user
+
+      // Save to localStorage
+      localStorage.setItem('auth_token', data.token)
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+      return {
+        success: true,
+        user: data.user,
+        isNewUser: data.isNewUser
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Verification failed'
+      setError(errorMessage)
+      throw new Error(errorMessage)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -79,18 +151,22 @@ export const useAuthStore = defineStore('auth', () => {
       if (password === adminPassword) {
         const adminUser: User = {
           id: 'admin',
-          email: 'admin@opillia.com.ua',
+          phone: '+380973244668',
           name: 'Administrator',
-          phone: '+38 (097) 324 46 68',
+          email: 'admin@opillia.com.ua',
           role: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          bonusPoints: 0,
+          totalPaidSum: 0
         }
 
         const adminToken = 'admin_token_' + Date.now()
 
-        setUser(adminUser)
-        setToken(adminToken)
+        user.value = adminUser
+        token.value = adminToken
+
+        // Save to localStorage
+        localStorage.setItem('auth_token', adminToken)
+        localStorage.setItem('auth_user', JSON.stringify(adminUser))
 
         return true
       } else {
@@ -104,189 +180,195 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const register = async (userData: RegisterForm): Promise<boolean> => {
-    isLoading.value = true
-    error.value = null
-
+  /**
+   * Get user profile with latest bonus information
+   */
+  const refreshProfile = async () => {
     try {
-      // Mock registration - in real app, call your API
-
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // Mock successful registration
-      const mockUser: User = {
-        id: '1',
-        email: userData.email,
-        name: userData.name,
-        phone: userData.phone,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+      if (!token.value) {
+        throw new Error('No authentication token')
       }
 
-      const mockToken = 'mock_jwt_token_' + Date.now()
+      const response = await fetch(`${backendApi.baseUrl}/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token.value}`
+        }
+      })
 
-      setUser(mockUser)
-      setToken(mockToken)
+      const data = await response.json()
 
-      return true
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to get profile')
+      }
+
+      user.value = data.user
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+      return data.user
     } catch (err: any) {
-      error.value = err.message || 'Registration failed'
-      return false
-    } finally {
-      isLoading.value = false
+      console.error('Failed to refresh profile:', err)
+      throw err
     }
   }
 
+  /**
+   * Logout user
+   */
   const logout = async () => {
-    isLoading.value = true
-    
     try {
-      // In real app, call logout API
-      
-      
-      // Clear user data
-      clearAuth()
-    } catch (err: any) {
-      console.error('Logout error:', err)
+      if (token.value) {
+        // Call logout endpoint
+        await fetch(`${backendApi.baseUrl}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token.value}`
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Logout API call failed:', err)
     } finally {
-      isLoading.value = false
+      // Clear local state regardless of API call result
+      user.value = null
+      token.value = null
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      clearError()
     }
   }
 
-  const refreshToken = async (): Promise<boolean> => {
-    if (!token.value) return false
-    
+  /**
+   * Update user profile
+   */
+  const updateProfile = async (updates: { name?: string; email?: string }) => {
     try {
-      // In real app, call refresh token API
-      
-      
-      // Mock token refresh
-      const newToken = 'refreshed_token_' + Date.now()
-      setToken(newToken)
-      
-      return true
-    } catch (err: any) {
-      console.error('Token refresh failed:', err)
-      clearAuth()
-      return false
-    }
-  }
+      setLoading(true)
+      clearError()
 
-  const updateProfile = async (updates: Partial<User>): Promise<boolean> => {
-    if (!user.value) return false
-    
-    isLoading.value = true
-    error.value = null
-    
-    try {
-      // In real app, call update profile API
-      
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Update user data
-      user.value = {
-        ...user.value,
-        ...updates,
-        updated_at: new Date().toISOString()
+      if (!token.value) {
+        throw new Error('No authentication token')
       }
-      
-      saveToStorage()
-      return true
+
+      const response = await fetch(`${backendApi.baseUrl}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token.value}`
+        },
+        body: JSON.stringify(updates)
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to update profile')
+      }
+
+      user.value = data.user
+      localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+      return data.user
     } catch (err: any) {
-      error.value = err.message || 'Profile update failed'
-      return false
+      const errorMessage = err.message || 'Failed to update profile'
+      setError(errorMessage)
+      throw new Error(errorMessage)
     } finally {
-      isLoading.value = false
+      setLoading(false)
     }
   }
 
-  const setUser = (userData: User) => {
-    user.value = userData
-    saveToStorage()
-  }
-
-  const setToken = (tokenValue: string) => {
-    token.value = tokenValue
-    saveToStorage()
-  }
-
-  const clearAuth = () => {
-    user.value = null
-    token.value = null
-    error.value = null
-    clearStorage()
-  }
-
-  const clearError = () => {
-    error.value = null
-  }
-
-  // Persistence
-  const saveToStorage = () => {
+  /**
+   * Get current bonus information
+   */
+  const getBonusInfo = async () => {
     try {
-      const authData = {
-        user: user.value,
-        token: token.value
+      if (!token.value) {
+        throw new Error('No authentication token')
       }
-      localStorage.setItem('pwa-pos-auth', JSON.stringify(authData))
-    } catch (error) {
-      console.error('Failed to save auth to storage:', error)
-    }
-  }
 
-  const loadFromStorage = () => {
-    try {
-      const stored = localStorage.getItem('pwa-pos-auth')
-      
-      if (stored) {
-        const authData = JSON.parse(stored)
-        user.value = authData.user
-        token.value = authData.token
+      const response = await fetch(`${backendApi.baseUrl}/auth/bonus`, {
+        headers: {
+          'Authorization': `Bearer ${token.value}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to get bonus info')
       }
-    } catch (error) {
-      console.error('Failed to load auth from storage:', error)
-      clearAuth()
+
+      // Update user bonus points
+      if (user.value) {
+        user.value.bonusPoints = data.bonusPoints
+        user.value.totalPaidSum = data.totalPaidSum
+        localStorage.setItem('auth_user', JSON.stringify(user.value))
+      }
+
+      return {
+        bonusPoints: data.bonusPoints,
+        totalPaidSum: data.totalPaidSum,
+        clientName: data.clientName,
+        phone: data.phone
+      }
+    } catch (err: any) {
+      console.error('Failed to get bonus info:', err)
+      throw err
     }
   }
 
-  const clearStorage = () => {
+  /**
+   * Initialize auth state from localStorage
+   */
+  const initializeAuth = () => {
     try {
-      localStorage.removeItem('pwa-pos-auth')
-    } catch (error) {
-      console.error('Failed to clear auth storage:', error)
+      const savedToken = localStorage.getItem('auth_token')
+      const savedUser = localStorage.getItem('auth_user')
+
+      if (savedToken && savedUser) {
+        token.value = savedToken
+        user.value = JSON.parse(savedUser)
+
+        // Refresh profile in background to get latest bonus info
+        refreshProfile().catch(err => {
+          console.error('Failed to refresh profile on init:', err)
+          // If refresh fails, clear auth state
+          logout()
+        })
+      }
+    } catch (err) {
+      console.error('Failed to initialize auth:', err)
+      // Clear corrupted data
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
     }
   }
 
-  // Token validation
-  const isTokenValid = (): boolean => {
-    if (!token.value) return false
-    
-    try {
-      // In real app, decode JWT and check expiration
-      // For mock, just check if token exists and is not too old
-      const tokenParts = token.value.split('_')
-      if (tokenParts.length < 3) return false
-      
-      const timestamp = parseInt(tokenParts[2])
-      const oneHour = 60 * 60 * 1000
-      
-      return Date.now() - timestamp < oneHour
-    } catch {
-      return false
+  /**
+   * Validate phone number format
+   */
+  const validatePhoneNumber = (phone: string): boolean => {
+    // Ukrainian phone number validation
+    const cleaned = phone.replace(/[^\d]/g, '')
+    return /^0[0-9]{9}$/.test(cleaned) || /^380[0-9]{9}$/.test(cleaned)
+  }
+
+  /**
+   * Format phone number for display
+   */
+  const formatPhoneNumber = (phone: string): string => {
+    const cleaned = phone.replace(/[^\d]/g, '')
+    if (cleaned.startsWith('380')) {
+      const number = cleaned.substring(3)
+      return `+380 (${number.substring(0, 2)}) ${number.substring(2, 5)} ${number.substring(5, 7)} ${number.substring(7)}`
+    } else if (cleaned.startsWith('0')) {
+      return `${cleaned.substring(0, 3)} ${cleaned.substring(3, 6)} ${cleaned.substring(6, 8)} ${cleaned.substring(8)}`
     }
+    return phone
   }
 
-  // Initialize from storage
-  loadFromStorage()
-
-  // Check token validity on initialization
-  if (token.value && !isTokenValid()) {
-    clearAuth()
-  }
+  // Initialize from storage on store creation
+  initializeAuth()
 
   return {
     // State
@@ -300,23 +382,21 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     canAccessAdmin,
     userInitials,
+    userBonusPoints,
+    userTotalSpent,
 
     // Actions
-    login,
+    sendVerificationCode,
+    verifyCodeAndLogin,
     adminLogin,
-    register,
-    logout,
-    refreshToken,
+    refreshProfile,
     updateProfile,
-    setUser,
-    setToken,
-    clearAuth,
-    clearError,
-    isTokenValid,
-
-    // Persistence
-    saveToStorage,
-    loadFromStorage,
-    clearStorage
+    getBonusInfo,
+    logout,
+    initializeAuth,
+    validatePhoneNumber,
+    formatPhoneNumber,
+    setError,
+    clearError
   }
 })

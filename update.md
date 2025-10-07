@@ -1,5 +1,52 @@
 # PWA POS System - Version History
 
+## Version 1.6.0 - 2025-10-07
+
+### 🚀 **MAJOR DEPLOYMENT: Login & Order History System**
+
+#### ✅ **Backend Deployment (Railway)**
+- **Status**: ✅ **LIVE** - https://backend-api-production-b3a0.up.railway.app
+- **Database**: ✅ All migrations completed successfully
+- **Authentication**: ✅ JWT + SMS verification system active
+- **Order History**: ✅ User-specific order tracking enabled
+- **Dependencies**: ✅ Fixed missing `jsonwebtoken` package
+
+#### ✅ **Frontend Deployment (Netlify)**
+- **Status**: ✅ **LIVE** - https://opillia.com.ua
+- **Build**: ✅ Successful (4.43s build time)
+- **PWA**: ✅ Service worker and offline support active
+- **Order History**: ✅ `/orders` route with reorder functionality
+
+#### 🔐 **Authentication System Features**
+- **SMS Verification**: SMS-Fly.ua integration for Ukrainian phone numbers
+- **Poster Integration**: Automatic client creation and bonus tracking
+- **JWT Security**: 30-day token expiration with secure storage
+- **Bonus System**: 1% earning rate, 1 UAH = 1 bonus point
+
+#### 📋 **Order History Features**
+- **User Orders**: Complete order history with status tracking
+- **Reorder Function**: One-click reorder with product availability check
+- **Product Validation**: Automatic filtering of inactive products
+- **Mobile Optimized**: Responsive design for all devices
+
+#### 🔧 **Technical Implementation**
+- **Database Schema**: Added User model with Order relationships
+- **API Endpoints**:
+  - `POST /api/auth/send-code` - SMS verification
+  - `POST /api/auth/verify-code` - Login completion
+  - `GET /api/user/orders` - Order history
+  - `POST /api/user/orders/:id/reorder` - Reorder processing
+- **Authentication Middleware**: Optional auth for backward compatibility
+- **Error Handling**: Comprehensive validation and user feedback
+
+#### ✅ **Enhanced Breadcrumb Structured Data**
+- **Feature**: Added product categories to breadcrumb structured data
+- **Implementation**: Dynamic 4-level breadcrumb structure (Home → Shop → Category → Product)
+- **SEO Impact**: Improved search result display with category context
+- **Example**: `Головна › Магазин › пиво ж/б імпорт › Пиво Volfas Engelman Baltic porter`
+
+---
+
 ## Version 1.5.0 - 2024-12-06
 
 ### ✅ **COMPLETE: Product Descriptions & Rich Snippets Implementation**

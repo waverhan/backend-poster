@@ -52,6 +52,106 @@
           <!-- Language Switcher -->
           <LanguageSwitcher />
 
+          <!-- User Account / Login -->
+          <div class="relative">
+            <!-- Authenticated User -->
+            <div v-if="authStore.isAuthenticated" class="flex items-center space-x-3">
+              <!-- Bonus Points (Desktop) -->
+              <div class="hidden lg:flex items-center space-x-2 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-3 py-1 rounded-full text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+                <span class="font-medium">{{ authStore.userBonusPoints }}</span>
+              </div>
+
+              <!-- User Menu -->
+              <div class="relative">
+                <button
+                  @click="showUserMenu = !showUserMenu"
+                  class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                >
+                  <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    {{ authStore.userInitials }}
+                  </div>
+                  <span class="hidden md:block">{{ authStore.user?.name }}</span>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- User Dropdown -->
+                <div
+                  v-if="showUserMenu"
+                  class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
+                  @click.stop
+                >
+                  <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ authStore.user?.name }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ formatPhoneNumber(authStore.user?.phone || '') }}</p>
+                    <div class="mt-2 flex items-center space-x-2 text-sm">
+                      <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      </svg>
+                      <span class="text-orange-600 dark:text-orange-400 font-medium">{{ authStore.userBonusPoints }} балів</span>
+                    </div>
+                  </div>
+
+                  <div class="py-2">
+                    <router-link
+                      to="/profile"
+                      class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      @click="showUserMenu = false"
+                    >
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span>Особистий кабінет</span>
+                      </div>
+                    </router-link>
+
+                    <router-link
+                      to="/orders"
+                      class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      @click="showUserMenu = false"
+                    >
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        <span>Мої замовлення</span>
+                      </div>
+                    </router-link>
+
+                    <button
+                      @click="handleLogout"
+                      class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span>Вийти</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Login Button -->
+            <button
+              v-else
+              @click="showLoginModal = true"
+              class="flex items-center space-x-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              <span class="hidden sm:block">Увійти</span>
+            </button>
+          </div>
+
           <!-- Cart Button - Hidden on mobile since it's in bottom nav -->
           <router-link
             to="/cart"
@@ -65,20 +165,63 @@
         </div>
       </div>
     </div>
+
+    <!-- Login Modal -->
+    <PhoneLoginModal
+      v-if="showLoginModal"
+      @close="showLoginModal = false"
+      @success="onLoginSuccess"
+    />
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import { useAuthStore } from '@/stores/auth'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
+import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
 
 const cartStore = useCartStore()
 const siteConfigStore = useSiteConfigStore()
+const authStore = useAuthStore()
 
 const cartCount = computed(() => cartStore.totalItems || 0)
 const siteConfig = computed(() => siteConfigStore.currentConfig)
 const showFallbackLogo = ref(false)
+const showLoginModal = ref(false)
+const showUserMenu = ref(false)
+
+// Methods
+const formatPhoneNumber = (phone: string) => {
+  return authStore.formatPhoneNumber(phone)
+}
+
+const handleLogout = async () => {
+  showUserMenu.value = false
+  await authStore.logout()
+}
+
+const onLoginSuccess = (user: any) => {
+  console.log('Login successful:', user)
+  // Optionally show a success message or redirect
+}
+
+// Close user menu when clicking outside
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.relative')) {
+    showUserMenu.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>

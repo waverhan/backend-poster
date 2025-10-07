@@ -91,8 +91,17 @@ const router = createRouter({
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'),
       meta: {
-        title: 'User Profile',
+        title: 'Профіль користувача - Опілля',
         requiresAuth: true
+      }
+    },
+    {
+      path: '/orders',
+      name: 'order-history',
+      component: () => import('@/views/OrderHistoryView.vue'),
+      meta: {
+        title: 'Історія замовлень - Опілля',
+        requiresAuth: false // Allow access but show login prompt if not authenticated
       }
     },
     {

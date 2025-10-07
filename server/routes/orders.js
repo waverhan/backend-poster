@@ -3,6 +3,7 @@ import { emailService } from '../services/emailService.js'
 import axios from 'axios'
 import { sendViberOrderNotification, sendViberStatusUpdate } from '../services/viberService.js'
 import { prisma } from '../index.js'
+import { optionalAuth } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -280,7 +281,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/orders - Create new order
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     console.log('📦 Incoming order request body:', JSON.stringify(req.body, null, 2))
 
@@ -295,11 +296,17 @@ router.post('/', async (req, res) => {
       delivery_fee,
       notes,
       no_callback_confirmation,
-      payment_method = 'cash'
+      payment_method = 'cash',
+      bonusUsed = 0,
+      userId,
+      posterClientId
     } = req.body
 
+    // Get authenticated user info if available
+    const authenticatedUser = req.user
+    const orderUserId = authenticatedUser?.id || userId || null
 
-
+    console.log(`👤 Order user info: authenticated=${!!authenticatedUser}, userId=${orderUserId}, bonusUsed=${bonusUsed}`)
     console.log(`🚚 Order details: method=${delivery_method}, pickup_branch=`, pickup_branch)
 
     
@@ -544,6 +551,7 @@ router.post('/', async (req, res) => {
       order = await prisma.order.create({
         data: {
           customer_id: customer?.id,
+          user_id: orderUserId,
           branch_id: branch.id,
           order_number: generateOrderNumber(),
           status: 'PENDING',
