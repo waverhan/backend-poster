@@ -94,7 +94,8 @@
 
 #### **🔍 SEO Implementation Details**
 - ✅ **Product Schema**: Complete Schema.org Product markup
-- ✅ **Breadcrumb Schema**: Three-level navigation (Головна → Магазин → Product)
+- ✅ **Breadcrumb Schema**: Four-level navigation (Головна → Магазин → Category → Product)
+- ✅ **Dynamic Category Breadcrumbs**: Automatically includes product category in breadcrumb path
 - ✅ **Beer Attributes**: ABV, IBU, OG as additionalProperty in structured data
 - ✅ **Aggregate Ratings**: Support for combined local and Untappd ratings
 - ✅ **Meta Description**: 160-character product descriptions with fallbacks
@@ -103,9 +104,16 @@
 #### **📦 Version & Deployment**
 - ✅ **Version Updated**: Package.json updated to v1.5.0
 - ✅ **Production Deployment**: Live at https://opillia.com.ua
-- ✅ **Netlify Deploy**: ID 68e4a6597ff50cfab710e9d7
+- ✅ **Latest Deploy**: ID 68e4b5f57ff50c228b10ecf6 (with category breadcrumbs)
+- ✅ **Previous Deploy**: ID 68e4a6597ff50cfab710e9d7 (initial rich snippets)
 - ✅ **GitHub Repository**: All changes committed and pushed
 - ✅ **Documentation**: Complete changelog and technical details
+
+#### **🆕 Latest Update: Category Breadcrumbs**
+- ✅ **Enhanced Breadcrumbs**: Now includes product category in breadcrumb path
+- ✅ **Dynamic Structure**: Головна → Магазин → [Category Name] → Product Name
+- ✅ **SEO Improvement**: Better search result breadcrumb display
+- ✅ **Example**: "Головна › Магазин › пиво ж/б імпорт › Пиво Volfas Engelman Baltic porter"
 
 ---
 

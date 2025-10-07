@@ -511,29 +511,43 @@ const addStructuredData = () => {
   })
 
   // Create breadcrumb structured data
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Головна",
+      "item": "https://opillia.com.ua/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Магазин",
+      "item": "https://opillia.com.ua/shop"
+    }
+  ]
+
+  // Add category if available
+  if (product.value.category_name) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      "position": 3,
+      "name": product.value.category_name,
+      "item": `https://opillia.com.ua/shop?category=${product.value.category_id}`
+    })
+  }
+
+  // Add product as final item
+  breadcrumbItems.push({
+    "@type": "ListItem",
+    "position": breadcrumbItems.length + 1,
+    "name": product.value.display_name,
+    "item": window.location.href
+  })
+
   const breadcrumbData = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Головна",
-        "item": "https://opillia.com.ua/"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Магазин",
-        "item": "https://opillia.com.ua/shop"
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": product.value.display_name,
-        "item": window.location.href
-      }
-    ]
+    "itemListElement": breadcrumbItems
   }
 
   // Create and append product structured data script tag
