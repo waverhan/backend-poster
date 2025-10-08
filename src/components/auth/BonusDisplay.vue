@@ -21,14 +21,14 @@
       </div>
     </div>
     
-    <!-- Additional info -->
-    <div v-if="showDetails" class="mt-4 pt-4 border-t border-orange-400 border-opacity-30">
+    <!-- Additional info - only show if user has spent money or has bonus points -->
+    <div v-if="showDetails && (totalSpent > 0 || bonusPoints > 0)" class="mt-4 pt-4 border-t border-orange-400 border-opacity-30">
       <div class="grid grid-cols-2 gap-4 text-sm">
-        <div>
+        <div v-if="totalSpent > 0">
           <p class="text-orange-100">Всього витрачено:</p>
           <p class="font-semibold">{{ formatCurrency(totalSpent) }}</p>
         </div>
-        <div>
+        <div v-if="bonusPoints > 0">
           <p class="text-orange-100">Економія:</p>
           <p class="font-semibold">{{ formatCurrency(bonusPoints) }}</p>
         </div>

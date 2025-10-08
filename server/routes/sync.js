@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename)
 const router = express.Router()
 
 const POSTER_API_BASE = 'https://joinposter.com/api'
-const POSTER_TOKEN = '218047:05891220e474bad7f26b6eaa0be3f344'
+const POSTER_TOKEN = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
 
 // POST /api/sync/full - Full sync from Poster API
 router.post('/full', async (req, res) => {

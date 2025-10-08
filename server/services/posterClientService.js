@@ -2,8 +2,8 @@ import fetch from 'node-fetch'
 
 class PosterClientService {
   constructor() {
-    // Use the existing Poster API token from your system
-    this.apiToken = process.env.POSTER_API_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
+    // Use the Poster API token from environment variables
+    this.apiToken = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
     this.baseUrl = 'https://joinposter.com/api'
   }
 
