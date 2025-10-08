@@ -293,7 +293,17 @@ const onPasswordSetupSuccess = () => {
 }
 
 // Initialize
-onMounted(() => {
+onMounted(async () => {
   loadProfileData()
+
+  // Fetch latest bonus information
+  if (authStore.isAuthenticated) {
+    try {
+      await authStore.getBonusInfo()
+      console.log('✅ Bonus info refreshed on profile load')
+    } catch (error) {
+      console.error('Failed to fetch bonus info on profile load:', error)
+    }
+  }
 })
 </script>

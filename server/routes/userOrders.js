@@ -60,20 +60,28 @@ router.get('/orders', authenticateToken, async (req, res) => {
       created_at: order.created_at.toISOString(),
       updated_at: order.updated_at.toISOString(),
       branch: order.branch,
-      items: order.items.map(item => ({
-        id: item.id,
-        product_id: item.product_id,
-        name: item.product_name || item.product?.name || 'Unknown Product',
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-        custom_quantity: item.custom_quantity,
-        custom_unit: item.custom_unit,
-        image_url: item.product?.image_url,
-        unit: item.product?.unit,
-        is_draft_beverage: item.product?.is_draft_beverage || false,
-        is_bottle_product: item.product?.is_bottle_product || false
-      }))
+      items: order.items.map(item => {
+        // Debug product name resolution
+        const productName = item.product_name || item.product?.name || `Product ${item.product_id}`
+        if (!item.product_name && !item.product?.name) {
+          console.log(`⚠️ Missing product name for item ${item.id}, product_id: ${item.product_id}`)
+        }
+
+        return {
+          id: item.id,
+          product_id: item.product_id,
+          name: productName,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+          custom_quantity: item.custom_quantity,
+          custom_unit: item.custom_unit,
+          image_url: item.product?.image_url,
+          unit: item.product?.unit,
+          is_draft_beverage: item.product?.is_draft_beverage || false,
+          is_bottle_product: item.product?.is_bottle_product || false
+        }
+      })
     }))
 
     console.log(`✅ Found ${transformedOrders.length} orders for user ${userId}`)
