@@ -175,7 +175,7 @@ router.get('/bonus', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       bonusPoints: parseFloat(posterClient.bonus) || 0,
-      totalPaidSum: parseFloat(posterClient.total_payed_sum) || 0,
+      totalPaidSum: (parseFloat(posterClient.total_payed_sum) || 0) / 100, // Convert kopecks to hryvnias
       clientName: posterClient.client_name,
       phone: posterClient.phone
     })

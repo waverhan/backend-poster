@@ -173,6 +173,7 @@
                 @click="reorderItems(order)"
                 :disabled="reorderingOrderId === order.id"
                 class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors"
+                style="min-width: 120px; display: block !important;"
               >
                 {{ reorderingOrderId === order.id ? 'Додавання...' : 'Замовити знову' }}
               </button>
@@ -242,6 +243,12 @@ const fetchOrders = async () => {
 
     const data = await response.json()
     orders.value = data.orders || []
+
+    // Debug log for reorder button investigation
+    console.log('📋 Orders loaded:', orders.value.length, 'orders')
+    if (orders.value.length > 0) {
+      console.log('📋 First order sample:', orders.value[0])
+    }
   } catch (err) {
     console.error('Error fetching orders:', err)
     error.value = 'Не вдалося завантажити історію замовлень'

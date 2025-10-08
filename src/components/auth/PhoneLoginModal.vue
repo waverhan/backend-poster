@@ -360,18 +360,21 @@ const sendCode = async () => {
 const verifyCode = async () => {
   codeError.value = ''
   authStore.clearError()
-  
+
   if (!isCodeValid.value) {
     codeError.value = 'Введіть 4-значний код'
     return
   }
-  
+
   if (showNameInput.value && !userName.value.trim()) {
     codeError.value = 'Введіть ваше ім\'я'
     return
   }
-  
+
   try {
+    // Add loading state for better UX
+    authStore.setLoading(true)
+
     const result = await authStore.verifyCodeAndLogin(
       phoneNumber.value,
       verificationCode.value,
