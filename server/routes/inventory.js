@@ -239,6 +239,41 @@ router.post('/sync/trigger', async (req, res) => {
   }
 })
 
+// POST /api/inventory/sync/daily-trigger - Trigger manual daily sync (new products + prices)
+router.post('/sync/daily-trigger', async (req, res) => {
+  try {
+    console.log('🔄 Manual daily sync triggered...')
+
+    // This will call the new daily sync endpoint
+    const syncResponse = await fetch(`${req.protocol}://${req.get('host')}/api/sync/daily`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!syncResponse.ok) {
+      throw new Error(`Daily sync failed with status: ${syncResponse.status}`)
+    }
+
+    const syncResult = await syncResponse.json()
+
+    res.json({
+      success: true,
+      message: 'Daily sync triggered successfully',
+      result: syncResult
+    })
+
+  } catch (error) {
+    console.error('❌ Error triggering daily sync:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to trigger daily sync',
+      message: error.message
+    })
+  }
+})
+
 // GET /api/inventory/sync/status/latest - Get latest sync status
 router.get('/sync/status/latest', async (req, res) => {
   try {

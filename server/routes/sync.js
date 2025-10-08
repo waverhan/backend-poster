@@ -1111,12 +1111,12 @@ router.post('/prices-only', async (req, res) => {
     }
 
     // Update sync log with success
-    await updateSyncLog(syncLog.id, 'completed', updatedProductsCount, null, {
+    await updateSyncLog(syncLog.id, 'completed', updatedProductsCount, null, JSON.stringify({
       updated_products: updatedProductsCount,
       skipped_products: skippedProductsCount,
       total_poster_products: posterProducts.length,
       sync_type: 'prices-only'
-    })
+    }))
 
 
 
@@ -1412,6 +1412,159 @@ router.post('/images-only', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Image sync failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/daily - Daily sync for new products and price updates
+router.post('/daily', async (req, res) => {
+  let syncLog = null
+
+  try {
+    console.log('🌅 Starting daily sync: new products and price updates...')
+
+    syncLog = await createSyncLog('daily-sync', 'in_progress')
+
+    // Get all products from Poster API
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+    console.log(`📊 Found ${posterProducts.length} products in Poster POS`)
+
+    // Get all existing products from database
+    const existingProducts = await prisma.product.findMany({
+      select: { poster_product_id: true, price: true, id: true, name: true }
+    })
+
+    const existingProductIds = new Set(existingProducts.map(p => p.poster_product_id))
+
+    let newProductsCount = 0
+    let updatedPricesCount = 0
+    let skippedProductsCount = 0
+    let errorCount = 0
+
+    // Process each product from Poster
+    for (const posterProduct of posterProducts) {
+      try {
+        const isNewProduct = !existingProductIds.has(posterProduct.product_id)
+
+        if (isNewProduct) {
+          // NEW PRODUCT: Import it
+          console.log(`🆕 New product found: ${posterProduct.product_name} (ID: ${posterProduct.product_id})`)
+
+          // Get category for the product
+          let categoryId = null
+          if (posterProduct.category_id) {
+            const category = await prisma.category.findFirst({
+              where: { poster_category_id: posterProduct.category_id }
+            })
+            categoryId = category?.id || null
+          }
+
+          // Calculate price
+          let price = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+          if (posterProduct.weight_flag === 1) {
+            price = price / 10 // For weight-based products
+          }
+
+          // Create new product
+          await prisma.product.create({
+            data: {
+              poster_product_id: posterProduct.product_id,
+              name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
+              description: posterProduct.product_name || '',
+              price: price,
+              category_id: categoryId,
+              is_active: true,
+              unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
+              weight_flag: posterProduct.weight_flag || 0,
+              created_at: new Date(),
+              updated_at: new Date()
+            }
+          })
+
+          newProductsCount++
+          console.log(`✅ Imported new product: ${posterProduct.product_name}`)
+
+        } else {
+          // EXISTING PRODUCT: Check for price updates
+          const existingProduct = existingProducts.find(p => p.poster_product_id === posterProduct.product_id)
+
+          if (existingProduct) {
+            // Calculate new price
+            let newPrice = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+            if (posterProduct.weight_flag === 1) {
+              newPrice = newPrice / 10 // For weight-based products
+            }
+
+            // Only update if price has changed
+            if (Math.abs(existingProduct.price - newPrice) > 0.01) { // Allow for small floating point differences
+              await prisma.product.update({
+                where: { id: existingProduct.id },
+                data: {
+                  price: newPrice,
+                  updated_at: new Date()
+                }
+              })
+
+              updatedPricesCount++
+              console.log(`💰 Updated price for ${existingProduct.name}: ${existingProduct.price} → ${newPrice} UAH`)
+            } else {
+              skippedProductsCount++
+            }
+          }
+        }
+
+      } catch (productError) {
+        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError)
+        errorCount++
+      }
+    }
+
+    // Update sync log with success
+    const syncDetails = {
+      new_products: newProductsCount,
+      updated_prices: updatedPricesCount,
+      skipped_products: skippedProductsCount,
+      errors: errorCount,
+      total_poster_products: posterProducts.length,
+      sync_type: 'daily-sync'
+    }
+
+    await updateSyncLog(syncLog.id, 'completed', newProductsCount + updatedPricesCount, null, JSON.stringify(syncDetails))
+
+    const result = {
+      success: true,
+      message: `Daily sync completed! Added ${newProductsCount} new products and updated ${updatedPricesCount} prices.`,
+      stats: {
+        new_products: newProductsCount,
+        updated_prices: updatedPricesCount,
+        skipped_products: skippedProductsCount,
+        errors: errorCount,
+        total_poster_products: posterProducts.length,
+        sync_type: 'daily-sync'
+      }
+    }
+
+    console.log('🎉 Daily sync completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Daily sync failed:', error)
+
+    // Update sync log with error
+    if (syncLog) {
+      await updateSyncLog(syncLog.id, 'failed', null, error.message)
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Daily sync failed',
       message: error.message
     })
   }
