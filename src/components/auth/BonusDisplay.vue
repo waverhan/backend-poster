@@ -21,19 +21,7 @@
       </div>
     </div>
     
-    <!-- Additional info - only show if user has spent money or has bonus points -->
-    <div v-if="showDetails && (totalSpent > 0 || bonusPoints > 0)" class="mt-4 pt-4 border-t border-orange-400 border-opacity-30">
-      <div class="grid grid-cols-2 gap-4 text-sm">
-        <div v-if="totalSpent > 0">
-          <p class="text-orange-100">Всього витрачено:</p>
-          <p class="font-semibold">{{ formatCurrency(totalSpent) }}</p>
-        </div>
-        <div v-if="bonusPoints > 0">
-          <p class="text-orange-100">Економія:</p>
-          <p class="font-semibold">{{ formatCurrency(bonusPoints) }}</p>
-        </div>
-      </div>
-    </div>
+    <!-- Additional info section removed as requested -->
     
     <!-- Refresh button -->
     <button
