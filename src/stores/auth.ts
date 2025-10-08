@@ -102,6 +102,32 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
+   * Check if user exists and has password
+   */
+  const checkUser = async (phone: string) => {
+    try {
+      const response = await fetch(`${backendApi.baseUrl}/auth/check-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || 'Failed to check user')
+      }
+
+      return data
+    } catch (err: any) {
+      console.error('❌ Check user error:', err)
+      throw err
+    }
+  }
+
+  /**
    * Login with phone and password
    */
   const loginWithPassword = async (phone: string, password: string) => {
@@ -484,6 +510,7 @@ export const useAuthStore = defineStore('auth', () => {
     setError,
     clearError,
     setPassword,
-    loginWithPassword
+    loginWithPassword,
+    checkUser
   }
 })

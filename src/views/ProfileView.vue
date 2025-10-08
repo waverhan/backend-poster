@@ -121,6 +121,28 @@
           </form>
         </div>
 
+        <!-- Password Management -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Безпека</h2>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+              <div>
+                <p class="font-medium text-gray-900 dark:text-gray-100">Пароль для входу</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ authStore.user?.is_password_set ? 'Пароль встановлено' : 'Пароль не встановлено' }}
+                </p>
+              </div>
+              <button
+                @click="showPasswordModal = true"
+                class="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors"
+              >
+                {{ authStore.user?.is_password_set ? 'Змінити пароль' : 'Встановити пароль' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Bonus History (Placeholder) -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Історія бонусів</h2>
@@ -186,6 +208,14 @@
       @close="showLoginModal = false"
       @success="onLoginSuccess"
     />
+
+    <!-- Password Setup Modal -->
+    <PasswordSetupModal
+      v-if="showPasswordModal"
+      @close="showPasswordModal = false"
+      @skip="showPasswordModal = false"
+      @success="onPasswordSetupSuccess"
+    />
   </div>
 </template>
 
@@ -194,12 +224,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import BonusDisplay from '@/components/auth/BonusDisplay.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
+import PasswordSetupModal from '@/components/auth/PasswordSetupModal.vue'
 
 // Store
 const authStore = useAuthStore()
 
 // State
 const showLoginModal = ref(false)
+const showPasswordModal = ref(false)
 const isEditing = ref(false)
 const isRefreshing = ref(false)
 
@@ -253,6 +285,11 @@ const refreshBonusInfo = async () => {
 const onLoginSuccess = () => {
   showLoginModal.value = false
   loadProfileData()
+}
+
+const onPasswordSetupSuccess = () => {
+  showPasswordModal.value = false
+  console.log('Password setup completed')
 }
 
 // Initialize

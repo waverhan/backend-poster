@@ -124,7 +124,7 @@ class AuthService {
       // Get current bonus information
       const bonusInfo = posterClient ? {
         bonusPoints: parseFloat(posterClient.bonus) || 0,
-        totalPaidSum: parseFloat(posterClient.total_payed_sum) || 0
+        totalPaidSum: (parseFloat(posterClient.total_payed_sum) || 0) / 100 // Convert kopecks to hryvnias
       } : {
         bonusPoints: 0,
         totalPaidSum: 0
@@ -251,7 +251,7 @@ class AuthService {
           const posterClient = await posterClientService.getClientDetails(user.poster_client_id)
           bonusInfo = {
             bonusPoints: parseFloat(posterClient.bonus) || 0,
-            totalPaidSum: parseFloat(posterClient.total_payed_sum) || 0
+            totalPaidSum: (parseFloat(posterClient.total_payed_sum) || 0) / 100 // Convert kopecks to hryvnias
           }
         } catch (error) {
           console.error('⚠️ Error getting Poster client details:', error)
@@ -368,7 +368,7 @@ class AuthService {
       }
 
       // Generate JWT token
-      const token = this.generateToken(user.id)
+      const token = this.generateJWT(user)
 
       // Get user profile with bonus info
       const profile = await this.getUserProfile(user.id)

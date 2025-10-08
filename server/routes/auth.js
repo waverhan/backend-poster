@@ -2,6 +2,9 @@ import express from 'express'
 import authService from '../services/authService.js'
 import smsFlyService from '../services/smsFlyService.js'
 import posterClientService from '../services/posterClientService.js'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 const router = express.Router()
 
@@ -243,6 +246,44 @@ router.post('/set-password', authenticateToken, async (req, res) => {
     console.error('❌ Set password error:', error)
     res.status(500).json({
       error: 'Failed to set password',
+      details: error.message
+    })
+  }
+})
+
+// POST /api/auth/check-user - Check if user exists and has password
+router.post('/check-user', async (req, res) => {
+  try {
+    const { phone } = req.body
+
+    if (!phone) {
+      return res.status(400).json({
+        error: 'Phone number is required'
+      })
+    }
+
+    // Format phone number
+    const formattedPhone = smsFlyService.validatePhoneNumber(phone)
+
+    // Find user by phone
+    const user = await prisma.user.findUnique({
+      where: { phone: formattedPhone },
+      select: {
+        id: true,
+        is_password_set: true,
+        force_password_setup: true
+      }
+    })
+
+    res.json({
+      exists: !!user,
+      hasPassword: user?.is_password_set || false,
+      requiresSetup: user?.force_password_setup || false
+    })
+  } catch (error) {
+    console.error('❌ Check user error:', error)
+    res.status(500).json({
+      error: 'Failed to check user',
       details: error.message
     })
   }

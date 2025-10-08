@@ -30,11 +30,14 @@
         <div class="flex space-x-2 mb-4">
           <button
             @click="loginMethod = 'sms'"
+            :disabled="userHasPassword"
             :class="[
               'flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors',
               loginMethod === 'sms'
                 ? 'bg-orange-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : userHasPassword
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             ]"
           >
             SMS код
@@ -50,6 +53,13 @@
           >
             Пароль
           </button>
+        </div>
+
+        <!-- SMS disabled message -->
+        <div v-if="userHasPassword && loginMethod === 'sms'" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p class="text-blue-700 text-sm">
+            Для цього номера вже встановлено пароль. Використайте пароль для входу.
+          </p>
         </div>
 
         <div>
@@ -226,6 +236,7 @@ import { useAuthStore } from '@/stores/auth'
 const emit = defineEmits<{
   close: []
   success: [user: any, requiresPasswordSetup?: boolean]
+  requiresProfileCompletion: [user: any]
 }>()
 
 // Store
@@ -244,6 +255,8 @@ const codeError = ref('')
 const showNameInput = ref(false)
 const resendCountdown = ref(0)
 const resendTimer = ref<number | null>(null)
+const userHasPassword = ref(false)
+const checkingUser = ref(false)
 
 // Computed
 const isPhoneValid = computed(() => {
@@ -263,10 +276,10 @@ const formatPhoneNumber = (phone: string) => {
   return authStore.formatPhoneNumber(phone)
 }
 
-const onPhoneInput = (event: Event) => {
+const onPhoneInput = async (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/[^\d]/g, '')
-  
+
   // Ensure it starts with 0 and is max 10 digits
   if (value.length > 0 && !value.startsWith('0')) {
     value = '0' + value.slice(0, 9)
@@ -274,10 +287,37 @@ const onPhoneInput = (event: Event) => {
   if (value.length > 10) {
     value = value.slice(0, 10)
   }
-  
+
   phoneNumber.value = value
   phoneError.value = ''
   authStore.clearError()
+
+  // Check if user has password when phone number is complete
+  if (value.length === 10) {
+    await checkUserStatus(value)
+  } else {
+    userHasPassword.value = false
+  }
+}
+
+const checkUserStatus = async (phone: string) => {
+  if (!authStore.validatePhoneNumber(phone)) return
+
+  checkingUser.value = true
+  try {
+    const result = await authStore.checkUser(phone)
+    userHasPassword.value = result.hasPassword
+
+    // If user has password, switch to password login
+    if (result.hasPassword) {
+      loginMethod.value = 'password'
+    }
+  } catch (error) {
+    console.error('Failed to check user status:', error)
+    userHasPassword.value = false
+  } finally {
+    checkingUser.value = false
+  }
 }
 
 const onCodeInput = (event: Event) => {
@@ -296,12 +336,18 @@ const onCodeInput = (event: Event) => {
 const sendCode = async () => {
   phoneError.value = ''
   authStore.clearError()
-  
+
   if (!isPhoneValid.value) {
     phoneError.value = 'Введіть коректний номер телефону'
     return
   }
-  
+
+  // Check if user already has password
+  if (userHasPassword.value) {
+    phoneError.value = 'Для цього номера вже встановлено пароль. Використайте пароль для входу.'
+    return
+  }
+
   try {
     await authStore.sendVerificationCode(phoneNumber.value)
     step.value = 'verification'
@@ -332,12 +378,8 @@ const verifyCode = async () => {
       userName.value.trim() || undefined
     )
 
-    // Check if user needs to set up password
-    if (result.requiresPasswordSetup) {
-      emit('success', result.user, true) // true indicates password setup needed
-    } else {
-      emit('success', result.user)
-    }
+    // All SMS verified users must complete profile (mandatory)
+    emit('requiresProfileCompletion', result.user)
     emit('close')
   } catch (error: any) {
     codeError.value = error.message

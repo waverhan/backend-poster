@@ -171,6 +171,7 @@
       v-if="showLoginModal"
       @close="showLoginModal = false"
       @success="onLoginSuccess"
+      @requires-profile-completion="onProfileCompletionRequired"
     />
 
     <!-- Password Setup Modal -->
@@ -179,6 +180,13 @@
       @close="showPasswordSetup = false"
       @skip="showPasswordSetup = false"
       @success="onPasswordSetupSuccess"
+    />
+
+    <!-- Profile Completion Modal -->
+    <ProfileCompletionModal
+      v-if="showProfileCompletion"
+      :user="pendingUser"
+      @success="onProfileCompletionSuccess"
     />
   </header>
 </template>
@@ -192,6 +200,7 @@ import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
 import PasswordSetupModal from '@/components/auth/PasswordSetupModal.vue'
+import ProfileCompletionModal from '@/components/auth/ProfileCompletionModal.vue'
 
 const cartStore = useCartStore()
 const siteConfigStore = useSiteConfigStore()
@@ -202,7 +211,9 @@ const siteConfig = computed(() => siteConfigStore.currentConfig)
 const showFallbackLogo = ref(false)
 const showLoginModal = ref(false)
 const showPasswordSetup = ref(false)
+const showProfileCompletion = ref(false)
 const showUserMenu = ref(false)
+const pendingUser = ref(null)
 
 // Methods
 const formatPhoneNumber = (phone: string) => {
@@ -226,6 +237,18 @@ const onLoginSuccess = (user: any, requiresPasswordSetup?: boolean) => {
 const onPasswordSetupSuccess = () => {
   showPasswordSetup.value = false
   console.log('Password setup completed')
+}
+
+const onProfileCompletionRequired = (user: any) => {
+  console.log('Profile completion required for user:', user)
+  pendingUser.value = user
+  showProfileCompletion.value = true
+}
+
+const onProfileCompletionSuccess = () => {
+  showProfileCompletion.value = false
+  pendingUser.value = null
+  console.log('Profile completion successful')
 }
 
 // Close user menu when clicking outside
