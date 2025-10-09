@@ -570,4 +570,101 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
   }
 })
 
+// POST /api/products/bulk-update-attributes - Bulk update product attributes
+router.post('/bulk-update-attributes', async (req, res) => {
+  try {
+    const { updates } = req.body
+
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Updates array is required' })
+    }
+
+    console.log(`🔄 Processing ${updates.length} product attribute updates...`)
+
+    const results = []
+
+    for (const update of updates) {
+      try {
+        const { searchTerm, attributes, removeAttributes } = update
+
+        // Find products matching the search term
+        const products = await prisma.product.findMany({
+          where: {
+            OR: [
+              { display_name: { contains: searchTerm, mode: 'insensitive' } },
+              { name: { contains: searchTerm, mode: 'insensitive' } }
+            ]
+          },
+          select: {
+            id: true,
+            name: true,
+            display_name: true,
+            attributes: true
+          }
+        })
+
+        console.log(`🔍 Found ${products.length} products matching "${searchTerm}"`)
+
+        for (const product of products) {
+          if (removeAttributes) {
+            // Remove attributes
+            await prisma.product.update({
+              where: { id: product.id },
+              data: { attributes: null }
+            })
+
+            results.push({
+              productId: product.id,
+              productName: product.display_name,
+              action: 'removed_attributes',
+              success: true
+            })
+
+            console.log(`❌ Removed attributes from: ${product.display_name}`)
+          } else if (attributes && Array.isArray(attributes)) {
+            // Add/update attributes
+            await prisma.product.update({
+              where: { id: product.id },
+              data: { attributes: JSON.stringify(attributes) }
+            })
+
+            results.push({
+              productId: product.id,
+              productName: product.display_name,
+              action: 'updated_attributes',
+              attributes: attributes,
+              success: true
+            })
+
+            console.log(`✅ Updated attributes for: ${product.display_name}`)
+          }
+        }
+
+      } catch (updateError) {
+        console.error(`❌ Error processing update for "${update.searchTerm}":`, updateError)
+        results.push({
+          searchTerm: update.searchTerm,
+          action: 'error',
+          error: updateError.message,
+          success: false
+        })
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Processed ${updates.length} attribute updates`,
+      results: results
+    })
+
+  } catch (error) {
+    console.error('❌ Bulk attribute update failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Bulk attribute update failed',
+      message: error.message
+    })
+  }
+})
+
 export default router
