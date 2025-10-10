@@ -85,24 +85,34 @@
         />
       </div>
 
-      <!-- Price -->
+      <!-- Price and Add to Cart -->
       <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center space-x-2">
-          <span :class="[
-            'text-xl font-bold',
-            product.original_price && product.original_price > product.price
-              ? 'text-red-600'
-              : 'text-primary-600'
-          ]">{{ displayPrice }} ₴</span>
-          <span v-if="product.original_price && product.original_price > product.price"
-                class="text-sm text-gray-400 line-through">
-            {{ formatDisplayPrice(product.original_price) }} ₴
-          </span>
-        </div>
-        <div class="text-right">
-          <span class="text-sm text-gray-500">
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <span :class="[
+              'text-2xl font-black tracking-tight',
+              product.original_price && product.original_price > product.price
+                ? 'text-red-600'
+                : 'text-gray-900'
+            ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }} ₴</span>
+            <span v-if="product.original_price && product.original_price > product.price"
+                  class="text-sm text-gray-400 line-through">
+              {{ formatDisplayPrice(product.original_price) }} ₴
+            </span>
+          </div>
+          <span class="text-xs text-gray-500 mt-1">
             за {{ displayPriceUnit }}
           </span>
+        </div>
+        <div class="flex-shrink-0 ml-3">
+          <button
+            v-if="!isDraft"
+            @click="handleAddToCart"
+            :disabled="!isAvailableInBranch"
+            class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ getButtonText() }}
+          </button>
         </div>
       </div>
 
@@ -157,8 +167,8 @@
         @cancel="onBottleSelectionCancel"
       />
 
-      <!-- Add to Cart Buttons -->
-      <div v-if="!showBottleSelector" class="space-y-2">
+      <!-- Add to Cart Buttons (for draft products only) -->
+      <div v-if="!showBottleSelector && isDraft" class="space-y-2">
         <!-- Main Add to Cart Button (with auto bottle selection for draft) -->
         <button
           @click="handleAddToCart"

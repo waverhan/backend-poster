@@ -95,20 +95,36 @@
         </div>
       </div>
 
-      <!-- Price -->
+      <!-- Price and Add to Cart -->
       <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="text-base font-bold text-gray-900">
-            {{ displayPrice }} ₴
-          </span>
-          <span v-if="product.original_price && product.original_price > product.price"
-                class="text-sm text-gray-500 line-through">
-            {{ formatDisplayPrice(product.original_price) }} ₴
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span :class="[
+              'text-2xl font-black tracking-tight',
+              product.original_price && product.original_price > product.price
+                ? 'text-red-600'
+                : 'text-gray-900'
+            ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+              {{ displayPrice }} ₴
+            </span>
+            <span v-if="product.original_price && product.original_price > product.price"
+                  class="text-sm text-gray-500 line-through">
+              {{ formatDisplayPrice(product.original_price) }} ₴
+            </span>
+          </div>
+          <span class="text-xs text-gray-500 mt-1">
+            за {{ displayPriceUnit }}
           </span>
         </div>
-        <span class="text-sm text-gray-500">
-          за {{ displayPriceUnit }}
-        </span>
+        <div class="flex-shrink-0 ml-3">
+          <button
+            @click="$emit('add-to-cart', product)"
+            :disabled="!product.available"
+            class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            {{ product.available ? 'Купити' : 'Out of Stock' }}
+          </button>
+        </div>
       </div>
 
       <!-- Sale Countdown -->
@@ -117,15 +133,6 @@
         :product="product"
         @sale-expired="handleSaleExpired"
       />
-
-      <!-- Add to Cart Button -->
-      <button
-        @click="$emit('add-to-cart', product)"
-        :disabled="!product.available"
-        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-      >
-        {{ product.available ? 'Купити' : 'Out of Stock' }}
-      </button>
     </div>
   </div>
 </template>
