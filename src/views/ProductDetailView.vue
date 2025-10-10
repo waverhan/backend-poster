@@ -85,18 +85,38 @@
               </div>
             </div>
 
-            <!-- Price -->
-            <div class="flex items-center gap-4 mb-4">
-              <span class="text-xl font-bold text-blue-600">{{ formatPrice(product.price) }} ₴</span>
-              <span v-if="product.original_price && product.original_price > product.price"
-                    class="text-base text-gray-500 line-through">
-                {{ formatPrice(product.original_price) }} ₴
-              </span>
+            <!-- Price and Add to Cart -->
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex flex-col">
+                <div class="flex items-center gap-4">
+                  <span :class="[
+                    'text-3xl font-black tracking-tight',
+                    product.original_price && product.original_price > product.price
+                      ? 'text-red-600'
+                      : 'text-gray-900'
+                  ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+                    {{ formatPrice(product.price) }} ₴
+                  </span>
+                  <span v-if="product.original_price && product.original_price > product.price"
+                        class="text-lg text-gray-500 line-through">
+                    {{ formatPrice(product.original_price) }} ₴
+                  </span>
+                </div>
+                <p class="text-sm text-gray-600 mt-1">{{ getUnitLabel(product.unit) }}</p>
+              </div>
+              <div class="flex-shrink-0 ml-6">
+                <button
+                  @click="addToCart"
+                  :disabled="!product.available"
+                  class="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-lg"
+                >
+                  {{ product.available ? 'КУПИТИ' : 'Немає в наявності' }}
+                </button>
+              </div>
             </div>
-            <p class="text-gray-600">{{ getUnitLabel(product.unit) }}</p>
 
             <!-- Product Attributes -->
-            <div v-if="displayAttributes && displayAttributes.length > 0" class="space-y-4">
+            <div v-if="displayAttributes && displayAttributes.length > 0" class="space-y-4 mb-6">
               <div class="grid grid-cols-3 gap-4">
                 <div
                   v-for="attribute in displayAttributes"
@@ -114,15 +134,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Add to Cart -->
-            <button
-              @click="addToCart"
-              :disabled="!product.available"
-              class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ product.available ? 'КУПИТИ' : 'Немає в наявності' }}
-            </button>
 
             <!-- Description -->
             <div v-if="displayDescription" class="mt-6">
