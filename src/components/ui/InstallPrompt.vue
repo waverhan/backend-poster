@@ -46,6 +46,13 @@
                 ✕
               </button>
             </div>
+
+            <!-- Debug info (remove in production) -->
+            <div class="mt-2 text-xs text-red-200 opacity-75">
+              {{ isIOS ? 'iOS' : isAndroid ? 'Android' : 'Other' }} |
+              {{ deferredPrompt ? 'Native' : 'Manual' }} |
+              {{ isStandalone ? 'Standalone' : 'Browser' }}
+            </div>
           </div>
         </div>
         
@@ -117,22 +124,61 @@ const shouldShowPrompt = () => {
 
 // Install the app
 const installApp = async () => {
+  console.log('🔄 Install button clicked')
+  console.log('📱 Device info:', { isIOS: isIOS.value, isAndroid: isAndroid.value, isStandalone: isStandalone.value })
+  console.log('🎯 Deferred prompt available:', !!deferredPrompt.value)
+
   if (deferredPrompt.value) {
-    // Android Chrome install
-    deferredPrompt.value.prompt()
-    const { outcome } = await deferredPrompt.value.userChoice
-    
-    if (outcome === 'accepted') {
-      localStorage.setItem('appInstalled', new Date().toISOString())
+    try {
+      console.log('🚀 Showing native install prompt...')
+      // Android Chrome install
+      deferredPrompt.value.prompt()
+      const { outcome } = await deferredPrompt.value.userChoice
+
+      console.log('✅ User choice:', outcome)
+
+      if (outcome === 'accepted') {
+        localStorage.setItem('appInstalled', new Date().toISOString())
+        console.log('🎉 App installed successfully!')
+      } else {
+        console.log('❌ User dismissed install prompt')
+      }
+
+      deferredPrompt.value = null
+      showPrompt.value = false
+    } catch (error) {
+      console.error('❌ Install prompt error:', error)
+      // Fallback: show manual instructions
+      showManualInstructions()
     }
-    
-    deferredPrompt.value = null
-    showPrompt.value = false
   } else if (isIOS.value) {
+    console.log('🍎 iOS device - showing manual instructions')
     // iOS - just hide the prompt as instructions are shown
     showPrompt.value = false
     localStorage.setItem('installPromptDismissed', new Date().toISOString())
+  } else {
+    console.log('🔧 No native install available - showing manual instructions')
+    showManualInstructions()
   }
+}
+
+// Show manual installation instructions
+const showManualInstructions = () => {
+  alert(`📱 Додати на головний екран:
+
+🤖 Android (Chrome):
+1. Натисніть меню (⋮) у браузері
+2. Виберіть "Додати на головний екран"
+
+🍎 iPhone/iPad (Safari):
+1. Натисніть кнопку "Поділитися" (□↗)
+2. Виберіть "Додати на головний екран"
+
+🌐 Інші браузери:
+Скористайтеся функцією "Додати закладку" або "Додати на головний екран" у меню браузера.`)
+
+  showPrompt.value = false
+  localStorage.setItem('installPromptDismissed', new Date().toISOString())
 }
 
 // Dismiss the prompt
@@ -141,33 +187,66 @@ const dismissPrompt = () => {
   localStorage.setItem('installPromptDismissed', new Date().toISOString())
 }
 
+// Manual trigger for testing (expose globally for debugging)
+const showPromptManually = () => {
+  console.log('🔧 Manual trigger activated')
+  showPrompt.value = true
+}
+
+// Expose for debugging
+if (typeof window !== 'undefined') {
+  (window as any).showInstallPrompt = showPromptManually
+  (window as any).resetInstallPrompt = () => {
+    localStorage.removeItem('installPromptDismissed')
+    localStorage.removeItem('appInstalled')
+    console.log('🔄 Install prompt storage cleared')
+  }
+}
+
 // Setup event listeners
 onMounted(() => {
+  console.log('🔧 InstallPrompt mounted')
+  console.log('📱 Device detection:', {
+    isIOS: isIOS.value,
+    isAndroid: isAndroid.value,
+    isStandalone: isStandalone.value,
+    userAgent: navigator.userAgent
+  })
+
   // Listen for beforeinstallprompt event (Android)
   window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('🎯 beforeinstallprompt event fired!')
     e.preventDefault()
     deferredPrompt.value = e
-    
+
     // Show prompt after a short delay if conditions are met
     setTimeout(() => {
       if (shouldShowPrompt()) {
+        console.log('✅ Showing install prompt (Android)')
         showPrompt.value = true
+      } else {
+        console.log('❌ Install prompt conditions not met')
       }
     }, 3000) // Show after 3 seconds
   })
-  
+
   // Listen for app installed event
   window.addEventListener('appinstalled', () => {
+    console.log('🎉 App installed event fired!')
     localStorage.setItem('appInstalled', new Date().toISOString())
     showPrompt.value = false
   })
-  
-  // For iOS, show prompt after delay if not standalone
-  if (isIOS.value && !isStandalone.value && shouldShowPrompt()) {
-    setTimeout(() => {
+
+  // For iOS or if no beforeinstallprompt event, show prompt after delay
+  setTimeout(() => {
+    if (!deferredPrompt.value && shouldShowPrompt()) {
+      console.log('✅ Showing install prompt (iOS/fallback)')
       showPrompt.value = true
-    }, 5000) // Show after 5 seconds on iOS
-  }
+    }
+  }, 5000) // Show after 5 seconds
+
+  // Debug: Check if prompt should show immediately
+  console.log('🔍 Should show prompt:', shouldShowPrompt())
 })
 </script>
 

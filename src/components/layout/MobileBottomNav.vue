@@ -320,6 +320,10 @@ router.afterEach(handleRouteChange)
   left: 0;
   right: 0;
   z-index: 50;
+  /* Prevent scrolling issues */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 
 .mobile-nav-bar {
@@ -332,6 +336,11 @@ router.afterEach(handleRouteChange)
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.95);
+  /* Ensure proper positioning */
+  position: relative;
+  width: 100%;
+  /* Prevent layout shifts */
+  min-height: 60px;
 }
 
 .dark .mobile-nav-bar {
@@ -594,5 +603,26 @@ router.afterEach(handleRouteChange)
 /* Safe area support for devices with notches */
 .mobile-nav-bar {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+/* Additional fixes for mobile scrolling issues */
+@supports (-webkit-touch-callout: none) {
+  .mobile-bottom-nav {
+    /* iOS specific fixes */
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+}
+
+/* Prevent body scroll affecting fixed elements */
+body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure proper stacking context */
+.mobile-bottom-nav {
+  isolation: isolate;
 }
 </style>
