@@ -399,6 +399,9 @@ router.afterEach(handleRouteChange)
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
+  z-index: 10;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-menu-overlay {

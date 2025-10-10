@@ -9,7 +9,8 @@
   >
     <div
       v-if="showPrompt"
-      class="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-red-700 to-red-600 text-white shadow-2xl border-t-4 border-yellow-400"
+      class="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-red-700 to-red-600 text-white shadow-2xl border-t-4 border-yellow-400"
+      style="margin-bottom: env(safe-area-inset-bottom, 0px);"
     >
       <div class="px-4 py-4 max-w-md mx-auto">
         <div class="flex items-start space-x-3">
@@ -78,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 
 // Reactive state
 const showPrompt = ref(false)
@@ -203,6 +204,15 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// Add body padding when prompt is shown
+watch(showPrompt, (newValue) => {
+  if (newValue) {
+    document.body.style.paddingBottom = '120px'
+  } else {
+    document.body.style.paddingBottom = ''
+  }
+})
+
 // Setup event listeners
 onMounted(() => {
   console.log('🔧 InstallPrompt mounted')
@@ -248,6 +258,25 @@ onMounted(() => {
   // Debug: Check if prompt should show immediately
   console.log('🔍 Should show prompt:', shouldShowPrompt())
 })
+
+// Cleanup on unmount
+onUnmounted(() => {
+  document.body.style.paddingBottom = ''
+})
+
+// Global functions for manual testing
+if (typeof window !== 'undefined') {
+  (window as any).showInstallPrompt = () => {
+    showPrompt.value = true
+  }
+
+  (window as any).resetInstallPrompt = () => {
+    localStorage.removeItem('installPromptDismissed')
+    localStorage.removeItem('appInstalled')
+    showPrompt.value = false
+    console.log('🔄 Install prompt storage cleared')
+  }
+}
 </script>
 
 <style scoped>
