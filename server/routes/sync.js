@@ -1417,6 +1417,29 @@ router.post('/images-only', async (req, res) => {
   }
 })
 
+// GET /api/sync/logs - Get sync logs
+router.get('/logs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10
+    const logs = await prisma.syncLog.findMany({
+      orderBy: { created_at: 'desc' },
+      take: limit
+    })
+
+    res.json({
+      success: true,
+      logs: logs
+    })
+  } catch (error) {
+    console.error('❌ Failed to fetch sync logs:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch sync logs',
+      message: error.message
+    })
+  }
+})
+
 // POST /api/sync/daily - Daily sync for new products and price updates
 router.post('/daily', async (req, res) => {
   let syncLog = null

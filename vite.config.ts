@@ -24,30 +24,31 @@ export default defineConfig({
           }
         ]
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'opillia-192x192.png', 'opillia-512x512.png'],
       manifest: {
-        name: 'PWA POS System',
-        short_name: 'PWA POS',
-        description: 'Modern Progressive Web App Point of Sale System',
-        theme_color: '#2563eb',
+        name: 'Опілля - Магазин напоїв та делікатесів',
+        short_name: 'Опілля',
+        description: 'Найкращі напої та делікатеси з доставкою по Києву. Замовляйте свіжі продукти онлайн.',
+        theme_color: '#B91C1C',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        lang: 'uk',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'opillia-192x192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'opillia-512x512.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'opillia-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

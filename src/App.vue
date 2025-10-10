@@ -46,6 +46,9 @@
 
     <!-- Cookie Consent Banner -->
     <CookieConsent />
+
+    <!-- Install App Prompt -->
+    <InstallPrompt />
   </div>
 </template>
 
@@ -73,6 +76,7 @@ import ChatWidget from '@/components/chat/ChatWidget.vue'
 import LicenseModal from '@/components/license/LicenseModal.vue'
 import LicenseWarning from '@/components/license/LicenseWarning.vue'
 import CookieConsent from '@/components/CookieConsent.vue'
+import InstallPrompt from '@/components/ui/InstallPrompt.vue'
 import type { Product } from '@/types'
 
 // Router and Stores

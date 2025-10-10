@@ -159,6 +159,8 @@ function setupCronJobs() {
   // Daily sync for new products and price updates - every day at 6 AM
   cron.schedule('0 6 * * *', async () => {
     log('⏰ Triggered: Daily sync for new products and price updates (6 AM)')
+    log(`🕐 Current server time: ${new Date().toISOString()}`)
+    log(`🌍 Current Kyiv time: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' })}`)
 
     try {
       const dailySyncResponse = await fetch(`${BACKEND_URL}/api/sync/daily`, {
@@ -173,6 +175,8 @@ function setupCronJobs() {
         log(`📊 Daily sync stats: ${JSON.stringify(result.stats)}`)
       } else {
         log(`❌ Daily sync failed: ${dailySyncResponse.status}`, 'ERROR')
+        const errorText = await dailySyncResponse.text()
+        log(`❌ Daily sync error response: ${errorText}`, 'ERROR')
       }
     } catch (error) {
       log(`❌ Daily sync error: ${error.message}`, 'ERROR')
