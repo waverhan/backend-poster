@@ -822,7 +822,10 @@ const loadDefaultBranch = async () => {
   loading.value.branches = true
 
   try {
-    await branchStore.fetchBranches(true)
+    // Only fetch branches if we don't have them cached
+    if (branches.value.length === 0) {
+      await branchStore.fetchBranches(true)
+    }
 
     // Find Branch 4 or the first available branch
     const defaultBranch = branches.value.find(b => b.name.includes('4')) || branches.value[0]
@@ -866,19 +869,19 @@ const loadCategories = async () => {
 
     // Only fetch categories if not already loaded
     if (!hasCategories) {
-      
-      await productStore.fetchCategories(true) // force = true to get fresh data
+      console.log('📥 Fetching categories...')
+      await productStore.fetchCategories(false) // Don't force if we have cache
     } else {
-      
+      console.log('⚡ Using cached categories')
     }
 
     // Only fetch products if not already loaded for this branch
     const branchId = selectedBranch.value?.id
     if (!hasProducts || branchId) {
-      
-      await productStore.fetchProducts(undefined, true, branchId, true) // categoryId=undefined, force=true, branchId, useDatabase=true
+      console.log('📥 Fetching products for branch:', branchId)
+      await productStore.fetchProducts(undefined, false, branchId, true) // Don't force if we have cache
     } else {
-      
+      console.log('⚡ Using cached products')
     }
 
     // Auto-select first category if no category is selected
@@ -1094,11 +1097,30 @@ onMounted(async () => {
     // Track page view
     googleAnalytics.trackPageView('Магазин - Опілля | Найкращі напої та делікатеси з доставкою по Києву')
 
-    // Load banners for the slider
+    // Check if we already have cached data
+    const hasCategories = categoriesWithProducts.value.length > 0
+    const hasProducts = products.value.length > 0
+    const hasBranches = branches.value.length > 0
+
+    console.log('🔍 Shop initialization - Cache status:', { hasCategories, hasProducts, hasBranches })
+
+    // Load banners for the slider (lightweight)
     await bannerStore.fetchBanners()
 
-    // Load default branch (Branch 4) and show products immediately for better UX
-    await loadDefaultBranch()
+    // Only load data if we don't have it cached
+    if (!hasBranches || !hasCategories || !hasProducts) {
+      console.log('📥 Loading fresh data...')
+      // Load default branch (Branch 4) and show products immediately for better UX
+      await loadDefaultBranch()
+    } else {
+      console.log('⚡ Using cached data - skipping load')
+      // We have cached data, just ensure a branch is selected
+      if (!selectedBranch.value && branches.value.length > 0) {
+        // Select default branch (Branch 4 - Голосіївський 5)
+        const defaultBranch = branches.value.find(b => b.id === 4) || branches.value[0]
+        branchStore.selectBranch(defaultBranch)
+      }
+    }
 
     // Handle category from URL after data is loaded
     handleCategoryFromURL()

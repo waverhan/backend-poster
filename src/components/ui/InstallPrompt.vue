@@ -103,20 +103,20 @@ const shouldShowPrompt = () => {
   // Don't show if already installed
   if (isStandalone.value) return false
   
-  // Don't show if user dismissed recently (within 7 days)
+  // Don't show if user dismissed recently (within 1 day for testing)
   const dismissed = localStorage.getItem('installPromptDismissed')
   if (dismissed) {
     const dismissedDate = new Date(dismissed)
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    if (dismissedDate > weekAgo) return false
+    const dayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+    if (dismissedDate > dayAgo) return false
   }
-  
-  // Don't show if user already installed (within 30 days)
+
+  // Don't show if user already installed (within 7 days for testing)
   const installed = localStorage.getItem('appInstalled')
   if (installed) {
     const installedDate = new Date(installed)
-    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    if (installedDate > monthAgo) return false
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    if (installedDate > weekAgo) return false
   }
   
   return true
@@ -227,7 +227,7 @@ onMounted(() => {
       } else {
         console.log('❌ Install prompt conditions not met')
       }
-    }, 3000) // Show after 3 seconds
+    }, 2000) // Show after 2 seconds
   })
 
   // Listen for app installed event
@@ -243,7 +243,7 @@ onMounted(() => {
       console.log('✅ Showing install prompt (iOS/fallback)')
       showPrompt.value = true
     }
-  }, 5000) // Show after 5 seconds
+  }, 3000) // Show after 3 seconds
 
   // Debug: Check if prompt should show immediately
   console.log('🔍 Should show prompt:', shouldShowPrompt())

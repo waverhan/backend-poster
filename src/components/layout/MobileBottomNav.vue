@@ -602,7 +602,7 @@ router.afterEach(handleRouteChange)
 
 /* Safe area support for devices with notches */
 .mobile-nav-bar {
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* Additional fixes for mobile scrolling issues */
