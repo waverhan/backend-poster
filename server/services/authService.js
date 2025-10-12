@@ -120,45 +120,31 @@ class AuthService {
       
       // Find or create user in our database
       let user = await this.findUserByPhone(formattedPhone)
-      
-      if (!user) {
-        // Create new user
-        user = await this.createUser(formattedPhone, name)
-      }
-      
-      // Find or create client in Poster (with timeout to prevent hanging)
-      let posterClient = null
-      try {
-        // Add timeout for Poster API operations
-        posterClient = await Promise.race([
-          posterClientService.findClientByPhone(formattedPhone),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Poster API timeout')), 10000) // 10 second timeout
-          )
-        ])
 
-        if (!posterClient && name) {
-          // Create new client in Poster
+      if (!user) {
+        // Create new user - require name for new users
+        if (!name || name.trim() === '') {
+          throw new Error('Name is required for new users')
+        }
+        user = await this.createUser(formattedPhone, name.trim())
+      }
+
+      // Start background Poster API sync (don't wait for it)
+      this.syncPosterClientInBackground(user, formattedPhone, name)
+
+      // Get current Poster client info if available
+      let posterClient = null
+      if (user.poster_client_id) {
+        try {
           posterClient = await Promise.race([
-            posterClientService.createClient({
-              name: name,
-              phone: formattedPhone,
-              email: user.email || '',
-              initialBonus: 0
-            }),
+            posterClientService.getClientDetails(user.poster_client_id),
             new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Poster API timeout')), 10000) // 10 second timeout
+              setTimeout(() => reject(new Error('Poster API timeout')), 5000) // 5 second timeout for existing client
             )
           ])
+        } catch (error) {
+          console.warn('⚠️ Failed to get existing Poster client details:', error.message)
         }
-
-        // Update user with Poster client ID if found
-        if (posterClient && !user.poster_client_id) {
-          user = await this.updateUserPosterClientId(user.id, posterClient.client_id)
-        }
-      } catch (error) {
-        console.warn('⚠️ Poster API operation failed, continuing without Poster client:', error.message)
-        // Continue without Poster client - don't fail the login
       }
       
       // Generate JWT token
@@ -211,26 +197,75 @@ class AuthService {
   /**
    * Create new user in our database
    */
-  async createUser(phoneNumber, name = null) {
+  async createUser(phoneNumber, name) {
     try {
       const userData = {
         phone: phoneNumber,
-        name: name || `User ${phoneNumber.slice(-4)}`,
+        name: name,
         email: null,
         role: 'user'
       }
-      
+
       console.log(`👤 Creating new user: ${userData.name} (${phoneNumber})`)
-      
+
       const user = await prisma.user.create({
         data: userData
       })
-      
+
       return user
     } catch (error) {
       console.error('❌ Error creating user:', error)
       throw error
     }
+  }
+
+  /**
+   * Sync user with Poster client in background (non-blocking)
+   */
+  async syncPosterClientInBackground(user, phoneNumber, name) {
+    // Run in background without blocking the login response
+    setImmediate(async () => {
+      try {
+        console.log(`🔄 Starting background Poster sync for user ${user.id}`)
+
+        // Find existing client in Poster
+        let posterClient = await Promise.race([
+          posterClientService.findClientByPhone(phoneNumber),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Poster API timeout')), 15000) // 15 second timeout for background
+          )
+        ])
+
+        if (!posterClient && name) {
+          // Create new client in Poster
+          console.log(`👤 Creating new Poster client for ${name}`)
+          posterClient = await Promise.race([
+            posterClientService.createClient({
+              name: name,
+              phone: phoneNumber,
+              email: user.email || '',
+              initialBonus: 0
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Poster API timeout')), 15000) // 15 second timeout
+            )
+          ])
+        }
+
+        // Update user with Poster client ID if found
+        if (posterClient && !user.poster_client_id) {
+          await this.updateUserPosterClientId(user.id, posterClient.client_id)
+          console.log(`✅ Background Poster sync completed for user ${user.id}`)
+        } else if (posterClient) {
+          console.log(`ℹ️ User ${user.id} already has Poster client ID`)
+        } else {
+          console.log(`ℹ️ No Poster client found/created for user ${user.id}`)
+        }
+      } catch (error) {
+        console.warn(`⚠️ Background Poster sync failed for user ${user.id}:`, error.message)
+        // Don't throw error - this is background operation
+      }
+    })
   }
 
   /**
@@ -287,18 +322,38 @@ class AuthService {
         throw new Error('User not found')
       }
       
-      let bonusInfo = { bonusPoints: 0, totalPaidSum: 0 }
-      
+      let bonusInfo = {
+        bonusPoints: 0,
+        totalPaidSum: 0,
+        hasPosterClient: false,
+        posterSyncStatus: 'not_synced'
+      }
+
       if (user.poster_client_id) {
         try {
-          const posterClient = await posterClientService.getClientDetails(user.poster_client_id)
+          // Add timeout for Poster API call
+          const posterClient = await Promise.race([
+            posterClientService.getClientDetails(user.poster_client_id),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Poster API timeout')), 5000) // 5 second timeout
+            )
+          ])
+
           bonusInfo = {
             bonusPoints: parseFloat(posterClient.bonus) || 0,
-            totalPaidSum: (parseFloat(posterClient.total_payed_sum) || 0) / 100 // Convert kopecks to hryvnias
+            totalPaidSum: (parseFloat(posterClient.total_payed_sum) || 0) / 100,
+            hasPosterClient: true,
+            posterSyncStatus: 'synced',
+            posterClientName: posterClient.client_name
           }
         } catch (error) {
-          console.error('⚠️ Error getting Poster client details:', error)
+          console.warn('⚠️ Failed to get bonus info from Poster:', error.message)
+          bonusInfo.posterSyncStatus = 'sync_failed'
+          bonusInfo.hasPosterClient = true // We have ID but can't fetch details
         }
+      } else {
+        // Check if background sync is still in progress
+        bonusInfo.posterSyncStatus = 'syncing'
       }
       
       return {

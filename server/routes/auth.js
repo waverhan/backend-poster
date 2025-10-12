@@ -100,7 +100,7 @@ router.post('/verify-code', async (req, res) => {
     }
 
     const result = await authService.verifyCodeAndLogin(phone, code, name)
-    
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -110,9 +110,28 @@ router.post('/verify-code', async (req, res) => {
     })
   } catch (error) {
     console.error('❌ Verify code error:', error)
-    res.status(400).json({ 
+    res.status(400).json({
       error: 'Verification failed',
-      details: error.message 
+      details: error.message
+    })
+  }
+})
+
+// GET /api/auth/profile - Get user profile with bonus information
+router.get('/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id
+    const profile = await authService.getUserProfile(userId)
+
+    res.json({
+      success: true,
+      profile
+    })
+  } catch (error) {
+    console.error('❌ Get profile error:', error)
+    res.status(500).json({
+      error: 'Failed to get profile',
+      details: error.message
     })
   }
 })
