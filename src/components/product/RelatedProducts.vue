@@ -39,14 +39,14 @@
                 <div class="flex items-center space-x-2">
                   <span v-if="product.original_price && product.original_price > product.price"
                         class="text-xs text-gray-500 line-through">
-                    {{ formatPrice(product.original_price) }}₴
+                    {{ formatPrice(product.original_price, product) }}₴
                   </span>
                   <span class="text-sm font-bold text-primary-600">
-                    {{ formatPrice(product.price) }}₴
+                    {{ formatPrice(product.price, product) }}₴
                   </span>
                 </div>
                 <span class="text-xs text-gray-500 mt-0.5">
-                  за {{ getUnitLabel(product.unit) }}
+                  за {{ getUnitLabel(product.unit, product) }}
                 </span>
               </div>
 
@@ -131,11 +131,33 @@ const isProductAvailable = (product: Product): boolean => {
   return product.available
 }
 
-const formatPrice = (price: number): string => {
+const formatPrice = (price: number, product?: Product): string => {
+  // If product has custom quantity (weight-based), show price per custom unit
+  if (product?.custom_quantity && product?.custom_unit) {
+    // Convert price per kg to price per custom unit (e.g., per 50g)
+    const pricePerCustomUnit = price * product.custom_quantity
+    return pricePerCustomUnit.toFixed(2)
+  }
+
+  // For regular products, show price as is
   return price.toFixed(2)
 }
 
-const getUnitLabel = (unit: string | undefined): string => {
+const getUnitLabel = (unit: string | undefined, product?: Product): string => {
+  // If product has custom quantity, show the custom unit
+  if (product?.custom_quantity && product?.custom_unit) {
+    // Convert custom_quantity to display format
+    if (product.custom_unit === 'г') {
+      const grams = product.custom_quantity * 1000
+      return `${grams}г`
+    } else if (product.custom_unit === 'мл') {
+      const ml = product.custom_quantity * 1000
+      return `${ml}мл`
+    }
+    return product.custom_unit
+  }
+
+  // For regular products, show the unit
   if (!unit) return 'шт'
 
   switch (unit.toLowerCase()) {

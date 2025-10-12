@@ -589,10 +589,32 @@ const handleImageError = (event: Event) => {
 }
 
 const formatPrice = (price: number): string => {
+  // If product has custom quantity (weight-based), show price per custom unit
+  if (product.value?.custom_quantity && product.value?.custom_unit) {
+    // Convert price per kg to price per custom unit (e.g., per 50g)
+    const pricePerCustomUnit = price * product.value.custom_quantity
+    return pricePerCustomUnit.toFixed(2)
+  }
+
+  // For regular products, show price as is
   return price.toFixed(2)
 }
 
 const getUnitLabel = (unit: string | undefined): string => {
+  // If product has custom quantity, show the custom unit
+  if (product.value?.custom_quantity && product.value?.custom_unit) {
+    // Convert custom_quantity to display format
+    if (product.value.custom_unit === 'г') {
+      const grams = product.value.custom_quantity * 1000
+      return `${grams}г`
+    } else if (product.value.custom_unit === 'мл') {
+      const ml = product.value.custom_quantity * 1000
+      return `${ml}мл`
+    }
+    return product.value.custom_unit
+  }
+
+  // For regular products, show the unit
   if (!unit) return 'за шт'
 
   const unitMap: Record<string, string> = {
