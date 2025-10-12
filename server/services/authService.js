@@ -126,22 +126,39 @@ class AuthService {
         user = await this.createUser(formattedPhone, name)
       }
       
-      // Find or create client in Poster
-      let posterClient = await posterClientService.findClientByPhone(formattedPhone)
-      
-      if (!posterClient && name) {
-        // Create new client in Poster
-        posterClient = await posterClientService.createClient({
-          name: name,
-          phone: formattedPhone,
-          email: user.email || '',
-          initialBonus: 0
-        })
-      }
-      
-      // Update user with Poster client ID if found
-      if (posterClient && !user.poster_client_id) {
-        user = await this.updateUserPosterClientId(user.id, posterClient.client_id)
+      // Find or create client in Poster (with timeout to prevent hanging)
+      let posterClient = null
+      try {
+        // Add timeout for Poster API operations
+        posterClient = await Promise.race([
+          posterClientService.findClientByPhone(formattedPhone),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Poster API timeout')), 10000) // 10 second timeout
+          )
+        ])
+
+        if (!posterClient && name) {
+          // Create new client in Poster
+          posterClient = await Promise.race([
+            posterClientService.createClient({
+              name: name,
+              phone: formattedPhone,
+              email: user.email || '',
+              initialBonus: 0
+            }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Poster API timeout')), 10000) // 10 second timeout
+            )
+          ])
+        }
+
+        // Update user with Poster client ID if found
+        if (posterClient && !user.poster_client_id) {
+          user = await this.updateUserPosterClientId(user.id, posterClient.client_id)
+        }
+      } catch (error) {
+        console.warn('⚠️ Poster API operation failed, continuing without Poster client:', error.message)
+        // Continue without Poster client - don't fail the login
       }
       
       // Generate JWT token

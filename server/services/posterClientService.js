@@ -8,6 +8,29 @@ class PosterClientService {
   }
 
   /**
+   * Create fetch request with timeout
+   */
+  async fetchWithTimeout(url, options = {}, timeout = 10000) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      return response
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Poster API timeout - service is not responding')
+      }
+      throw error
+    }
+  }
+
+  /**
    * Get all clients from Poster
    * @param {number} limit - Number of clients to fetch (default 100)
    * @param {number} offset - Offset for pagination (default 0)
@@ -15,17 +38,22 @@ class PosterClientService {
   async getClients(limit = 100, offset = 0) {
     try {
       const url = `${this.baseUrl}/clients.getClients?token=${this.apiToken}&num=${limit}&offset=${offset}`
-      
+
       console.log(`📋 Fetching clients from Poster (limit: ${limit}, offset: ${offset})...`)
-      
-      const response = await fetch(url)
+
+      const response = await this.fetchWithTimeout(url)
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const result = await response.json()
-      
+
       if (result.error) {
         console.error('❌ Poster API error:', result.error)
         throw new Error(`Poster API error: ${result.error}`)
       }
-      
+
       console.log(`✅ Retrieved ${result.response?.length || 0} clients from Poster`)
       return result.response || []
     } catch (error) {
@@ -35,7 +63,7 @@ class PosterClientService {
   }
 
   /**
-   * Find client by phone number
+   * Find client by phone number (with timeout and limited search)
    * @param {string} phoneNumber - Phone number in international format (380XXXXXXXXX)
    */
   async findClientByPhone(phoneNumber) {
@@ -43,43 +71,57 @@ class PosterClientService {
       // Clean phone number - remove + and ensure 380 format
       const cleanPhone = phoneNumber.replace(/^\+/, '')
       const formattedPhone = cleanPhone.startsWith('380') ? cleanPhone : `380${cleanPhone.substring(1)}`
-      
+
       console.log(`🔍 Searching for client with phone: ${formattedPhone}`)
-      
-      // Get all clients (we might need to paginate if there are many)
-      let allClients = []
+
+      // Limit search to prevent long delays - only search first 500 clients
+      const maxClients = 500
+      let searchedCount = 0
       let offset = 0
       const limit = 100
-      
-      while (true) {
-        const clients = await this.getClients(limit, offset)
-        if (!clients || clients.length === 0) break
-        
-        allClients = allClients.concat(clients)
-        
-        // Check if we found the client in this batch
-        const foundClient = clients.find(client => {
-          if (!client.phone) return false
-          const clientPhone = client.phone.replace(/[^\d]/g, '')
-          return clientPhone === formattedPhone || clientPhone === cleanPhone
-        })
-        
-        if (foundClient) {
-          console.log(`✅ Found client: ${foundClient.client_name} (ID: ${foundClient.client_id})`)
-          return foundClient
+
+      while (searchedCount < maxClients) {
+        try {
+          // Add timeout for each batch
+          const clients = await Promise.race([
+            this.getClients(limit, offset),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Batch timeout')), 5000) // 5 second timeout per batch
+            )
+          ])
+
+          if (!clients || clients.length === 0) break
+
+          searchedCount += clients.length
+
+          // Check if we found the client in this batch
+          const foundClient = clients.find(client => {
+            if (!client.phone) return false
+            const clientPhone = client.phone.replace(/[^\d]/g, '')
+            return clientPhone === formattedPhone || clientPhone === cleanPhone
+          })
+
+          if (foundClient) {
+            console.log(`✅ Found client: ${foundClient.client_name} (ID: ${foundClient.client_id})`)
+            return foundClient
+          }
+
+          // If we got less than the limit, we've reached the end
+          if (clients.length < limit) break
+
+          offset += limit
+        } catch (error) {
+          console.warn(`⚠️ Batch search failed at offset ${offset}:`, error.message)
+          break // Stop searching on error
         }
-        
-        // If we got less than the limit, we've reached the end
-        if (clients.length < limit) break
-        
-        offset += limit
       }
-      
-      console.log(`ℹ️ Client not found for phone: ${formattedPhone}`)
+
+      console.log(`ℹ️ Client not found for phone: ${formattedPhone} (searched ${searchedCount} clients)`)
       return null
     } catch (error) {
       console.error('❌ Error finding client by phone:', error)
-      throw error
+      // Don't throw error - return null to allow login without Poster client
+      return null
     }
   }
 
@@ -125,14 +167,18 @@ class PosterClientService {
       })
 
       const url = `${this.baseUrl}/clients.createClient?token=${this.apiToken}`
-      
-      const response = await fetch(url, {
+
+      const response = await this.fetchWithTimeout(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newClient)
       })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
 
       const result = await response.json()
       
