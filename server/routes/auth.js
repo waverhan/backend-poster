@@ -8,6 +8,30 @@ const prisma = new PrismaClient()
 
 const router = express.Router()
 
+// GET /api/auth/test-sms - Test SMS-Fly connection (development only)
+router.get('/test-sms', async (req, res) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Test endpoint not available in production' })
+    }
+
+    console.log('🧪 Testing SMS-Fly connection...')
+    const testResult = await smsFlyService.testConnection()
+
+    res.json({
+      success: testResult.success,
+      message: testResult.success ? 'SMS-Fly connection successful' : 'SMS-Fly connection failed',
+      details: testResult
+    })
+  } catch (error) {
+    console.error('❌ SMS test error:', error)
+    res.status(500).json({
+      error: 'SMS test failed',
+      details: error.message
+    })
+  }
+})
+
 // Middleware to verify JWT token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization']

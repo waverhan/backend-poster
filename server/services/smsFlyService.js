@@ -5,6 +5,30 @@ class SmsFlyService {
     this.apiKey = process.env.SMS_FLY_API_KEY || 'y4gofJyEnJ7NP9znmkN1ACk5XwROzlma'
     this.apiUrl = 'https://sms-fly.ua/api/v2/api.php'
     this.senderName = 'OpilliaShop'
+    this.requestTimeout = 30000 // 30 seconds timeout for API requests
+  }
+
+  /**
+   * Create fetch request with timeout
+   */
+  async fetchWithTimeout(url, options, timeout = this.requestTimeout) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeout)
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      return response
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - SMS service is not responding')
+      }
+      throw error
+    }
   }
 
   /**
@@ -23,8 +47,8 @@ class SmsFlyService {
       }
 
       console.log('📱 Getting SMS-Fly sources...')
-      
-      const response = await fetch(this.apiUrl, {
+
+      const response = await this.fetchWithTimeout(this.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -32,14 +56,18 @@ class SmsFlyService {
         body: JSON.stringify(requestData)
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const result = await response.json()
-      
+
       if (result.success === 1) {
         console.log('✅ SMS-Fly sources retrieved:', result.data)
         return result.data
       } else {
         console.error('❌ Failed to get SMS-Fly sources:', result)
-        throw new Error('Failed to get SMS sources')
+        throw new Error(`SMS-Fly API error: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('❌ SMS-Fly getSources error:', error)
@@ -56,9 +84,9 @@ class SmsFlyService {
     try {
       // Ensure phone number is in correct format (without +)
       const cleanPhone = phoneNumber.replace(/^\+/, '')
-      
+
       const message = `Kod podtverzhdenija OPILLIA: ${verificationCode}`
-      
+
       const requestData = {
         auth: {
           key: this.apiKey
@@ -77,8 +105,9 @@ class SmsFlyService {
       }
 
       console.log(`📱 Sending SMS verification to ${cleanPhone}...`)
-      
-      const response = await fetch(this.apiUrl, {
+      console.log('📱 Request data:', JSON.stringify(requestData, null, 2))
+
+      const response = await this.fetchWithTimeout(this.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,22 +115,44 @@ class SmsFlyService {
         body: JSON.stringify(requestData)
       })
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
       const result = await response.json()
-      
+      console.log('📱 SMS-Fly response:', JSON.stringify(result, null, 2))
+
       if (result.success === 1) {
         console.log(`✅ SMS sent successfully to ${cleanPhone}`)
         return {
           success: true,
-          messageId: result.data?.messageId,
+          messageId: result.data?.messageID, // Note: API returns messageID, not messageId
           phone: cleanPhone,
-          message: message
+          message: message,
+          smsStatus: result.data?.sms?.status,
+          cost: result.data?.sms?.cost
         }
       } else {
         console.error('❌ Failed to send SMS:', result)
-        throw new Error(`SMS sending failed: ${result.error || 'Unknown error'}`)
+        // Handle specific SMS-Fly error codes
+        const errorCode = result.error || 'UNKNOWN'
+        const errorMessage = this.getErrorMessage(errorCode)
+        throw new Error(`SMS sending failed: ${errorMessage} (${errorCode})`)
       }
     } catch (error) {
       console.error('❌ SMS-Fly sendVerificationSMS error:', error)
+
+      // Provide user-friendly error messages
+      if (error.message.includes('timeout')) {
+        throw new Error('SMS service timeout. Please try again.')
+      } else if (error.message.includes('HTTP 403')) {
+        throw new Error('SMS service authentication failed. Please contact support.')
+      } else if (error.message.includes('HTTP 400')) {
+        throw new Error('Invalid phone number format.')
+      } else if (error.message.includes('INSUFFICIENTFUNDS')) {
+        throw new Error('SMS service temporarily unavailable. Please contact support.')
+      }
+
       throw error
     }
   }
@@ -176,16 +227,39 @@ class SmsFlyService {
   }
 
   /**
+   * Get user-friendly error message for SMS-Fly error codes
+   */
+  getErrorMessage(errorCode) {
+    const errorMessages = {
+      'INVREQUEST': 'Invalid request format',
+      'INVACTION': 'Invalid action specified',
+      'INVRECIPIENT': 'Invalid phone number',
+      'INVTEXT': 'Invalid message text',
+      'INVBUTTON': 'Invalid button format',
+      'INVIMAGEURL': 'Invalid image URL',
+      'INVROUTE': 'Message cannot be sent to this number',
+      'INVSOURCE': 'Invalid sender name',
+      'INVCHANNELS': 'Invalid channels specified',
+      'INVSMSMESSAGE': 'SMS message not specified',
+      'INVVIBERMESSAGE': 'Viber message not specified',
+      'INVMSGID': 'Invalid message ID',
+      'INSUFFICIENTFUNDS': 'Insufficient funds for SMS sending'
+    }
+
+    return errorMessages[errorCode] || 'Unknown SMS service error'
+  }
+
+  /**
    * Validate phone number format
    * @param {string} phoneNumber - Phone number to validate
    */
   validatePhoneNumber(phoneNumber) {
     // Remove any non-digit characters except +
     const cleaned = phoneNumber.replace(/[^\d+]/g, '')
-    
+
     // Check if it's a valid Ukrainian number
     const ukrainianPattern = /^(\+?380|0)[0-9]{9}$/
-    
+
     if (ukrainianPattern.test(cleaned)) {
       // Convert to international format without +
       if (cleaned.startsWith('0')) {
@@ -196,7 +270,7 @@ class SmsFlyService {
         return cleaned
       }
     }
-    
+
     throw new Error('Invalid Ukrainian phone number format')
   }
 
@@ -206,13 +280,22 @@ class SmsFlyService {
   async testConnection() {
     try {
       console.log('🧪 Testing SMS-Fly connection...')
+      console.log(`🔑 Using API key: ${this.apiKey.substring(0, 8)}...`)
+
       const sources = await this.getSources()
-      
+
       if (sources.sms && sources.sms.includes(this.senderName)) {
         console.log(`✅ SMS-Fly connection successful. Sender "${this.senderName}" is available.`)
         return { success: true, senderAvailable: true, sources }
       } else {
         console.log(`⚠️ SMS-Fly connected but sender "${this.senderName}" not found in available sources:`, sources.sms)
+        // Try to use the first available SMS source if our preferred one is not available
+        if (sources.sms && sources.sms.length > 0) {
+          const availableSender = sources.sms[0]
+          console.log(`📝 Using available sender: "${availableSender}"`)
+          this.senderName = availableSender
+          return { success: true, senderAvailable: true, sources, senderChanged: true, newSender: availableSender }
+        }
         return { success: true, senderAvailable: false, sources }
       }
     } catch (error) {

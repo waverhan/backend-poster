@@ -19,10 +19,16 @@ class AuthService {
     try {
       // Validate and format phone number
       const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
-      
+
+      // Check if there's already a recent code for this phone
+      const existingCode = this.verificationCodes.get(formattedPhone)
+      if (existingCode && (Date.now() - existingCode.createdAt) < 60000) { // 1 minute cooldown
+        throw new Error('Please wait 1 minute before requesting a new code')
+      }
+
       // Generate verification code
       const verificationCode = smsFlyService.generateVerificationCode()
-      
+
       // Store verification code with expiry
       const codeData = {
         code: verificationCode,
@@ -32,25 +38,45 @@ class AuthService {
         attempts: 0,
         maxAttempts: 3
       }
-      
+
       this.verificationCodes.set(formattedPhone, codeData)
-      
+
       console.log(`📱 Sending verification code to ${formattedPhone}: ${verificationCode}`)
-      
-      // Send SMS
-      const smsResult = await smsFlyService.sendVerificationSMS(formattedPhone, verificationCode)
-      
+
+      // Send SMS with timeout handling
+      const smsResult = await Promise.race([
+        smsFlyService.sendVerificationSMS(formattedPhone, verificationCode),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMS sending timeout')), 25000) // 25 second timeout
+        )
+      ])
+
+      console.log('📱 SMS sending result:', smsResult)
+
       // Clean up expired codes
       this.cleanupExpiredCodes()
-      
+
       return {
         success: true,
         phone: formattedPhone,
         message: 'Verification code sent successfully',
-        expiresIn: this.codeExpiryTime / 1000 // seconds
+        expiresIn: this.codeExpiryTime / 1000, // seconds
+        smsStatus: smsResult.smsStatus
       }
     } catch (error) {
       console.error('❌ Error sending verification code:', error)
+
+      // Remove the stored code if SMS sending failed
+      const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
+      this.verificationCodes.delete(formattedPhone)
+
+      // Provide user-friendly error messages
+      if (error.message.includes('timeout')) {
+        throw new Error('SMS service is temporarily slow. Please try again.')
+      } else if (error.message.includes('wait 1 minute')) {
+        throw new Error('Please wait 1 minute before requesting a new code')
+      }
+
       throw error
     }
   }
