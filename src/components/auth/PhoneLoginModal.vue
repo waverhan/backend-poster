@@ -372,9 +372,6 @@ const verifyCode = async () => {
   }
 
   try {
-    // Add loading state for better UX
-    authStore.setLoading(true)
-
     const result = await authStore.verifyCodeAndLogin(
       phoneNumber.value,
       verificationCode.value,
@@ -386,7 +383,7 @@ const verifyCode = async () => {
     emit('close')
   } catch (error: any) {
     codeError.value = error.message
-    
+
     // If it's a new user, show name input
     if (error.message.includes('name') || error.message.includes('ім\'я')) {
       showNameInput.value = true

@@ -33,26 +33,36 @@
               {{ product.display_name || product.name }}
             </h4>
             
-            <!-- Price -->
+            <!-- Price and Cart Icon -->
             <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span v-if="product.original_price && product.original_price > product.price" 
-                      class="text-sm text-gray-500 line-through">
-                  {{ formatPrice(product.original_price) }}₴
-                </span>
-                <span class="text-lg font-bold text-primary-600">
-                  {{ formatPrice(product.price) }}₴
+              <div class="flex flex-col">
+                <div class="flex items-center space-x-2">
+                  <span v-if="product.original_price && product.original_price > product.price"
+                        class="text-xs text-gray-500 line-through">
+                    {{ formatPrice(product.original_price) }}₴
+                  </span>
+                  <span class="text-sm font-bold text-primary-600">
+                    {{ formatPrice(product.price) }}₴
+                  </span>
+                </div>
+                <span class="text-xs text-gray-500 mt-0.5">
+                  за {{ getUnitLabel(product.unit) }}
                 </span>
               </div>
-              
-              <!-- Add to Cart Button -->
+
+              <!-- Cart Icon Button -->
               <button
                 @click.stop="addToCart(product)"
                 :disabled="!isProductAvailable(product)"
-                class="px-3 py-1.5 bg-primary-600 text-white text-sm rounded-md hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+                :title="isProductAvailable(product) ? 'Додати до кошика' : 'Немає в наявності'"
               >
-                <span v-if="isProductAvailable(product)">Додати</span>
-                <span v-else>Немає</span>
+                <svg v-if="isProductAvailable(product)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -123,6 +133,27 @@ const isProductAvailable = (product: Product): boolean => {
 
 const formatPrice = (price: number): string => {
   return price.toFixed(2)
+}
+
+const getUnitLabel = (unit: string | undefined): string => {
+  if (!unit) return 'шт'
+
+  switch (unit.toLowerCase()) {
+    case 'kg':
+    case 'кг':
+      return '1 кг'
+    case 'l':
+    case 'л':
+      return '1 л'
+    case 'g':
+    case 'г':
+      return '100 г'
+    case 'ml':
+    case 'мл':
+      return '100 мл'
+    default:
+      return 'шт'
+  }
 }
 
 const getImageUrl = (product: Product): string => {
