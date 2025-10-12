@@ -349,9 +349,9 @@ const sendCode = async () => {
   }
 
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging (increased to 30 seconds to match backend)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 10000)
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 30000)
     })
 
     const sendPromise = authStore.sendVerificationCode(phoneNumber.value)
@@ -379,9 +379,9 @@ const verifyCode = async () => {
   }
 
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging (reduced to 30 seconds to match backend)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 15000)
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 30000)
     })
 
     const verificationPromise = authStore.verifyCodeAndLogin(
@@ -407,9 +407,9 @@ const verifyCode = async () => {
 
 const resendCode = async () => {
   try {
-    // Add timeout to prevent hanging
+    // Add timeout to prevent hanging (increased to 30 seconds to match backend)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 10000)
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 30000)
     })
 
     const sendPromise = authStore.sendVerificationCode(phoneNumber.value)
