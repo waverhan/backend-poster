@@ -49,8 +49,8 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-        <p class="text-gray-700 text-sm">{{ product.description }}</p>
+           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 max-w-sm">
+        <p class="text-gray-700 text-sm whitespace-normal break-words">{{ product.description }}</p>
       </div>
 
       <!-- Rating -->
@@ -110,7 +110,7 @@
 
         <!-- Show quantity controls if product is in cart, otherwise show add button -->
         <div class="flex-shrink-0 ml-3">
-          <!-- Quantity Controls (shown when product is in cart) -->
+          <!-- Quantity Controls (shown when NON-DRAFT product is in cart) -->
           <div v-if="!isDraft && itemInCart"
                class="flex items-center border-2 border-red-500 rounded-lg overflow-hidden">
             <button
@@ -129,10 +129,10 @@
             </button>
           </div>
 
-          <!-- Add to Cart Button (shown when product is NOT in cart) -->
+          <!-- Add to Cart Button (shown when product is NOT in cart OR is a draft product) -->
           <button
             v-else-if="!isDraft"
-            @click="handleAddToCart"
+            @click="handleAddToCartDirectly"
             :disabled="!isAvailableInBranch"
             class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -528,6 +528,34 @@ const handleAddToCart = () => {
   } else {
     emit('add-to-cart', props.product)
   }
+}
+
+// Direct add to cart method for non-draft products
+const handleAddToCartDirectly = () => {
+  if (!isAvailableInBranch.value) return
+
+  // Create cart item directly
+  const cartItem = {
+    cart_item_id: `${props.product.id}_${Date.now()}`,
+    product_id: props.product.id,
+    poster_product_id: props.product.poster_product_id,
+    name: props.product.display_name || props.product.name,
+    price: props.product.price,
+    quantity: 1,
+    subtotal: props.product.custom_quantity && props.product.custom_unit
+      ? props.product.price * props.product.custom_quantity
+      : props.product.price,
+    image_url: props.product.display_image_url || props.product.image_url,
+    unit: props.product.unit,
+    custom_quantity: props.product.custom_quantity,
+    custom_unit: props.product.custom_unit,
+    max_quantity: props.product.max_quantity,
+    is_draft_beverage: false,
+    is_bottle_product: false
+  }
+
+  // Add directly to cart store
+  cartStore.addItem(cartItem)
 }
 
 const onImageError = (event: Event) => {
