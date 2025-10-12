@@ -150,14 +150,7 @@ onMounted(async () => {
     // Don't show error notification on app startup - let individual pages handle their own loading
   }
 
-  // Show welcome notification with site name
-  const siteName = siteConfigStore.currentConfig.site_name
-  notificationStore.add({
-    type: 'success',
-    title: `${t('ui.welcome')} ${siteName}!`,
-    message: 'Modern AI-powered shopping experience',
-    duration: 3000
-  })
+  // Welcome notification removed - was showing unwanted popup
 
   // Initialize app
   console.log('App mounted and initialized')

@@ -349,7 +349,14 @@ const sendCode = async () => {
   }
 
   try {
-    await authStore.sendVerificationCode(phoneNumber.value)
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 10000)
+    })
+
+    const sendPromise = authStore.sendVerificationCode(phoneNumber.value)
+    await Promise.race([sendPromise, timeoutPromise])
+
     step.value = 'verification'
     startResendCountdown()
   } catch (error: any) {
@@ -372,11 +379,18 @@ const verifyCode = async () => {
   }
 
   try {
-    const result = await authStore.verifyCodeAndLogin(
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 15000)
+    })
+
+    const verificationPromise = authStore.verifyCodeAndLogin(
       phoneNumber.value,
       verificationCode.value,
       userName.value.trim() || undefined
     )
+
+    const result = await Promise.race([verificationPromise, timeoutPromise])
 
     // All SMS verified users must complete profile (mandatory)
     emit('requiresProfileCompletion', result.user)
@@ -393,7 +407,14 @@ const verifyCode = async () => {
 
 const resendCode = async () => {
   try {
-    await authStore.sendVerificationCode(phoneNumber.value)
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Час очікування вичерпано. Спробуйте ще раз.')), 10000)
+    })
+
+    const sendPromise = authStore.sendVerificationCode(phoneNumber.value)
+    await Promise.race([sendPromise, timeoutPromise])
+
     startResendCountdown()
   } catch (error: any) {
     codeError.value = error.message
