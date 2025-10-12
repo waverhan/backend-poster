@@ -44,11 +44,14 @@
     </router-link>
 
     <!-- Product Info -->
-    <div class="p-4">
+    <div class="p-4 relative group">
       <h3 class="font-bold text-base mb-2">{{ formattedProductName }}</h3>
-      <p v-if="product.description" class="text-gray-600 text-sm mb-3 line-clamp-2">
-        {{ product.description }}
-      </p>
+
+      <!-- Description - Hidden by default, shown on hover -->
+      <div v-if="product.description"
+           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+        <p class="text-gray-700 text-sm">{{ product.description }}</p>
+      </div>
 
       <!-- Rating -->
       <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-3">
@@ -85,7 +88,7 @@
         />
       </div>
 
-      <!-- Price and Add to Cart -->
+      <!-- Price and Add to Cart / Quantity Controls -->
       <div class="flex items-center justify-between mb-3">
         <div class="flex flex-col">
           <div class="flex items-center space-x-2">
@@ -104,9 +107,31 @@
             за {{ displayPriceUnit }}
           </span>
         </div>
+
+        <!-- Show quantity controls if product is in cart, otherwise show add button -->
         <div class="flex-shrink-0 ml-3">
+          <!-- Quantity Controls (shown when product is in cart) -->
+          <div v-if="!isDraft && itemInCart"
+               class="flex items-center border-2 border-red-500 rounded-lg overflow-hidden">
+            <button
+              @click="decreaseCartQuantity"
+              class="w-10 h-10 bg-white text-gray-700 flex items-center justify-center font-bold hover:bg-gray-50 transition-colors"
+            >
+              −
+            </button>
+            <span class="w-12 text-center font-bold text-lg bg-white">{{ itemInCart.quantity }}</span>
+            <button
+              @click="increaseCartQuantity"
+              :disabled="itemInCart.quantity >= (product.max_quantity || 999)"
+              class="w-10 h-10 bg-red-500 text-white flex items-center justify-center font-bold hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              +
+            </button>
+          </div>
+
+          <!-- Add to Cart Button (shown when product is NOT in cart) -->
           <button
-            v-if="!isDraft"
+            v-else-if="!isDraft"
             @click="handleAddToCart"
             :disabled="!isAvailableInBranch"
             class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
@@ -200,6 +225,7 @@ import { useI18n } from 'vue-i18n'
 import type { Product, BottleSelection } from '@/types'
 import { backendApi } from '@/services/backendApi'
 import { useBranchStore } from '@/stores/branch'
+import { useCartStore } from '@/stores/cart'
 import { ProductAvailabilityService } from '@/services/productAvailabilityService'
 import {
   isDraftBeverage,
@@ -241,6 +267,7 @@ const { t } = useI18n()
 
 // Stores
 const branchStore = useBranchStore()
+const cartStore = useCartStore()
 
 // Image error handling is done directly in the onImageError method
 
@@ -263,6 +290,11 @@ const ratingLoading = ref(false)
 // Computed properties
 const isDraft = computed(() => {
   return isDraftBeverage(props.product)
+})
+
+// Check if product is in cart
+const itemInCart = computed(() => {
+  return cartStore.getItemById.value(props.product.id)
 })
 
 // Check if product is available in current branch
@@ -444,6 +476,27 @@ const getButtonText = () => {
   }
 
   return 'Купити'
+}
+
+// Methods for cart quantity control
+const increaseCartQuantity = () => {
+  if (!itemInCart.value) return
+
+  const maxQty = props.product.max_quantity || 999
+  if (itemInCart.value.quantity < maxQty) {
+    cartStore.updateItemQuantity(itemInCart.value.cart_item_id, itemInCart.value.quantity + 1)
+  }
+}
+
+const decreaseCartQuantity = () => {
+  if (!itemInCart.value) return
+
+  if (itemInCart.value.quantity > 1) {
+    cartStore.updateItemQuantity(itemInCart.value.cart_item_id, itemInCart.value.quantity - 1)
+  } else {
+    // Remove item if quantity would be 0
+    cartStore.removeItem(itemInCart.value.cart_item_id)
+  }
 }
 
 const handleAddToCart = () => {
