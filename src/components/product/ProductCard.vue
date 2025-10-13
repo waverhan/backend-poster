@@ -1,5 +1,5 @@
 <template>
-  <div class="card-hover group">
+  <div class="card-hover product-card-container">
     <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
       <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
@@ -218,7 +218,7 @@
 
     <!-- Description at bottom - Hidden by default, shows on hover -->
     <div v-if="product.description"
-         class="border-t border-gray-200 bg-gray-50 max-h-0 overflow-hidden group-hover:max-h-40 transition-all duration-300 ease-in-out">
+         class="product-description border-t border-gray-200 bg-gray-50 max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -800,5 +800,10 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Product card hover behavior - only affects individual cards */
+.product-card-container:hover .product-description {
+  max-height: 10rem; /* 40 in Tailwind = 10rem */
 }
 </style>
