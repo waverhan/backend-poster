@@ -216,11 +216,13 @@
       </div>
     </div>
 
-    <!-- Description at bottom - Only expands when hovering over this area -->
+    <!-- Description at bottom - Shows preview and expands on hover -->
     <div v-if="product.description"
-         class="border-t border-gray-200 bg-gray-50 max-h-0 overflow-hidden hover:max-h-32 transition-all duration-300 ease-in-out group">
-      <div class="px-4 py-3">
-        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ truncatedDescription }}</p>
+         class="border-t border-gray-200 bg-gray-50 hover:max-h-32 transition-all duration-300 ease-in-out cursor-pointer group">
+      <div class="px-4 py-2">
+        <p class="text-gray-600 text-xs leading-relaxed whitespace-normal break-words opacity-70 group-hover:opacity-100">
+          {{ truncatedDescription }}
+        </p>
       </div>
     </div>
   </div>
