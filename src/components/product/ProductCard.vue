@@ -1,5 +1,5 @@
 <template>
-  <div class="card-hover product-card-container">
+  <div class="card-hover product-card-container" :data-product-id="product.id">
     <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
       <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
@@ -218,7 +218,7 @@
 
     <!-- Description at bottom - Hidden by default, shows on hover -->
     <div v-if="product.description"
-         class="product-description border-t border-gray-200 bg-gray-50 max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
+         class="product-description border-t border-gray-200 bg-gray-50">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -804,6 +804,13 @@ onMounted(() => {
 
 /* Product card hover behavior - only affects individual cards */
 .product-card-container:hover .product-description {
-  max-height: 10rem; /* 40 in Tailwind = 10rem */
+  max-height: 10rem !important; /* 40 in Tailwind = 10rem */
+}
+
+/* Ensure descriptions are hidden by default */
+.product-description {
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transition: max-height 0.3s ease-in-out !important;
 }
 </style>
