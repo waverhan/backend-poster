@@ -665,10 +665,6 @@ const addToCart = () => {
     // For draft beverages, use default 1L quantity and auto bottle selection
     const quantity = 1 // Default 1L
     const autoBottles = getDefaultBottleSelection(quantity)
-    const bottleCost = calculateBottleCost(autoBottles)
-
-    // Try to get bottle products for cart
-    const bottleCartItems = getBottleCartItems(autoBottles)
 
     // Create cart item for the beverage
     const cartItem: any = {
@@ -680,22 +676,33 @@ const addToCart = () => {
       image_url: product.value.display_image_url,
       unit: product.value.unit || 'L',
       max_quantity: product.value.quantity,
-      is_draft_beverage: true
-    }
-
-    // Add bottle information if using fallback mode
-    if (bottleCartItems.length === 0) {
-      cartItem.bottles = autoBottles
-      cartItem.bottle_cost = bottleCost
+      is_draft_beverage: true,
+      bottle_selection: autoBottles
     }
 
     cartStore.addItem(cartItem)
 
-    // Add bottle products to cart as separate items if available
-    if (bottleCartItems.length > 0) {
-      for (const bottleItem of bottleCartItems) {
-        cartStore.addItem(bottleItem)
-      }
+    // Add bottles to cart if auto selection is enabled
+    if (autoBottles && autoBottles.bottles && autoBottles.bottles.length > 0) {
+      autoBottles.bottles.forEach(bottle => {
+        if (bottle.quantity > 0) {
+          const bottleCartItem = {
+            cart_item_id: `bottle_${bottle.id}_${Date.now()}`,
+            product_id: bottle.id,
+            poster_product_id: bottle.poster_product_id,
+            name: bottle.name,
+            price: bottle.price,
+            quantity: bottle.quantity,
+            subtotal: bottle.price * bottle.quantity,
+            image_url: bottle.image_url,
+            unit: bottle.unit,
+            max_quantity: bottle.max_quantity,
+            is_draft_beverage: false,
+            is_bottle_product: true
+          }
+          cartStore.addItem(bottleCartItem)
+        }
+      })
     }
 
     notificationStore.add({

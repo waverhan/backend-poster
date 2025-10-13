@@ -49,8 +49,7 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 z-[9999] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300"
-           style="width: 100%;">
+           class="mt-2 bg-gray-50 border border-gray-200 rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 max-h-0 group-hover:max-h-40 overflow-hidden">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ product.description }}</p>
       </div>
 
@@ -94,7 +93,7 @@
         <div class="flex flex-col">
           <div class="flex items-center space-x-2">
             <span :class="[
-              'text-2xl font-black tracking-tight',
+              'text-lg font-bold tracking-tight',
               product.original_price && product.original_price > product.price
                 ? 'text-red-600'
                 : 'text-gray-900'
@@ -113,18 +112,18 @@
         <div class="flex-shrink-0 ml-3">
           <!-- Quantity Controls (shown when ANY product is in cart) -->
           <div v-if="itemInCart"
-               class="flex items-center border-2 border-red-500 rounded-lg overflow-hidden">
+               class="flex items-center border border-blue-500 rounded-lg overflow-hidden">
             <button
               @click="decreaseCartQuantity"
-              class="w-10 h-10 bg-white text-gray-700 flex items-center justify-center font-bold hover:bg-gray-50 transition-colors"
+              class="w-8 h-8 bg-white text-gray-700 flex items-center justify-center text-sm font-bold hover:bg-gray-50 transition-colors"
             >
               −
             </button>
-            <span class="w-12 text-center font-bold text-lg bg-white">{{ itemInCart.quantity }}</span>
+            <span class="w-10 text-center font-bold text-sm bg-white">{{ itemInCart.quantity }}</span>
             <button
               @click="increaseCartQuantity"
               :disabled="itemInCart.quantity >= (product.max_quantity || 999)"
-              class="w-10 h-10 bg-red-500 text-white flex items-center justify-center font-bold hover:bg-red-600 transition-colors disabled:opacity-50"
+              class="w-8 h-8 bg-blue-500 text-white flex items-center justify-center text-sm font-bold hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               +
             </button>
