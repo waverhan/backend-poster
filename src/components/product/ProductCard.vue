@@ -49,8 +49,8 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="border-t border-gray-200 bg-gray-50 px-4 py-3 max-h-0 overflow-hidden group-hover:max-h-40 transition-all duration-300 ease-in-out">
-        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ product.description }}</p>
+           class="border-t border-gray-200 bg-gray-50 px-4 py-3 max-h-0 overflow-hidden group-hover:max-h-32 transition-all duration-300 ease-in-out">
+        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ truncatedDescription }}</p>
       </div>
 
       <!-- Rating -->
@@ -143,8 +143,8 @@
 
       <!-- Sale Badge -->
       <div v-if="product.original_price && product.original_price > product.price" class="mb-3">
-        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          🔥 {{ $t('deals.title') }}
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
+          SALE
         </span>
       </div>
 
@@ -347,6 +347,14 @@ const displayQuantity = computed(() => {
 // Formatted product name
 const formattedProductName = computed(() => {
   return formatProductName(props.product.display_name || props.product.name)
+})
+
+// Truncated description (max 100 characters)
+const truncatedDescription = computed(() => {
+  if (!props.product.description) return ''
+  return props.product.description.length > 100
+    ? props.product.description.substring(0, 100) + '...'
+    : props.product.description
 })
 
 // Price display logic for weight-based products
