@@ -49,7 +49,7 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="absolute left-0 right-0 top-full bg-white border border-gray-200 rounded-b-lg shadow-lg p-4 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
+           class="border-t border-gray-200 bg-gray-50 px-4 py-3 max-h-0 overflow-hidden group-hover:max-h-40 transition-all duration-300 ease-in-out">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ product.description }}</p>
       </div>
 
