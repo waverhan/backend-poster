@@ -44,21 +44,29 @@ const currentTime = ref(Date.now())
 let intervalId: number | null = null
 
 const isOnSale = computed(() => {
-  return props.product.original_price && 
-         props.product.original_price > props.product.price &&
-         props.product.sale_expires_at
+  return props.product.original_price &&
+         props.product.original_price > props.product.price
 })
 
 const timeRemaining = computed((): TimeRemaining | null => {
-  if (!isOnSale.value || !props.product.sale_expires_at) {
+  if (!isOnSale.value) {
     return null
   }
 
-  const expirationTime = new Date(props.product.sale_expires_at).getTime()
+  let expirationTime: number
+
+  if (props.product.sale_expires_at) {
+    // Use the provided expiration time
+    expirationTime = new Date(props.product.sale_expires_at).getTime()
+  } else {
+    // Default to 24 hours from now if no expiration is set
+    expirationTime = currentTime.value + (24 * 60 * 60 * 1000)
+  }
+
   const total = expirationTime - currentTime.value
 
-  if (total <= 0) {
-    // Sale has expired
+  if (total <= 0 && props.product.sale_expires_at) {
+    // Sale has expired (only emit if there was an actual expiration date)
     emit('saleExpired', props.product)
     return null
   }
