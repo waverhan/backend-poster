@@ -81,6 +81,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
 import {
   isDraftBeverage,
+  isBottledProduct,
   getDefaultBottleSelection,
   calculateBottleCost,
   getBottleCartItems
@@ -203,8 +204,8 @@ const addToCart = (product: Product) => {
   if (!isProductAvailable(product)) return
 
   try {
-    // Check if this is a draft beverage that requires bottles
-    if (isDraftBeverage(product)) {
+    // Check if this is a draft beverage that requires bottles (but not if it's already a bottled product)
+    if (isDraftBeverage(product) && !isBottledProduct(product)) {
       // For draft beverages, use default 1L quantity and auto bottle selection
       const quantity = 1 // Default 1L
       const autoBottles = getDefaultBottleSelection(quantity)
@@ -248,7 +249,7 @@ const addToCart = (product: Product) => {
         duration: 2000
       })
     } else {
-      // Regular product (non-draft)
+      // Regular product (non-draft) or bottled product
       cartStore.addItem({
         product_id: product.id,
         poster_product_id: product.poster_product_id,
