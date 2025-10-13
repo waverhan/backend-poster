@@ -30,6 +30,7 @@ model Product {
   category_id       String
   name              String
   display_name      String
+  subtitle          String?            // Short subtitle/tagline for the product
   description       String?
   price             Float
   original_price    Float?

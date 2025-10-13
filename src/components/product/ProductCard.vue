@@ -1,6 +1,6 @@
 <template>
   <div
-    class="card-hover product-card-container product-card-slide relative overflow-hidden"
+    class="card-hover product-card-container product-card-expand"
     :data-product-id="product.id"
   >
     <!-- Main Card Content -->
@@ -224,9 +224,9 @@
     </div>
     <!-- End Main Card Content -->
 
-    <!-- Sliding Description Panel -->
+    <!-- Expandable Description Panel -->
     <div v-if="product.description"
-         class="description-slide absolute bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 transform translate-y-full transition-transform duration-300 ease-in-out">
+         class="description-expand bg-gray-50 border-t border-gray-200 overflow-hidden transition-all duration-300 ease-in-out max-h-0">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -819,17 +819,17 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* Sliding effect for individual cards */
-.product-card-slide {
+/* Expanding effect for individual cards */
+.product-card-expand {
   position: relative;
 }
 
-.product-card-slide:hover .description-slide {
-  transform: translateY(0) !important;
+.product-card-expand:hover .description-expand {
+  max-height: 200px !important;
 }
 
-.description-slide {
-  transform: translateY(100%);
-  transition: transform 0.3s ease-in-out;
+.description-expand {
+  max-height: 0;
+  transition: max-height 0.3s ease-in-out;
 }
 </style>
