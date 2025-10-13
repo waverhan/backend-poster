@@ -1,9 +1,7 @@
 <template>
   <div
-    class="card-hover product-card-container"
+    class="card-hover product-card-container individual-hover-card"
     :data-product-id="product.id"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
   >
     <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
@@ -224,8 +222,7 @@
 
     <!-- Description at bottom - Hidden by default, shows on hover -->
     <div v-if="product.description"
-         class="border-t border-gray-200 bg-gray-50 overflow-hidden transition-all duration-300 ease-in-out"
-         :class="isHovered ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'">
+         class="product-description border-t border-gray-200 bg-gray-50 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -233,6 +230,7 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script setup lang="ts">
@@ -376,20 +374,9 @@ const truncatedDescription = computed(() => {
     : props.product.description
 })
 
-// Product subtitle from attributes (like "Темне, Фільтроване, 6.5°")
+// Product subtitle from database field
 const productSubtitle = computed(() => {
-  if (!parsedAttributes.value || parsedAttributes.value.length === 0) return ''
-
-  // Create subtitle from key attributes
-  const subtitleParts: string[] = []
-
-  parsedAttributes.value.forEach(attr => {
-    // Add attribute value with unit if available
-    const value = attr.value + (attr.unit || '')
-    subtitleParts.push(value)
-  })
-
-  return subtitleParts.join(', ')
+  return props.product.subtitle || ''
 })
 
 // Price display logic for weight-based products
@@ -828,5 +815,9 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* No CSS hover needed - using Vue reactive approach */
+/* Individual card hover - scoped to this component only */
+.individual-hover-card:hover .product-description {
+  max-height: 10rem !important;
+  opacity: 1 !important;
+}
 </style>

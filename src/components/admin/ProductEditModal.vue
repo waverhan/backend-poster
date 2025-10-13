@@ -135,6 +135,22 @@
           ></textarea>
         </div>
 
+        <!-- Subtitle -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Subtitle
+          </label>
+          <input
+            v-model="formData.subtitle"
+            type="text"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Темне, Фільтроване, 6.5°"
+          />
+          <p class="text-sm text-gray-500 mt-1">
+            Short descriptive text shown under the product title
+          </p>
+        </div>
+
 
 
         <!-- Image Upload -->
@@ -456,6 +472,7 @@ const formData = ref({
   name: '',
   display_name: '',
   description: '',
+  subtitle: '',
   price: 0,
   original_price: 0,
   image_url: '',
@@ -498,6 +515,7 @@ watch(() => props.product, (newProduct) => {
       name: newProduct.name || '',
       display_name: newProduct.display_name || '',
       description: newProduct.description || '',
+      subtitle: newProduct.subtitle || '',
       price: newProduct.price || 0,
       original_price: newProduct.original_price || 0,
       image_url: newProduct.image_url || '',
@@ -524,6 +542,7 @@ watch(() => props.product, (newProduct) => {
       name: '',
       display_name: '',
       description: '',
+      subtitle: '',
       price: 0,
       original_price: 0,
       image_url: '',
