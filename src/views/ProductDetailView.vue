@@ -50,7 +50,10 @@
           <div class="space-y-6">
             <!-- Title -->
             <div>
-              <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ product.display_name }}</h1>
+              <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ product.display_name }}</h1>
+
+              <!-- Product Subtitle -->
+              <p v-if="productSubtitle" class="text-lg text-gray-600 mb-4">{{ productSubtitle }}</p>
 
               <!-- Rating and Like Button Row -->
               <div class="flex items-center justify-between mb-4">
@@ -293,6 +296,36 @@ const untappdRatingCount = computed(() => {
 // Format description (clean, without ABV/IBU since they're shown as attributes)
 const displayDescription = computed(() => {
   return product.value?.description || ''
+})
+
+// Product subtitle from attributes (like "Темне, Фільтроване, 6.5°")
+const productSubtitle = computed(() => {
+  const attrs = parsedAttributes.value
+  if (!attrs || Object.keys(attrs).length === 0) return ''
+
+  // Create subtitle from key attributes
+  const subtitleParts: string[] = []
+
+  // Common beer/beverage attributes to include in subtitle
+  const subtitleAttributes = ['style', 'type', 'color', 'abv', 'alcohol', 'strength']
+
+  Object.entries(attrs).forEach(([key, value]) => {
+    // Skip untappd ratings and other non-subtitle attributes
+    if (key.includes('untappd') || key.includes('rating')) return
+
+    // Include key attributes or if no specific attributes, include first few
+    if (subtitleAttributes.some(attr => key.toLowerCase().includes(attr)) || subtitleParts.length < 3) {
+      if (value && String(value).trim()) {
+        // Add degree symbol for alcohol content
+        const displayValue = key.toLowerCase().includes('abv') || key.toLowerCase().includes('alcohol')
+          ? `${value}°`
+          : String(value)
+        subtitleParts.push(displayValue)
+      }
+    }
+  })
+
+  return subtitleParts.slice(0, 3).join(', ') // Limit to 3 parts
 })
 
 // Check if description is long (more than 300 characters)

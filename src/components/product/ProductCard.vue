@@ -1,5 +1,10 @@
 <template>
-  <div class="card-hover product-card-container" :data-product-id="product.id">
+  <div
+    class="card-hover product-card-container"
+    :data-product-id="product.id"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
+  >
     <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
       <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
@@ -53,9 +58,10 @@
 
     <!-- Product Info -->
     <div class="p-4 relative group">
-      <h3 class="font-bold text-base mb-2">{{ formattedProductName }}</h3>
+      <h3 class="font-bold text-base mb-1">{{ formattedProductName }}</h3>
 
-
+      <!-- Product Subtitle -->
+      <p v-if="productSubtitle" class="text-sm text-gray-600 mb-2">{{ productSubtitle }}</p>
 
       <!-- Rating -->
       <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-3">
@@ -218,7 +224,8 @@
 
     <!-- Description at bottom - Hidden by default, shows on hover -->
     <div v-if="product.description"
-         class="product-description border-t border-gray-200 bg-gray-50">
+         class="border-t border-gray-200 bg-gray-50 overflow-hidden transition-all duration-300 ease-in-out"
+         :class="isHovered ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -296,6 +303,9 @@ const showBottleSelector = ref(false)
 const combinedRating = ref<CombinedRating | null>(null)
 const ratingLoading = ref(false)
 
+// State for hover
+const isHovered = ref(false)
+
 // Computed properties
 const isDraft = computed(() => {
   return isDraftBeverage(props.product)
@@ -364,6 +374,22 @@ const truncatedDescription = computed(() => {
   return props.product.description.length > 100
     ? props.product.description.substring(0, 100) + '...'
     : props.product.description
+})
+
+// Product subtitle from attributes (like "Темне, Фільтроване, 6.5°")
+const productSubtitle = computed(() => {
+  if (!parsedAttributes.value || parsedAttributes.value.length === 0) return ''
+
+  // Create subtitle from key attributes
+  const subtitleParts: string[] = []
+
+  parsedAttributes.value.forEach(attr => {
+    // Add attribute value with unit if available
+    const value = attr.value + (attr.unit || '')
+    subtitleParts.push(value)
+  })
+
+  return subtitleParts.join(', ')
 })
 
 // Price display logic for weight-based products
@@ -802,15 +828,5 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* Product card hover behavior - only affects individual cards */
-.product-card-container:hover .product-description {
-  max-height: 10rem !important; /* 40 in Tailwind = 10rem */
-}
-
-/* Ensure descriptions are hidden by default */
-.product-description {
-  max-height: 0 !important;
-  overflow: hidden !important;
-  transition: max-height 0.3s ease-in-out !important;
-}
+/* No CSS hover needed - using Vue reactive approach */
 </style>
