@@ -49,8 +49,9 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 max-w-sm">
-        <p class="text-gray-700 text-sm whitespace-normal break-words">{{ product.description }}</p>
+           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 z-[9999] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 min-w-[300px] max-w-[400px]"
+           style="transform: translateX(-50%); left: 50%;">
+        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ product.description }}</p>
       </div>
 
       <!-- Rating -->
@@ -110,8 +111,8 @@
 
         <!-- Show quantity controls if product is in cart, otherwise show add button -->
         <div class="flex-shrink-0 ml-3">
-          <!-- Quantity Controls (shown when NON-DRAFT product is in cart) -->
-          <div v-if="!isDraft && itemInCart"
+          <!-- Quantity Controls (shown when ANY product is in cart) -->
+          <div v-if="itemInCart"
                class="flex items-center border-2 border-red-500 rounded-lg overflow-hidden">
             <button
               @click="decreaseCartQuantity"
@@ -129,10 +130,10 @@
             </button>
           </div>
 
-          <!-- Add to Cart Button (shown when product is NOT in cart OR is a draft product) -->
+          <!-- Add to Cart Button (shown when product is NOT in cart) -->
           <button
-            v-else-if="!isDraft"
-            @click="handleAddToCartDirectly"
+            v-else
+            @click="isDraft ? handleAddDraftToCartDirectly : handleAddToCartDirectly"
             :disabled="!isAvailableInBranch"
             class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -155,8 +156,8 @@
         @sale-expired="handleSaleExpired"
       />
 
-      <!-- Quantity Selector for Draft Beverages -->
-      <div v-if="isDraft && !showBottleSelector" class="mb-4">
+      <!-- Quantity Selector for Draft Beverages - HIDDEN -->
+      <div v-if="false" class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Кількість ({{ displayUnit }}):
         </label>
@@ -192,8 +193,8 @@
         @cancel="onBottleSelectionCancel"
       />
 
-      <!-- Add to Cart Buttons (for draft products only) -->
-      <div v-if="!showBottleSelector && isDraft" class="space-y-2">
+      <!-- Add to Cart Buttons (for draft products only) - HIDDEN -->
+      <div v-if="false" class="space-y-2">
         <!-- Main Add to Cart Button (with auto bottle selection for draft) -->
         <button
           @click="handleAddToCart"
@@ -294,7 +295,7 @@ const isDraft = computed(() => {
 
 // Check if product is in cart
 const itemInCart = computed(() => {
-  return cartStore.getItemById.value(props.product.id)
+  return cartStore.getItemById(props.product.id)
 })
 
 // Check if product is available in current branch
@@ -556,6 +557,35 @@ const handleAddToCartDirectly = () => {
 
   // Add directly to cart store
   cartStore.addItem(cartItem)
+}
+
+// Direct add to cart method for draft products
+const handleAddDraftToCartDirectly = () => {
+  if (!isAvailableInBranch.value) return
+
+  // Use default quantity (1L for draft beverages)
+  const defaultQuantity = 1
+
+  // Auto bottle selection: automatically select the best bottle combination
+  const autoBottles = getDefaultBottleSelection(defaultQuantity)
+
+  // Try to get bottle products for cart
+  const bottleCartItems = getBottleCartItems(autoBottles)
+
+  if (bottleCartItems.length > 0) {
+    // Add beverage to cart (without bottle cost since bottles are separate)
+    emit('add-to-cart', props.product, defaultQuantity, autoBottles)
+
+    // Add bottle products to cart as separate items
+    for (const bottleItem of bottleCartItems) {
+      emit('add-bottle-to-cart', bottleItem)
+    }
+  } else {
+    // Fallback: use old system with bottle cost included in beverage
+    const bottleCost = calculateBottleCost(autoBottles)
+    console.warn('Bottle products not available, using fallback bottle cost system')
+    emit('add-to-cart', props.product, defaultQuantity, autoBottles, bottleCost)
+  }
 }
 
 const onImageError = (event: Event) => {
