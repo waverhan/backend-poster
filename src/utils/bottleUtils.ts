@@ -56,6 +56,33 @@ export function isDraftBeverage(product: Product): boolean {
 }
 
 /**
+ * Check if a product is a bottle/tara product
+ */
+export function isBottledProduct(product: Product): boolean {
+  if (!product) return false
+
+  // Check if product is in the "Тара" category
+  const category = (product as any).category
+  if (category && category.display_name === 'Тара') {
+    return true
+  }
+
+  // Also check by product ID if it matches known bottle products
+  const bottleIds = Object.values(BOTTLE_PRODUCTS).map(bottle => bottle.id)
+  if (bottleIds.includes(product.id)) {
+    return true
+  }
+
+  // Check by poster_product_id
+  const bottlePosterIds = Object.values(BOTTLE_PRODUCTS).map(bottle => bottle.poster_product_id)
+  if (product.poster_product_id && bottlePosterIds.includes(product.poster_product_id)) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Get the default bottle selection for a given beverage quantity
  * SIMPLIFIED: Only use 1L bottles for easy calculation
  */

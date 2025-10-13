@@ -204,6 +204,14 @@ const addToCart = (product: Product) => {
   if (!isProductAvailable(product)) return
 
   try {
+    console.log('🔍 RelatedProducts addToCart:', {
+      productName: product.display_name || product.name,
+      isDraft: isDraftBeverage(product),
+      isBottled: isBottledProduct(product),
+      category: (product as any).category?.display_name,
+      requires_bottles: product.requires_bottles
+    })
+
     // Check if this is a draft beverage that requires bottles (but not if it's already a bottled product)
     if (isDraftBeverage(product) && !isBottledProduct(product)) {
       // For draft beverages, use default 1L quantity and auto bottle selection

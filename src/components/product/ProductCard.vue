@@ -1,5 +1,5 @@
 <template>
-  <div class="card-hover">
+  <div class="card-hover group">
     <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
       <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
