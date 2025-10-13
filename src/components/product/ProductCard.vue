@@ -1,9 +1,11 @@
 <template>
   <div
-    class="card-hover product-card-container individual-hover-card"
+    class="card-hover product-card-container product-card-slide relative overflow-hidden"
     :data-product-id="product.id"
   >
-    <!-- Product Image -->
+    <!-- Main Card Content -->
+    <div class="card-main-content">
+      <!-- Product Image -->
     <router-link :to="`/product/${product.id}`" class="block">
       <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
         <img
@@ -219,10 +221,12 @@
         -->
       </div>
     </div>
+    </div>
+    <!-- End Main Card Content -->
 
-    <!-- Description at bottom - Hidden by default, shows on hover -->
+    <!-- Sliding Description Panel -->
     <div v-if="product.description"
-         class="product-description border-t border-gray-200 bg-gray-50 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0">
+         class="description-slide absolute bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 transform translate-y-full transition-transform duration-300 ease-in-out">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -815,9 +819,17 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* Individual card hover - scoped to this component only */
-.individual-hover-card:hover .product-description {
-  max-height: 10rem !important;
-  opacity: 1 !important;
+/* Sliding effect for individual cards */
+.product-card-slide {
+  position: relative;
+}
+
+.product-card-slide:hover .description-slide {
+  transform: translateY(0) !important;
+}
+
+.description-slide {
+  transform: translateY(100%);
+  transition: transform 0.3s ease-in-out;
 }
 </style>
