@@ -49,8 +49,8 @@
 
       <!-- Description - Hidden by default, shown on hover -->
       <div v-if="product.description"
-           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 z-[9999] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 min-w-[300px] max-w-[400px]"
-           style="transform: translateX(-50%); left: 50%;">
+           class="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl p-4 z-[9999] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300"
+           style="width: 100%;">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ product.description }}</p>
       </div>
 
@@ -133,7 +133,7 @@
           <!-- Add to Cart Button (shown when product is NOT in cart) -->
           <button
             v-else
-            @click="isDraft ? handleAddDraftToCartDirectly : handleAddToCartDirectly"
+            @click="handleAddToCartDirectly"
             :disabled="!isAvailableInBranch"
             class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -531,32 +531,83 @@ const handleAddToCart = () => {
   }
 }
 
-// Direct add to cart method for non-draft products
+// Direct add to cart method for all products
 const handleAddToCartDirectly = () => {
   if (!isAvailableInBranch.value) return
 
-  // Create cart item directly
-  const cartItem = {
-    cart_item_id: `${props.product.id}_${Date.now()}`,
-    product_id: props.product.id,
-    poster_product_id: props.product.poster_product_id,
-    name: props.product.display_name || props.product.name,
-    price: props.product.price,
-    quantity: 1,
-    subtotal: props.product.custom_quantity && props.product.custom_unit
-      ? props.product.price * props.product.custom_quantity
-      : props.product.price,
-    image_url: props.product.display_image_url || props.product.image_url,
-    unit: props.product.unit,
-    custom_quantity: props.product.custom_quantity,
-    custom_unit: props.product.custom_unit,
-    max_quantity: props.product.max_quantity,
-    is_draft_beverage: false,
-    is_bottle_product: false
-  }
+  if (isDraft.value) {
+    // Handle draft products with auto bottle selection
+    const defaultQuantity = 1
+    const autoBottles = getDefaultBottleSelection(defaultQuantity)
 
-  // Add directly to cart store
-  cartStore.addItem(cartItem)
+    // Create cart item for draft beverage
+    const cartItem = {
+      cart_item_id: `${props.product.id}_${Date.now()}`,
+      product_id: props.product.id,
+      poster_product_id: props.product.poster_product_id,
+      name: props.product.display_name || props.product.name,
+      price: props.product.price,
+      quantity: defaultQuantity,
+      subtotal: props.product.price * defaultQuantity,
+      image_url: props.product.display_image_url || props.product.image_url,
+      unit: displayUnit.value,
+      custom_quantity: props.product.custom_quantity,
+      custom_unit: props.product.custom_unit,
+      max_quantity: props.product.max_quantity,
+      is_draft_beverage: true,
+      is_bottle_product: false,
+      bottle_selection: autoBottles
+    }
+
+    // Add draft beverage to cart
+    cartStore.addItem(cartItem)
+
+    // Add bottles to cart if auto selection is enabled
+    if (autoBottles && autoBottles.bottles && autoBottles.bottles.length > 0) {
+      autoBottles.bottles.forEach(bottle => {
+        if (bottle.quantity > 0) {
+          const bottleCartItem = {
+            cart_item_id: `bottle_${bottle.id}_${Date.now()}`,
+            product_id: bottle.id,
+            poster_product_id: bottle.poster_product_id,
+            name: bottle.name,
+            price: bottle.price,
+            quantity: bottle.quantity,
+            subtotal: bottle.price * bottle.quantity,
+            image_url: bottle.image_url,
+            unit: bottle.unit,
+            max_quantity: bottle.max_quantity,
+            is_draft_beverage: false,
+            is_bottle_product: true
+          }
+          cartStore.addItem(bottleCartItem)
+        }
+      })
+    }
+  } else {
+    // Handle regular products
+    const cartItem = {
+      cart_item_id: `${props.product.id}_${Date.now()}`,
+      product_id: props.product.id,
+      poster_product_id: props.product.poster_product_id,
+      name: props.product.display_name || props.product.name,
+      price: props.product.price,
+      quantity: 1,
+      subtotal: props.product.custom_quantity && props.product.custom_unit
+        ? props.product.price * props.product.custom_quantity
+        : props.product.price,
+      image_url: props.product.display_image_url || props.product.image_url,
+      unit: props.product.unit,
+      custom_quantity: props.product.custom_quantity,
+      custom_unit: props.product.custom_unit,
+      max_quantity: props.product.max_quantity,
+      is_draft_beverage: false,
+      is_bottle_product: false
+    }
+
+    // Add directly to cart store
+    cartStore.addItem(cartItem)
+  }
 }
 
 // Direct add to cart method for draft products
