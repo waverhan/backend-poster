@@ -15,6 +15,14 @@
         <!-- New Product Badge -->
         <NewProductBadge :product="product" />
 
+        <!-- Sale Badge on Image -->
+        <div v-if="product.original_price && product.original_price > product.price"
+             class="absolute top-2 left-2 z-10">
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
+            SALE
+          </span>
+        </div>
+
         <!-- Product Attributes Overlay -->
         <div v-if="parsedAttributes && parsedAttributes.length > 0"
              class="absolute top-1 right-1 space-y-1">
@@ -47,11 +55,7 @@
     <div class="p-4 relative group">
       <h3 class="font-bold text-base mb-2">{{ formattedProductName }}</h3>
 
-      <!-- Description - Hidden by default, shown on hover -->
-      <div v-if="product.description"
-           class="border-t border-gray-200 bg-gray-50 px-4 py-3 max-h-0 overflow-hidden group-hover:max-h-32 transition-all duration-300 ease-in-out">
-        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ truncatedDescription }}</p>
-      </div>
+
 
       <!-- Rating -->
       <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-3">
@@ -141,12 +145,7 @@
         </div>
       </div>
 
-      <!-- Sale Badge -->
-      <div v-if="product.original_price && product.original_price > product.price" class="mb-3">
-        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
-          SALE
-        </span>
-      </div>
+
 
       <!-- Sale Countdown -->
       <SaleCountdown
@@ -214,6 +213,14 @@
           🍾 Обрати пляшки
         </button>
         -->
+      </div>
+    </div>
+
+    <!-- Description at bottom - Only expands when hovering over this area -->
+    <div v-if="product.description"
+         class="border-t border-gray-200 bg-gray-50 max-h-0 overflow-hidden hover:max-h-32 transition-all duration-300 ease-in-out group">
+      <div class="px-4 py-3">
+        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">{{ truncatedDescription }}</p>
       </div>
     </div>
   </div>
