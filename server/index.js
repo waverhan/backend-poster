@@ -70,11 +70,21 @@ app.use((req, res, next) => {
 
 app.use(express.json())
 
-// Serve static images FIRST (before API routes)
+// Serve static images FIRST (before API routes) with cache headers
 app.use('/images', (req, res, next) => {
   console.log(`📁 Static request: ${req.url}`)
+
+  // Set cache headers for images
+  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000') // 1 day browser, 1 year CDN
+  res.setHeader('ETag', `"${Date.now()}"`) // Simple ETag for cache validation
+  res.setHeader('Vary', 'Accept-Encoding')
+
   next()
-}, express.static(path.join(__dirname, 'public/images')))
+}, express.static(path.join(__dirname, 'public/images'), {
+  maxAge: '1d', // 1 day cache
+  etag: true,
+  lastModified: true
+}))
 
 // Health check
 app.get('/health', (req, res) => {

@@ -9,12 +9,15 @@
       <div class="relative">
         <router-link :to="`/product/${product.id}`" class="block">
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
-            <img
+            <LazyImage
               v-if="imageUrl"
               :src="imageUrl"
+              :fallback-src="fallbackImageUrl"
               :alt="product.display_name"
-              class="w-full h-full object-cover"
+              container-class="w-full h-full"
+              image-class="w-full h-full object-cover"
               @error="onImageError"
+              @load="onImageLoad"
             />
             <span v-else class="text-4xl">🍽️</span>
 
@@ -277,6 +280,7 @@ import BottleSelector from './BottleSelector.vue'
 import SaleCountdown from '../SaleCountdown.vue'
 import NewProductBadge from '../NewProductBadge.vue'
 import LikeButton from './LikeButton.vue'
+import LazyImage from '../ui/LazyImage.vue'
 
 interface Props {
   product: Product
@@ -466,6 +470,14 @@ const imageUrl = computed(() => {
 
   // Use the backend API to get the full image URL (same as admin panel)
   return backendApi.getImageUrl(primaryImage)
+})
+
+// Fallback image URL for LazyImage component
+const fallbackImageUrl = computed(() => {
+  if (props.product.poster_product_id) {
+    return backendApi.getPosterImageUrl(props.product.poster_product_id)
+  }
+  return ''
 })
 
 // Methods for quantity control
@@ -692,6 +704,11 @@ const onImageError = (event: Event) => {
     // If even the fallback fails, hide the image
     img.style.display = 'none'
   }
+}
+
+const onImageLoad = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.style.opacity = '1'
 }
 
 const formatQuantity = (quantity: number, unit?: string): string => {

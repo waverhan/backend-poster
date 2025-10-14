@@ -21,6 +21,30 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 // 24 hours
               }
             }
+          },
+          {
+            // Cache backend images with CacheFirst strategy
+            urlPattern: /^https:\/\/backend-api-production-b3a0\.up\.railway\.app\/images\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'backend-images-cache',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+              }
+            }
+          },
+          {
+            // Cache Poster images as fallback
+            urlPattern: /^https:\/\/joinposter\.com\/upload\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'poster-images-cache',
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 3 // 3 days
+              }
+            }
           }
         ]
       },
