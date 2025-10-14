@@ -6,56 +6,59 @@
     <!-- Main Card Content -->
     <div class="card-main-content">
       <!-- Product Image -->
-    <router-link :to="`/product/${product.id}`" class="block">
-      <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
-        <img
-          v-if="imageUrl"
-          :src="imageUrl"
-          :alt="product.display_name"
-          class="w-full h-full object-cover"
-          @error="onImageError"
-        />
-        <span v-else class="text-4xl">🍽️</span>
+      <div class="relative">
+        <router-link :to="`/product/${product.id}`" class="block">
+          <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
+            <img
+              v-if="imageUrl"
+              :src="imageUrl"
+              :alt="product.display_name"
+              class="w-full h-full object-cover"
+              @error="onImageError"
+            />
+            <span v-else class="text-4xl">🍽️</span>
 
-        <!-- New Product Badge -->
-        <NewProductBadge :product="product" />
+            <!-- New Product Badge -->
+            <NewProductBadge :product="product" />
 
-        <!-- Sale Badge on Image -->
-        <div v-if="product.original_price && product.original_price > product.price"
-             class="absolute top-2 left-2 z-10">
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
-            SALE
-          </span>
-        </div>
-
-        <!-- Product Attributes Overlay -->
-        <div v-if="parsedAttributes && parsedAttributes.length > 0"
-             class="absolute top-1 right-1 space-y-1">
-          <div
-            v-for="attribute in parsedAttributes.slice(0, 3)"
-            :key="attribute.name"
-            class="bg-white bg-opacity-75 backdrop-blur-sm rounded px-2 py-1 text-right shadow-sm min-w-0"
-          >
-            <div class="text-xs text-gray-700 font-medium leading-tight">{{ attribute.name }}</div>
-            <div class="text-xs font-bold text-gray-900 leading-tight">
-              {{ attribute.value }}{{ attribute.unit || '' }}
+            <!-- Sale Badge on Image -->
+            <div v-if="product.original_price && product.original_price > product.price"
+                 class="absolute top-2 left-2 z-10">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
+                SALE
+              </span>
             </div>
-            <!-- Scale bars -->
-            <div class="flex justify-end gap-0.5 mt-0.5">
+
+            <!-- Product Attributes Overlay -->
+            <div v-if="parsedAttributes && parsedAttributes.length > 0"
+                 class="absolute top-1 right-1 space-y-1">
               <div
-                v-for="i in 5"
-                :key="i"
-                class="w-1.5 h-1 rounded-sm"
-                :class="i <= getScaleLevel(attribute.value, attribute.name)
-                  ? getAttributeBarColor(attribute.color)
-                  : 'bg-gray-300'"
-              ></div>
+                v-for="attribute in parsedAttributes.slice(0, 3)"
+                :key="attribute.name"
+                class="bg-white bg-opacity-75 backdrop-blur-sm rounded px-2 py-1 text-right shadow-sm min-w-0"
+              >
+                <div class="text-xs text-gray-700 font-medium leading-tight">{{ attribute.name }}</div>
+                <div class="text-xs font-bold text-gray-900 leading-tight">
+                  {{ attribute.value }}{{ attribute.unit || '' }}
+                </div>
+                <!-- Scale bars -->
+                <div class="flex justify-end gap-0.5 mt-0.5">
+                  <div
+                    v-for="i in 5"
+                    :key="i"
+                    class="w-1.5 h-1 rounded-sm"
+                    :class="i <= getScaleLevel(attribute.value, attribute.name)
+                      ? getAttributeBarColor(attribute.color)
+                      : 'bg-gray-300'"
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </router-link>
 
-        <!-- Like Button - Bottom Right Corner -->
-        <div class="absolute bottom-2 right-2 z-10">
+        <!-- Like Button - Bottom Right Corner (Outside router-link) -->
+        <div class="absolute bottom-2 right-2 z-20" @click.stop>
           <LikeButton
             :product="product"
             size="small"
@@ -64,7 +67,6 @@
           />
         </div>
       </div>
-    </router-link>
 
     <!-- Product Info -->
     <div class="p-4 relative group">
@@ -103,13 +105,19 @@
       <!-- Price and Add to Cart / Quantity Controls -->
       <div class="flex items-center justify-between mb-3">
         <div class="flex flex-col">
-          <div class="flex items-center space-x-2">
+          <div class="flex items-baseline space-x-1">
             <span :class="[
               'text-lg font-bold tracking-tight',
               product.original_price && product.original_price > product.price
                 ? 'text-red-600'
                 : 'text-gray-900'
-            ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }} ₴</span>
+            ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }}</span>
+            <span :class="[
+              'text-lg font-bold tracking-tight',
+              product.original_price && product.original_price > product.price
+                ? 'text-red-600'
+                : 'text-gray-900'
+            ]">₴</span>
             <span v-if="product.original_price && product.original_price > product.price"
                   class="text-xs text-gray-400 line-through">
               {{ formatDisplayPrice(product.original_price) }} ₴
