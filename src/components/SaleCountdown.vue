@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOnSale && timeRemaining" class="sale-countdown">
+  <div v-if="isOnSale && timeRemaining && product.sale_expires_at" class="sale-countdown">
     <div class="flex items-center gap-2 text-sm">
       <div class="flex items-center gap-1 font-mono text-red-700">
         <span v-if="timeRemaining.days > 0" class="bg-red-100 px-2 py-1 rounded">
@@ -49,24 +49,16 @@ const isOnSale = computed(() => {
 })
 
 const timeRemaining = computed((): TimeRemaining | null => {
-  if (!isOnSale.value) {
+  if (!isOnSale.value || !props.product.sale_expires_at) {
     return null
   }
 
-  let expirationTime: number
-
-  if (props.product.sale_expires_at) {
-    // Use the provided expiration time
-    expirationTime = new Date(props.product.sale_expires_at).getTime()
-  } else {
-    // Default to 24 hours from now if no expiration is set
-    expirationTime = currentTime.value + (24 * 60 * 60 * 1000)
-  }
-
+  // Use the provided expiration time
+  const expirationTime = new Date(props.product.sale_expires_at).getTime()
   const total = expirationTime - currentTime.value
 
-  if (total <= 0 && props.product.sale_expires_at) {
-    // Sale has expired (only emit if there was an actual expiration date)
+  if (total <= 0) {
+    // Sale has expired
     emit('saleExpired', props.product)
     return null
   }

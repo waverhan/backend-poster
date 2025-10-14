@@ -53,6 +53,16 @@
             </div>
           </div>
         </div>
+
+        <!-- Like Button - Bottom Right Corner -->
+        <div class="absolute bottom-2 right-2 z-10">
+          <LikeButton
+            :product="product"
+            size="small"
+            variant="minimal"
+            :show-count="false"
+          />
+        </div>
       </div>
     </router-link>
 
@@ -88,15 +98,7 @@
         </div>
       </div>
 
-      <!-- Like Button -->
-      <div class="flex justify-end mb-2">
-        <LikeButton
-          :product="product"
-          size="small"
-          variant="minimal"
-          :show-count="true"
-        />
-      </div>
+
 
       <!-- Price and Add to Cart / Quantity Controls -->
       <div class="flex items-center justify-between mb-3">
@@ -109,7 +111,7 @@
                 : 'text-gray-900'
             ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }} ₴</span>
             <span v-if="product.original_price && product.original_price > product.price"
-                  class="text-sm text-gray-400 line-through">
+                  class="text-xs text-gray-400 line-through">
               {{ formatDisplayPrice(product.original_price) }} ₴
             </span>
           </div>
@@ -155,7 +157,7 @@
 
       <!-- Sale Countdown -->
       <SaleCountdown
-        v-if="product.original_price && product.original_price > product.price"
+        v-if="product.original_price && product.original_price > product.price && product.sale_expires_at"
         :product="product"
         @sale-expired="handleSaleExpired"
       />
