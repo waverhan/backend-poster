@@ -354,12 +354,45 @@ class BackendApiService {
     return `${BACKEND_BASE_URL}${imagePath}`
   }
 
-  // Get fallback Poster image URL
+  // Get Poster image URL with smart fallback
   getPosterImageUrl(posterProductId: string): string {
     if (!posterProductId) return ''
-    // Use the actual Poster API format - we'll need to fetch this from the API
-    // For now, return a placeholder that will trigger the image error handler
-    return `https://joinposter.com/upload/pos_cdb_214175/menu/product_placeholder_${posterProductId}.jpeg`
+
+    // Try the most common Poster image patterns first
+    const commonTimestamps = [
+      '1707315138', '1678998630', '1678998675', '1678998721', '1688988756',
+      '1678785050', '1678785078', '1717493132', '1678785093', '1678785064'
+    ]
+
+    // Return the most likely URL (first common timestamp with .png)
+    return `https://joinposter.com/upload/pos_cdb_214175/menu/product_${commonTimestamps[0]}_${posterProductId}.png`
+  }
+
+  // Get all possible Poster image URLs for fallback
+  getAllPosterImageUrls(posterProductId: string): string[] {
+    if (!posterProductId) return []
+
+    const timestamps = [
+      '1707315138', '1678998630', '1678998675', '1678998721', '1688988756',
+      '1678785050', '1678785078', '1717493132', '1678785093', '1678785064',
+      '1689445896', '1678785128', '1678996480', '1678996934', '1679039883'
+    ]
+    const extensions = ['png', 'jpeg', 'jpg']
+    const urls = []
+
+    // Generate all possible combinations
+    for (const timestamp of timestamps) {
+      for (const ext of extensions) {
+        urls.push(`https://joinposter.com/upload/pos_cdb_214175/menu/product_${timestamp}_${posterProductId}.${ext}`)
+      }
+    }
+
+    // Also try without timestamp
+    for (const ext of extensions) {
+      urls.push(`https://joinposter.com/upload/pos_cdb_214175/menu/product_${posterProductId}.${ext}`)
+    }
+
+    return urls
   }
 }
 

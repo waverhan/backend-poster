@@ -457,20 +457,25 @@ const parsedAttributes = computed(() => {
   }
 })
 
-// Optimized image URL - direct Railway serving
+// Smart image URL - try Poster first, then Railway fallback
 const imageUrl = computed(() => {
-  const primaryImage = props.product.display_image_url || props.product.image_url
+  // If we have a poster_product_id, try Poster images first (faster)
+  if (props.product.poster_product_id) {
+    return backendApi.getPosterImageUrl(props.product.poster_product_id)
+  }
 
+  // Fallback to Railway images
+  const primaryImage = props.product.display_image_url || props.product.image_url
   if (!primaryImage) {
     return ''
   }
 
-  // Direct URL construction for faster loading
+  // Direct URL construction for Railway images
   if (primaryImage.startsWith('/images/')) {
     return `https://backend-api-production-b3a0.up.railway.app${primaryImage}`
   }
 
-  // Use the backend API to get the full image URL (same as admin panel)
+  // Use the backend API to get the full image URL
   return backendApi.getImageUrl(primaryImage)
 })
 
@@ -688,16 +693,36 @@ const handleAddDraftToCartDirectly = () => {
   }
 }
 
+// State for tracking image fallback attempts
+const imageAttempts = ref(0)
+const posterUrls = ref<string[]>([])
+
 const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
 
-  // If this is a local image that failed, try the Poster fallback
-  if (img.src.includes('/images/')) {
-    img.src = backendApi.getPosterImageUrl(props.product.poster_product_id)
-  } else {
-    // If even the fallback fails, hide the image
-    img.style.display = 'none'
+  // Initialize Poster URLs if not done yet
+  if (posterUrls.value.length === 0 && props.product.poster_product_id) {
+    posterUrls.value = backendApi.getAllPosterImageUrls(props.product.poster_product_id)
   }
+
+  // Try next Poster URL if available
+  if (imageAttempts.value < posterUrls.value.length) {
+    img.src = posterUrls.value[imageAttempts.value]
+    imageAttempts.value++
+    return
+  }
+
+  // If all Poster URLs failed, try Railway fallback
+  if (img.src.includes('joinposter.com')) {
+    const primaryImage = props.product.display_image_url || props.product.image_url
+    if (primaryImage && primaryImage.startsWith('/images/')) {
+      img.src = `https://backend-api-production-b3a0.up.railway.app${primaryImage}`
+      return
+    }
+  }
+
+  // If everything fails, hide the image
+  img.style.display = 'none'
 }
 
 const onImageLoad = (event: Event) => {

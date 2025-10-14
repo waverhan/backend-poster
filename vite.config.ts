@@ -35,14 +35,14 @@ export default defineConfig({
             }
           },
           {
-            // Cache Poster images as fallback
+            // Cache Poster images with aggressive caching (primary source)
             urlPattern: /^https:\/\/joinposter\.com\/upload\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'poster-images-cache',
               expiration: {
-                maxEntries: 300,
-                maxAgeSeconds: 60 * 60 * 24 * 3 // 3 days
+                maxEntries: 1000,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               }
             }
           }
