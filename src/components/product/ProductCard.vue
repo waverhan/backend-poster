@@ -9,13 +9,11 @@
       <div class="relative">
         <router-link :to="`/product/${product.id}`" class="block">
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
-            <LazyImage
+            <img
               v-if="imageUrl"
               :src="imageUrl"
-              :fallback-src="fallbackImageUrl"
               :alt="product.display_name"
-              container-class="w-full h-full"
-              image-class="w-full h-full object-cover"
+              class="w-full h-full object-cover"
               @error="onImageError"
               @load="onImageLoad"
             />
@@ -280,7 +278,6 @@ import BottleSelector from './BottleSelector.vue'
 import SaleCountdown from '../SaleCountdown.vue'
 import NewProductBadge from '../NewProductBadge.vue'
 import LikeButton from './LikeButton.vue'
-import LazyImage from '../ui/LazyImage.vue'
 
 interface Props {
   product: Product
@@ -460,7 +457,7 @@ const parsedAttributes = computed(() => {
   }
 })
 
-// Computed image URL with fallback logic
+// Optimized image URL - direct Railway serving
 const imageUrl = computed(() => {
   const primaryImage = props.product.display_image_url || props.product.image_url
 
@@ -468,16 +465,13 @@ const imageUrl = computed(() => {
     return ''
   }
 
+  // Direct URL construction for faster loading
+  if (primaryImage.startsWith('/images/')) {
+    return `https://backend-api-production-b3a0.up.railway.app${primaryImage}`
+  }
+
   // Use the backend API to get the full image URL (same as admin panel)
   return backendApi.getImageUrl(primaryImage)
-})
-
-// Fallback image URL for LazyImage component
-const fallbackImageUrl = computed(() => {
-  if (props.product.poster_product_id) {
-    return backendApi.getPosterImageUrl(props.product.poster_product_id)
-  }
-  return ''
 })
 
 // Methods for quantity control

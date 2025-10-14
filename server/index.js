@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import compression from 'compression'
 import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
@@ -68,22 +69,39 @@ app.use((req, res, next) => {
   next()
 })
 
+// Enable compression for all responses
+app.use(compression({
+  filter: (req, res) => {
+    // Don't compress responses if the client doesn't support it
+    if (req.headers['x-no-compression']) {
+      return false
+    }
+    // Use compression for all requests
+    return compression.filter(req, res)
+  },
+  level: 6, // Compression level (1-9, 6 is good balance)
+  threshold: 1024 // Only compress responses larger than 1KB
+}))
+
 app.use(express.json())
 
-// Serve static images FIRST (before API routes) with cache headers
+// Serve static images FIRST (before API routes) with optimized headers
 app.use('/images', (req, res, next) => {
   console.log(`📁 Static request: ${req.url}`)
 
-  // Set cache headers for images
-  res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=31536000') // 1 day browser, 1 year CDN
-  res.setHeader('ETag', `"${Date.now()}"`) // Simple ETag for cache validation
-  res.setHeader('Vary', 'Accept-Encoding')
+  // Optimized cache headers for faster loading
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET')
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
 
   next()
 }, express.static(path.join(__dirname, 'public/images'), {
-  maxAge: '1d', // 1 day cache
-  etag: true,
-  lastModified: true
+  maxAge: '1y', // 1 year cache
+  etag: false, // Disable ETag for faster serving
+  lastModified: false, // Disable last-modified for faster serving
+  index: false, // Disable directory indexing
+  dotfiles: 'ignore' // Ignore dotfiles
 }))
 
 // Health check
