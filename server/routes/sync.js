@@ -1077,8 +1077,12 @@ router.post('/prices-only', async (req, res) => {
         })
 
         if (existingProduct) {
-          // Use price_1 for price sync (instead of cost)
-          let newPrice = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+          // Use price object with key "1" for price level 1
+          let priceInKopecks = 0
+          if (posterProduct.price && typeof posterProduct.price === 'object') {
+            priceInKopecks = parseInt(posterProduct.price['1']) || 0
+          }
+          let newPrice = priceInKopecks / 100 // Convert from kopecks to UAH
 
           // For weight-based products (weight_flag = 1), divide by 10
           // to convert from 100g price to 1kg price for display
@@ -1087,7 +1091,7 @@ router.post('/prices-only', async (req, res) => {
           }
 
           // Only update if price has changed
-          if (existingProduct.price !== newPrice) {
+          if (Math.abs(existingProduct.price - newPrice) > 0.01) {
             await prisma.product.update({
               where: { id: existingProduct.id },
               data: {
@@ -1096,6 +1100,7 @@ router.post('/prices-only', async (req, res) => {
               }
             })
             updatedProductsCount++
+            console.log(`💰 Updated price for ${existingProduct.name}: ${existingProduct.price} → ${newPrice} UAH`)
 
           } else {
             skippedProductsCount++
@@ -1464,7 +1469,7 @@ router.post('/daily', async (req, res) => {
       select: { poster_product_id: true, price: true, id: true, name: true }
     })
 
-    const existingProductIds = new Set(existingProducts.map(p => p.poster_product_id))
+    const existingProductIds = new Set(existingProducts.map(p => String(p.poster_product_id)))
 
     let newProductsCount = 0
     let updatedPricesCount = 0
@@ -1474,7 +1479,7 @@ router.post('/daily', async (req, res) => {
     // Process each product from Poster
     for (const posterProduct of posterProducts) {
       try {
-        const isNewProduct = !existingProductIds.has(posterProduct.product_id)
+        const isNewProduct = !existingProductIds.has(String(posterProduct.product_id))
 
         if (isNewProduct) {
           // NEW PRODUCT: Import it
@@ -1482,17 +1487,22 @@ router.post('/daily', async (req, res) => {
 
           // Get category for the product
           let categoryId = null
-          if (posterProduct.category_id) {
+          if (posterProduct.menu_category_id) {
             const category = await prisma.category.findFirst({
-              where: { poster_category_id: posterProduct.category_id }
+              where: { poster_category_id: posterProduct.menu_category_id }
             })
             categoryId = category?.id || null
           }
 
-          // Calculate price
-          let price = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+          // Calculate price - use price object with key "1" for price level 1
+          let priceInKopecks = 0
+          if (posterProduct.price && typeof posterProduct.price === 'object') {
+            priceInKopecks = parseInt(posterProduct.price['1']) || 0
+          }
+          let price = priceInKopecks / 100 // Convert from kopecks to UAH
+
           if (posterProduct.weight_flag === 1) {
-            price = price / 10 // For weight-based products
+            price = price / 10 // For weight-based products, divide by 10
           }
 
           // Create new product
@@ -1512,17 +1522,22 @@ router.post('/daily', async (req, res) => {
           })
 
           newProductsCount++
-          console.log(`✅ Imported new product: ${posterProduct.product_name}`)
+          console.log(`✅ Imported new product: ${posterProduct.product_name} (Price: ${price} UAH)`)
 
         } else {
           // EXISTING PRODUCT: Check for price updates
-          const existingProduct = existingProducts.find(p => p.poster_product_id === posterProduct.product_id)
+          const existingProduct = existingProducts.find(p => String(p.poster_product_id) === String(posterProduct.product_id))
 
           if (existingProduct) {
-            // Calculate new price
-            let newPrice = posterProduct.price_1 / 100 // Convert from kopecks to UAH
+            // Calculate new price - use price object with key "1" for price level 1
+            let priceInKopecks = 0
+            if (posterProduct.price && typeof posterProduct.price === 'object') {
+              priceInKopecks = parseInt(posterProduct.price['1']) || 0
+            }
+            let newPrice = priceInKopecks / 100 // Convert from kopecks to UAH
+
             if (posterProduct.weight_flag === 1) {
-              newPrice = newPrice / 10 // For weight-based products
+              newPrice = newPrice / 10 // For weight-based products, divide by 10
             }
 
             // Only update if price has changed
@@ -1588,6 +1603,244 @@ router.post('/daily', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Daily sync failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/update-prices - Manual price update from Poster POS
+router.post('/update-prices', async (req, res) => {
+  let syncLog = null
+
+  try {
+    console.log('💰 Starting manual price update...')
+
+    syncLog = await createSyncLog('manual-price-update', 'in_progress')
+
+    // Get all products from Poster API
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+    console.log(`📊 Found ${posterProducts.length} products in Poster POS`)
+
+    // Get all existing products from database
+    const existingProducts = await prisma.product.findMany({
+      select: { poster_product_id: true, price: true, id: true, name: true }
+    })
+
+    let updatedPricesCount = 0
+    let skippedProductsCount = 0
+    let errorCount = 0
+
+    // Process each product from Poster
+    for (const posterProduct of posterProducts) {
+      try {
+        const existingProduct = existingProducts.find(p => String(p.poster_product_id) === String(posterProduct.product_id))
+
+        if (existingProduct) {
+          // Calculate new price - use price object with key "1" for price level 1
+          let priceInKopecks = 0
+          if (posterProduct.price && typeof posterProduct.price === 'object') {
+            priceInKopecks = parseInt(posterProduct.price['1']) || 0
+          }
+          let newPrice = priceInKopecks / 100 // Convert from kopecks to UAH
+
+          if (posterProduct.weight_flag === 1) {
+            newPrice = newPrice / 10 // For weight-based products, divide by 10
+          }
+
+          // Only update if price has changed
+          if (Math.abs(existingProduct.price - newPrice) > 0.01) {
+            await prisma.product.update({
+              where: { id: existingProduct.id },
+              data: {
+                price: newPrice,
+                updated_at: new Date()
+              }
+            })
+
+            updatedPricesCount++
+            console.log(`💰 Updated price for ${existingProduct.name}: ${existingProduct.price} → ${newPrice} UAH`)
+          } else {
+            skippedProductsCount++
+          }
+        }
+      } catch (productError) {
+        console.error(`❌ Error updating price for product ${posterProduct.product_id}:`, productError)
+        errorCount++
+      }
+    }
+
+    // Update sync log with success
+    const syncDetails = {
+      updated_prices: updatedPricesCount,
+      skipped_products: skippedProductsCount,
+      errors: errorCount,
+      total_poster_products: posterProducts.length,
+      sync_type: 'manual-price-update'
+    }
+
+    await updateSyncLog(syncLog.id, 'completed', updatedPricesCount, null, JSON.stringify(syncDetails))
+
+    const result = {
+      success: true,
+      message: `Price update completed! Updated ${updatedPricesCount} prices.`,
+      stats: {
+        updated_prices: updatedPricesCount,
+        skipped_products: skippedProductsCount,
+        errors: errorCount,
+        total_poster_products: posterProducts.length,
+        sync_type: 'manual-price-update'
+      }
+    }
+
+    console.log('🎉 Price update completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Price update failed:', error)
+
+    // Update sync log with error
+    if (syncLog) {
+      await updateSyncLog(syncLog.id, 'failed', null, error.message)
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Price update failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/import-new-products - Manual import of new products from Poster POS
+router.post('/import-new-products', async (req, res) => {
+  let syncLog = null
+
+  try {
+    console.log('🆕 Starting manual new products import...')
+
+    syncLog = await createSyncLog('manual-new-products-import', 'in_progress')
+
+    // Get all products from Poster API
+    const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts`, {
+      params: {
+        token: POSTER_TOKEN
+      }
+    })
+
+    const posterProducts = productsResponse.data.response || []
+    console.log(`📊 Found ${posterProducts.length} products in Poster POS`)
+
+    // Get all existing products from database
+    const existingProducts = await prisma.product.findMany({
+      select: { poster_product_id: true }
+    })
+
+    const existingProductIds = new Set(existingProducts.map(p => String(p.poster_product_id)))
+
+    let newProductsCount = 0
+    let skippedProductsCount = 0
+    let errorCount = 0
+
+    // Process each product from Poster
+    for (const posterProduct of posterProducts) {
+      try {
+        const isNewProduct = !existingProductIds.has(String(posterProduct.product_id))
+
+        if (isNewProduct) {
+          // NEW PRODUCT: Import it
+          console.log(`🆕 New product found: ${posterProduct.product_name} (ID: ${posterProduct.product_id})`)
+
+          // Get category for the product
+          let categoryId = null
+          if (posterProduct.menu_category_id) {
+            const category = await prisma.category.findFirst({
+              where: { poster_category_id: posterProduct.menu_category_id }
+            })
+            categoryId = category?.id || null
+          }
+
+          // Calculate price - use price object with key "1" for price level 1
+          let priceInKopecks = 0
+          if (posterProduct.price && typeof posterProduct.price === 'object') {
+            priceInKopecks = parseInt(posterProduct.price['1']) || 0
+          }
+          let price = priceInKopecks / 100 // Convert from kopecks to UAH
+
+          if (posterProduct.weight_flag === 1) {
+            price = price / 10 // For weight-based products, divide by 10
+          }
+
+          // Create new product
+          await prisma.product.create({
+            data: {
+              poster_product_id: posterProduct.product_id,
+              name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
+              description: posterProduct.product_name || '',
+              price: price,
+              category_id: categoryId,
+              is_active: true,
+              unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
+              weight_flag: posterProduct.weight_flag || 0,
+              created_at: new Date(),
+              updated_at: new Date()
+            }
+          })
+
+          newProductsCount++
+          console.log(`✅ Imported new product: ${posterProduct.product_name} (Price: ${price} UAH)`)
+        } else {
+          skippedProductsCount++
+        }
+
+      } catch (productError) {
+        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError)
+        errorCount++
+      }
+    }
+
+    // Update sync log with success
+    const syncDetails = {
+      new_products: newProductsCount,
+      skipped_products: skippedProductsCount,
+      errors: errorCount,
+      total_poster_products: posterProducts.length,
+      sync_type: 'manual-new-products-import'
+    }
+
+    await updateSyncLog(syncLog.id, 'completed', newProductsCount, null, JSON.stringify(syncDetails))
+
+    const result = {
+      success: true,
+      message: `New products import completed! Added ${newProductsCount} new products.`,
+      stats: {
+        new_products: newProductsCount,
+        skipped_products: skippedProductsCount,
+        errors: errorCount,
+        total_poster_products: posterProducts.length,
+        sync_type: 'manual-new-products-import'
+      }
+    }
+
+    console.log('🎉 New products import completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ New products import failed:', error)
+
+    // Update sync log with error
+    if (syncLog) {
+      await updateSyncLog(syncLog.id, 'failed', null, error.message)
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'New products import failed',
       message: error.message
     })
   }
