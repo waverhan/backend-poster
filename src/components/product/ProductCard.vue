@@ -858,7 +858,7 @@ onMounted(() => {
 
 .description-expand {
   position: absolute;
-  bottom: -300px;
+  top: 100%;
   left: 0;
   right: 0;
   max-height: 300px;
@@ -880,6 +880,11 @@ onMounted(() => {
 
 /* Override card overflow to allow description to show */
 .product-card-container {
+  overflow: visible !important;
+}
+
+/* Ensure card-hover doesn't clip the description */
+.product-card-container.card-hover {
   overflow: visible !important;
 }
 </style>
