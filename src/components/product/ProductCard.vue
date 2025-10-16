@@ -231,19 +231,19 @@
         </button>
         -->
       </div>
+
+      <!-- Expandable Description Panel -->
+      <div v-if="product.description"
+           class="description-expand">
+        <div class="px-4 py-3">
+          <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
+            {{ truncatedDescription }}
+          </p>
+        </div>
+      </div>
     </div>
     </div>
     <!-- End Main Card Content -->
-
-    <!-- Expandable Description Panel (Absolute positioned) -->
-    <div v-if="product.description"
-         class="description-expand">
-      <div class="px-4 py-3">
-        <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
-          {{ truncatedDescription }}
-        </p>
-      </div>
-    </div>
   </div>
 
 </template>
@@ -846,26 +846,22 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   z-index: 10;
-  overflow: visible;
 }
 
 /* Only expand description when THIS specific card is hovered */
 .product-card-expand:hover .description-expand {
+  max-height: 300px;
   opacity: 1;
   visibility: visible;
   z-index: 50;
 }
 
 .description-expand {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 300px;
-  overflow-y: auto;
+  max-height: 0;
+  overflow: hidden;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
   background: white;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
