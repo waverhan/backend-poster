@@ -385,6 +385,7 @@ router.post('/bulk-edit', async (req, res) => {
 
           if (currentProduct) {
             let newPrice = currentProduct.price
+            const isWeightBased = currentProduct.custom_quantity && currentProduct.custom_quantity > 0
 
             switch (type) {
               case 'set':
@@ -404,6 +405,12 @@ router.post('/bulk-edit', async (req, res) => {
                 break
               case 'multiply':
                 newPrice = currentProduct.price * parseFloat(value)
+                // For weight-based products, multiply by 10 to account for Poster POS price format
+                // Weight-based products in Poster are stored as price per 100g, we display as price per kg
+                if (isWeightBased) {
+                  newPrice = newPrice * 10
+                  console.log(`📊 Weight-based product: Applied additional 10x multiplier for Poster format`)
+                }
                 break
               default:
                 throw new Error(`Unknown price adjustment type: ${type}`)
@@ -415,8 +422,7 @@ router.post('/bulk-edit', async (req, res) => {
             updateData.price = newPrice
             updateData.original_price = newPrice
 
-            // Note: Do not apply additional price conversions for weight-based products
-            // The price should be stored as entered by the user
+            console.log(`💰 Price adjustment: ${currentProduct.price} → ${newPrice} (type: ${type}, weight-based: ${isWeightBased})`)
           }
         }
 
