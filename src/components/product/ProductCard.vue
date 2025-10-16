@@ -853,11 +853,12 @@ onMounted(() => {
   opacity: 1;
   visibility: visible;
   z-index: 50;
+  position: fixed;
 }
 
 .description-expand {
   position: absolute;
-  bottom: 0;
+  top: 100%;
   left: 0;
   right: 0;
   max-height: 300px;
@@ -866,9 +867,11 @@ onMounted(() => {
   visibility: hidden;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
   background: white;
-  border-top: 1px solid #e5e7eb;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 40;
+  margin-top: -1px;
 }
 
 .card-main-content {
