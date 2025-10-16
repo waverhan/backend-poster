@@ -235,9 +235,9 @@
     </div>
     <!-- End Main Card Content -->
 
-    <!-- Expandable Description Panel -->
+    <!-- Expandable Description Panel (Absolute positioned) -->
     <div v-if="product.description"
-         class="description-expand bg-gray-50 border-t border-gray-200 overflow-hidden transition-all duration-300 ease-in-out max-h-0">
+         class="description-expand">
       <div class="px-4 py-3">
         <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
           {{ truncatedDescription }}
@@ -845,17 +845,34 @@ onMounted(() => {
   position: relative;
   display: flex;
   flex-direction: column;
+  z-index: 10;
 }
 
 /* Only expand description when THIS specific card is hovered */
 .product-card-expand:hover .description-expand {
-  max-height: 200px !important;
+  opacity: 1;
+  visibility: visible;
+  z-index: 50;
 }
 
 .description-expand {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-in-out;
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 40;
+}
+
+.card-main-content {
+  display: flex;
+  flex-direction: column;
 }
 </style>
