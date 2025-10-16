@@ -1508,7 +1508,7 @@ router.post('/daily', async (req, res) => {
           // Create new product
           await prisma.product.create({
             data: {
-              poster_product_id: posterProduct.product_id,
+              poster_product_id: String(posterProduct.product_id),
               name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
               description: posterProduct.product_name || '',
               price: price,
@@ -1559,7 +1559,9 @@ router.post('/daily', async (req, res) => {
         }
 
       } catch (productError) {
-        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError)
+        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError.message || productError)
+        console.error(`   Product details: ${posterProduct.product_name}`)
+        console.error(`   Full error:`, productError)
         errorCount++
       }
     }
@@ -1779,7 +1781,7 @@ router.post('/import-new-products', async (req, res) => {
           // Create new product
           await prisma.product.create({
             data: {
-              poster_product_id: posterProduct.product_id,
+              poster_product_id: String(posterProduct.product_id),
               name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
               description: posterProduct.product_name || '',
               price: price,
@@ -1799,7 +1801,9 @@ router.post('/import-new-products', async (req, res) => {
         }
 
       } catch (productError) {
-        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError)
+        console.error(`❌ Error processing product ${posterProduct.product_id}:`, productError.message || productError)
+        console.error(`   Product details: ${posterProduct.product_name}`)
+        console.error(`   Full error:`, productError)
         errorCount++
       }
     }
