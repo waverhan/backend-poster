@@ -846,6 +846,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   z-index: 10;
+  overflow: visible;
 }
 
 /* Only expand description when THIS specific card is hovered */
@@ -853,7 +854,6 @@ onMounted(() => {
   opacity: 1;
   visibility: visible;
   z-index: 50;
-  position: fixed;
 }
 
 .description-expand {
@@ -872,10 +872,16 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 40;
   margin-top: -1px;
+  pointer-events: auto;
 }
 
 .card-main-content {
   display: flex;
   flex-direction: column;
+}
+
+/* Override card overflow to allow description to show */
+.product-card-container {
+  overflow: visible !important;
 }
 </style>
