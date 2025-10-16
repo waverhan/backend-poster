@@ -440,12 +440,15 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = savedToken
         user.value = JSON.parse(savedUser)
 
-        // Refresh profile in background to get latest bonus info
-        refreshProfile().catch(err => {
-          console.error('Failed to refresh profile on init:', err)
-          // If refresh fails, clear auth state
-          logout()
-        })
+        // For admin tokens, don't refresh profile (admin tokens are local only)
+        if (!savedToken.startsWith('admin_token_')) {
+          // Refresh profile in background to get latest bonus info
+          refreshProfile().catch(err => {
+            console.error('Failed to refresh profile on init:', err)
+            // If refresh fails, clear auth state
+            logout()
+          })
+        }
       }
     } catch (err) {
       console.error('Failed to initialize auth:', err)
@@ -453,6 +456,13 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
     }
+  }
+
+  /**
+   * Alias for initializeAuth for backward compatibility
+   */
+  const loadFromStorage = () => {
+    initializeAuth()
   }
 
   /**
@@ -505,6 +515,7 @@ export const useAuthStore = defineStore('auth', () => {
     getBonusInfo,
     logout,
     initializeAuth,
+    loadFromStorage,
     validatePhoneNumber,
     formatPhoneNumber,
     setError,

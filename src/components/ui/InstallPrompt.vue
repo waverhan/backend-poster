@@ -194,8 +194,8 @@ const showPromptManually = () => {
   showPrompt.value = true
 }
 
-// Expose for debugging
-if (typeof window !== 'undefined') {
+// Expose for debugging (only in browser context)
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   (window as any).showInstallPrompt = showPromptManually
   (window as any).resetInstallPrompt = () => {
     localStorage.removeItem('installPromptDismissed')
@@ -264,8 +264,8 @@ onUnmounted(() => {
   document.body.style.paddingBottom = ''
 })
 
-// Global functions for manual testing
-if (typeof window !== 'undefined') {
+// Global functions for manual testing (only in browser context)
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   (window as any).showInstallPrompt = () => {
     showPrompt.value = true
   }
