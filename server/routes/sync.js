@@ -1489,9 +1489,26 @@ router.post('/daily', async (req, res) => {
           let categoryId = null
           if (posterProduct.menu_category_id) {
             const category = await prisma.category.findFirst({
-              where: { poster_category_id: posterProduct.menu_category_id }
+              where: { poster_category_id: String(posterProduct.menu_category_id) }
             })
-            categoryId = category?.id || null
+            categoryId = category?.id
+          }
+
+          // If no category found, try to get any category or create a default one
+          if (!categoryId) {
+            let defaultCategory = await prisma.category.findFirst({
+              where: { name: 'Інші' }
+            })
+            if (!defaultCategory) {
+              defaultCategory = await prisma.category.create({
+                data: {
+                  name: 'Інші',
+                  display_name: 'Інші товари',
+                  is_active: true
+                }
+              })
+            }
+            categoryId = defaultCategory.id
           }
 
           // Calculate price - use price object with key "1" for price level 1
@@ -1510,12 +1527,12 @@ router.post('/daily', async (req, res) => {
             data: {
               poster_product_id: String(posterProduct.product_id),
               name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
+              display_name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
               description: posterProduct.product_name || '',
               price: price,
               category_id: categoryId,
               is_active: true,
-              unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
-              weight_flag: posterProduct.weight_flag || 0,
+              custom_unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
               created_at: new Date(),
               updated_at: new Date()
             }
@@ -1762,9 +1779,26 @@ router.post('/import-new-products', async (req, res) => {
           let categoryId = null
           if (posterProduct.menu_category_id) {
             const category = await prisma.category.findFirst({
-              where: { poster_category_id: posterProduct.menu_category_id }
+              where: { poster_category_id: String(posterProduct.menu_category_id) }
             })
-            categoryId = category?.id || null
+            categoryId = category?.id
+          }
+
+          // If no category found, try to get any category or create a default one
+          if (!categoryId) {
+            let defaultCategory = await prisma.category.findFirst({
+              where: { name: 'Інші' }
+            })
+            if (!defaultCategory) {
+              defaultCategory = await prisma.category.create({
+                data: {
+                  name: 'Інші',
+                  display_name: 'Інші товари',
+                  is_active: true
+                }
+              })
+            }
+            categoryId = defaultCategory.id
           }
 
           // Calculate price - use price object with key "1" for price level 1
@@ -1783,12 +1817,12 @@ router.post('/import-new-products', async (req, res) => {
             data: {
               poster_product_id: String(posterProduct.product_id),
               name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
+              display_name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
               description: posterProduct.product_name || '',
               price: price,
               category_id: categoryId,
               is_active: true,
-              unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
-              weight_flag: posterProduct.weight_flag || 0,
+              custom_unit: posterProduct.weight_flag === 1 ? 'кг' : 'шт',
               created_at: new Date(),
               updated_at: new Date()
             }
