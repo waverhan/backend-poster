@@ -840,17 +840,22 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* Expanding effect for individual cards */
+/* Expanding effect for individual cards - only on hover of that specific card */
 .product-card-expand {
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Only expand description when THIS specific card is hovered */
 .product-card-expand:hover .description-expand {
   max-height: 200px !important;
 }
 
 .description-expand {
   max-height: 0;
+  overflow: hidden;
   transition: max-height 0.3s ease-in-out;
+  flex-shrink: 0;
 }
 </style>
