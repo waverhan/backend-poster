@@ -300,6 +300,12 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error('No authentication token')
       }
 
+      // Skip refresh for admin tokens (they are local-only)
+      if (token.value.startsWith('admin_token_')) {
+        console.log('ℹ️ Skipping profile refresh for admin token (local-only)')
+        return user.value
+      }
+
       const response = await fetch(`${backendApi.baseUrl}/auth/profile`, {
         headers: {
           'Authorization': `Bearer ${token.value}`
@@ -327,8 +333,8 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const logout = async () => {
     try {
-      if (token.value) {
-        // Call logout endpoint
+      if (token.value && !token.value.startsWith('admin_token_')) {
+        // Call logout endpoint only for non-admin tokens
         await fetch(`${backendApi.baseUrl}/auth/logout`, {
           method: 'POST',
           headers: {
