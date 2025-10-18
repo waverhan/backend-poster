@@ -156,34 +156,9 @@ function setupCronJobs() {
     timezone: 'Europe/Kiev'
   })
 
-  // Daily sync for new products and price updates - every day at 6 AM
-  cron.schedule('0 6 * * *', async () => {
-    log('⏰ Triggered: Daily sync for new products and price updates (6 AM)')
-    log(`🕐 Current server time: ${new Date().toISOString()}`)
-    log(`🌍 Current Kyiv time: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' })}`)
-
-    try {
-      const dailySyncResponse = await fetch(`${BACKEND_URL}/api/sync/daily`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 300000 // 5 minutes timeout for daily sync
-      })
-
-      if (dailySyncResponse.ok) {
-        const result = await dailySyncResponse.json()
-        log(`✅ Daily sync completed: ${result.stats.new_products} new products, ${result.stats.updated_prices} price updates`)
-        log(`📊 Daily sync stats: ${JSON.stringify(result.stats)}`)
-      } else {
-        log(`❌ Daily sync failed: ${dailySyncResponse.status}`, 'ERROR')
-        const errorText = await dailySyncResponse.text()
-        log(`❌ Daily sync error response: ${errorText}`, 'ERROR')
-      }
-    } catch (error) {
-      log(`❌ Daily sync error: ${error.message}`, 'ERROR')
-    }
-  }, {
-    timezone: 'Europe/Kiev'
-  })
+  // Daily sync for new products and price updates - DISABLED (use manual endpoints instead)
+  // Use /api/sync/update-prices for manual price updates
+  // Use /api/sync/import-new-products for manual new product imports
 
   // Log cleanup - every Sunday at 2 AM
   cron.schedule('0 2 * * 0', () => {
@@ -198,8 +173,11 @@ function setupCronJobs() {
   log('   • Inventory sync: Every 15 minutes (8 AM - 10 PM)')
   log('   • Peak hours sync: Every 5 minutes (12 PM - 8 PM)')
   log('   • Health check: Every hour')
-  log('   • Daily sync (new products + prices): 6 AM daily')
   log('   • Log cleanup: 2 AM every Sunday')
+  log('')
+  log('📌 Manual Sync Endpoints (use from Admin Panel):')
+  log('   • POST /api/sync/update-prices - Update prices from Poster POS')
+  log('   • POST /api/sync/import-new-products - Import new products from Poster POS')
 }
 
 /**

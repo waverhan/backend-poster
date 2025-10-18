@@ -739,12 +739,58 @@
         <div class="bg-white rounded-lg shadow-sm p-6">
           <h2 class="text-lg font-semibold text-gray-900 mb-6">Price Synchronization & Bulk Operations</h2>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Price Sync from Poster API -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <!-- Manual Price Update -->
+            <div class="border border-blue-200 rounded-lg p-6 bg-blue-50">
+              <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                <span class="text-2xl mr-2">💰</span>
+                Update Prices
+              </h3>
+              <p class="text-sm text-gray-600 mb-4">
+                Manually update all product prices from Poster POS API. Only prices will be updated.
+              </p>
+              <div class="bg-blue-100 border border-blue-300 rounded-lg p-3 mb-4">
+                <p class="text-xs text-blue-800">
+                  ✅ Safe operation - Only prices are updated, all other product data preserved
+                </p>
+              </div>
+              <button
+                @click="handleManualPriceUpdate"
+                :disabled="isLoading"
+                class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ isLoading ? 'Updating...' : 'Update Prices Now' }}
+              </button>
+            </div>
+
+            <!-- Manual New Products Import -->
+            <div class="border border-green-200 rounded-lg p-6 bg-green-50">
+              <h3 class="font-medium text-gray-900 mb-3 flex items-center">
+                <span class="text-2xl mr-2">🆕</span>
+                Import New Products
+              </h3>
+              <p class="text-sm text-gray-600 mb-4">
+                Manually import new products from Poster POS API that don't exist in the system yet.
+              </p>
+              <div class="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
+                <p class="text-xs text-green-800">
+                  ✅ Only new products are imported - existing products are not affected
+                </p>
+              </div>
+              <button
+                @click="handleManualNewProductsImport"
+                :disabled="isLoading"
+                class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ isLoading ? 'Importing...' : 'Import New Products' }}
+              </button>
+            </div>
+
+            <!-- Price Sync from Poster API (Legacy) -->
             <div class="border border-gray-200 rounded-lg p-6">
               <h3 class="font-medium text-gray-900 mb-3 flex items-center">
                 <span class="text-2xl mr-2">🔄</span>
-                Sync Prices from Poster API
+                Sync Prices (Legacy)
               </h3>
               <p class="text-sm text-gray-600 mb-4">
                 Update all product prices from the Poster POS system. This will overwrite current prices with the latest data from Poster API.
@@ -757,11 +803,14 @@
               <button
                 @click="handlePriceSync"
                 :disabled="isLoading"
-                class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {{ isLoading ? 'Syncing Prices...' : 'Sync Prices from Poster' }}
+                {{ isLoading ? 'Syncing Prices...' : 'Sync Prices (Legacy)' }}
               </button>
             </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <!-- Bulk Price Operations -->
             <div class="border border-gray-200 rounded-lg p-6">
@@ -1358,6 +1407,80 @@ const handleFixImageUrls = async () => {
   } catch (error) {
     console.error('❌ Image URL fix failed:', error)
     syncStatus.value = { type: 'error', message: 'Image URL fix failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Manual price update from Poster POS
+const handleManualPriceUpdate = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/update-prices`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // Refresh products to show updated prices
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `✅ Price update completed! Updated ${result.stats?.updated_prices || 0} prices from Poster POS.`
+    }
+  } catch (error: any) {
+    console.error('❌ Manual price update failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'Price update failed. Please try again.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Manual new products import from Poster POS
+const handleManualNewProductsImport = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/import-new-products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // Refresh products to show newly imported products
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `✅ New products import completed! Imported ${result.stats?.new_products || 0} new products from Poster POS.`
+    }
+  } catch (error: any) {
+    console.error('❌ Manual new products import failed:', error)
+    syncStatus.value = {
+      type: 'error',
+      message: error.message || 'New products import failed. Please try again.'
+    }
   } finally {
     isLoading.value = false
   }
