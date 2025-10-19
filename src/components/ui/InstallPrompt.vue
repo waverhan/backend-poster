@@ -223,8 +223,22 @@ onMounted(() => {
     userAgent: navigator.userAgent
   })
 
+  // Check if service worker is registered
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      console.log('✅ Service Workers registered:', registrations.length)
+      registrations.forEach(reg => {
+        console.log('  - Scope:', reg.scope)
+      })
+    }).catch(err => {
+      console.error('❌ Error checking service workers:', err)
+    })
+  } else {
+    console.warn('⚠️ Service Worker not supported')
+  }
+
   // Listen for beforeinstallprompt event (Android)
-  window.addEventListener('beforeinstallprompt', (e) => {
+  const handleBeforeInstallPrompt = (e: any) => {
     console.log('🎯 beforeinstallprompt event fired!')
     e.preventDefault()
     deferredPrompt.value = e
@@ -238,17 +252,21 @@ onMounted(() => {
         console.log('❌ Install prompt conditions not met')
       }
     }, 2000) // Show after 2 seconds
-  })
+  }
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
 
   // Listen for app installed event
-  window.addEventListener('appinstalled', () => {
+  const handleAppInstalled = () => {
     console.log('🎉 App installed event fired!')
     localStorage.setItem('appInstalled', new Date().toISOString())
     showPrompt.value = false
-  })
+  }
+
+  window.addEventListener('appinstalled', handleAppInstalled)
 
   // For iOS or if no beforeinstallprompt event, show prompt after delay
-  setTimeout(() => {
+  const fallbackTimeout = setTimeout(() => {
     if (!deferredPrompt.value && shouldShowPrompt()) {
       console.log('✅ Showing install prompt (iOS/fallback)')
       showPrompt.value = true
@@ -257,12 +275,16 @@ onMounted(() => {
 
   // Debug: Check if prompt should show immediately
   console.log('🔍 Should show prompt:', shouldShowPrompt())
+
+  // Cleanup function
+  return () => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.removeEventListener('appinstalled', handleAppInstalled)
+    clearTimeout(fallbackTimeout)
+  }
 })
 
-// Cleanup on unmount
-onUnmounted(() => {
-  document.body.style.paddingBottom = ''
-})
+// Cleanup on unmount is handled in onMounted return function
 
 // Global functions for manual testing (only in browser context)
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {

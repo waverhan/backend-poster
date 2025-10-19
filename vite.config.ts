@@ -8,6 +8,10 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      devOptions: {
+        enabled: true
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
@@ -56,26 +60,43 @@ export default defineConfig({
         theme_color: '#B91C1C',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'portrait-primary',
         scope: '/',
-        start_url: '/',
+        start_url: '/?utm_source=pwa',
         lang: 'uk',
-        icons: [
+        categories: ['shopping', 'food'],
+        screenshots: [
           {
             src: 'opillia-192x192.png',
             sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'opillia-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
+            type: 'image/png',
+            form_factor: 'narrow'
           },
           {
             src: 'opillia-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            form_factor: 'wide'
+          }
+        ],
+        icons: [
+          {
+            src: 'opillia-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'opillia-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'opillia-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }
