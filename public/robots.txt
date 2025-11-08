@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://opillia.com.ua/sitemap.xml
+Sitemap: https://opillia.com.ua/api/sitemap.xml
 Sitemap: https://backend-api-production-b3a0.up.railway.app/api/sitemap.xml
 
 # Disallow admin and API routes
