@@ -484,13 +484,11 @@ const addStructuredData = () => {
   }
 
   // Update page title and meta tags
-  const productTitle = product.value.display_name
-  const productDescription = product.value.description ?
-    product.value.description.substring(0, 160) + (product.value.description.length > 160 ? '...' : '') :
-    `${productTitle} - Замовляйте найкращі напої, пиво, м'ясо та делікатеси з доставкою по Києву.`
+  const productTitle = `Купити "${product.value.display_name}" в Києві | OpilliaSHOP`
+  const productDescription = `ᐉ Замовити "${product.value.display_name}" онлайн – купуйте з доставкою додому в Києві ☎ 097 324 46 68 ⚡ Доступні ціни ⚡ Акції і знижки ⭐ краща якість`
 
   // Update page title
-  document.title = `${productTitle} | OpilliaShop`
+  document.title = productTitle
 
   // Update or create meta description
   let metaDescription = document.querySelector('meta[name="description"]')
@@ -503,7 +501,7 @@ const addStructuredData = () => {
 
   // Update or create Open Graph meta tags
   const ogTags = [
-    { property: 'og:title', content: productTitle },
+    { property: 'og:title', content: `Купити "${product.value.display_name}" в Києві | OpilliaSHOP` },
     { property: 'og:description', content: productDescription },
     { property: 'og:type', content: 'product' },
     { property: 'og:url', content: window.location.href },
