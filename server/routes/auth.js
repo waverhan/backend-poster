@@ -67,9 +67,10 @@ router.post('/send-code', async (req, res) => {
     }
 
     // Check if there's already a pending verification
-    if (authService.hasPendingVerification(phone)) {
-      return res.status(429).json({ 
-        error: 'Verification code already sent. Please wait before requesting a new one.' 
+    const hasPending = await authService.hasPendingVerification(phone)
+    if (hasPending) {
+      return res.status(429).json({
+        error: 'Verification code already sent. Please wait before requesting a new one.'
       })
     }
 

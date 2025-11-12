@@ -7,7 +7,6 @@ import posterClientService from './posterClientService.js'
 class AuthService {
   constructor() {
     this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-    this.verificationCodes = new Map() // In production, use Redis or database
     this.codeExpiryTime = 5 * 60 * 1000 // 5 minutes in milliseconds
   }
 
@@ -20,26 +19,37 @@ class AuthService {
       // Validate and format phone number
       const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
 
-      // Check if there's already a recent code for this phone
-      const existingCode = this.verificationCodes.get(formattedPhone)
-      if (existingCode && (Date.now() - existingCode.createdAt) < 60000) { // 1 minute cooldown
+      // Check if there's already a recent code for this phone (1 minute cooldown)
+      const existingCode = await prisma.verificationCode.findUnique({
+        where: { phone: formattedPhone }
+      })
+
+      if (existingCode && (Date.now() - existingCode.createdAt.getTime()) < 60000) {
         throw new Error('Please wait 1 minute before requesting a new code')
       }
 
       // Generate verification code
       const verificationCode = smsFlyService.generateVerificationCode()
 
-      // Store verification code with expiry
-      const codeData = {
-        code: verificationCode,
-        phone: formattedPhone,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + this.codeExpiryTime,
-        attempts: 0,
-        maxAttempts: 3
-      }
+      // Calculate expiry time
+      const expiresAt = new Date(Date.now() + this.codeExpiryTime)
 
-      this.verificationCodes.set(formattedPhone, codeData)
+      // Store or update verification code in database
+      await prisma.verificationCode.upsert({
+        where: { phone: formattedPhone },
+        update: {
+          code: verificationCode,
+          attempts: 0,
+          expiresAt: expiresAt,
+          updatedAt: new Date()
+        },
+        create: {
+          phone: formattedPhone,
+          code: verificationCode,
+          attempts: 0,
+          expiresAt: expiresAt
+        }
+      })
 
       console.log(`📱 Sending verification code to ${formattedPhone}: ${verificationCode}`)
 
@@ -53,9 +63,6 @@ class AuthService {
 
       console.log('📱 SMS sending result:', smsResult)
 
-      // Clean up expired codes
-      this.cleanupExpiredCodes()
-
       return {
         success: true,
         phone: formattedPhone,
@@ -65,10 +72,6 @@ class AuthService {
       }
     } catch (error) {
       console.error('❌ Error sending verification code:', error)
-
-      // Remove the stored code if SMS sending failed
-      const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
-      this.verificationCodes.delete(formattedPhone)
 
       // Provide user-friendly error messages
       if (error.message.includes('timeout')) {
@@ -90,31 +93,44 @@ class AuthService {
   async verifyCodeAndLogin(phoneNumber, code, name = null) {
     try {
       const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
-      
+
       // Check if verification code exists and is valid
-      const codeData = this.verificationCodes.get(formattedPhone)
-      
+      const codeData = await prisma.verificationCode.findUnique({
+        where: { phone: formattedPhone }
+      })
+
       if (!codeData) {
         throw new Error('Verification code not found or expired')
       }
-      
-      if (Date.now() > codeData.expiresAt) {
-        this.verificationCodes.delete(formattedPhone)
+
+      if (Date.now() > codeData.expiresAt.getTime()) {
+        // Delete expired code
+        await prisma.verificationCode.delete({
+          where: { phone: formattedPhone }
+        })
         throw new Error('Verification code expired')
       }
-      
-      if (codeData.attempts >= codeData.maxAttempts) {
-        this.verificationCodes.delete(formattedPhone)
+
+      if (codeData.attempts >= 3) { // Max 3 attempts
+        await prisma.verificationCode.delete({
+          where: { phone: formattedPhone }
+        })
         throw new Error('Too many verification attempts')
       }
-      
+
       if (codeData.code !== code) {
-        codeData.attempts++
+        // Increment attempts
+        await prisma.verificationCode.update({
+          where: { phone: formattedPhone },
+          data: { attempts: codeData.attempts + 1 }
+        })
         throw new Error('Invalid verification code')
       }
-      
-      // Code is valid, remove it
-      this.verificationCodes.delete(formattedPhone)
+
+      // Code is valid, delete it
+      await prisma.verificationCode.delete({
+        where: { phone: formattedPhone }
+      })
       
       console.log(`✅ Phone verification successful for ${formattedPhone}`)
       
@@ -385,10 +401,17 @@ class AuthService {
   /**
    * Check if phone number has pending verification
    */
-  hasPendingVerification(phoneNumber) {
-    const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
-    const codeData = this.verificationCodes.get(formattedPhone)
-    return codeData && Date.now() < codeData.expiresAt
+  async hasPendingVerification(phoneNumber) {
+    try {
+      const formattedPhone = smsFlyService.validatePhoneNumber(phoneNumber)
+      const codeData = await prisma.verificationCode.findUnique({
+        where: { phone: formattedPhone }
+      })
+      return codeData && Date.now() < codeData.expiresAt.getTime()
+    } catch (error) {
+      console.error('❌ Error checking pending verification:', error)
+      return false
+    }
   }
 
   /**
