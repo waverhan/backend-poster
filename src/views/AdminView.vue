@@ -166,6 +166,19 @@
             </button>
           </div>
 
+          <!-- Upload Images to MinIO -->
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h3 class="font-medium text-gray-900 mb-2">MinIO Upload</h3>
+            <p class="text-sm text-gray-600 mb-4">Upload all product images to MinIO cloud storage</p>
+            <button
+              @click="handleUploadImagesToMinIO"
+              :disabled="isLoading"
+              class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Uploading...' : 'Upload to MinIO' }}
+            </button>
+          </div>
+
           <!-- Refresh Data -->
           <div class="border border-gray-200 rounded-lg p-4">
             <h3 class="font-medium text-gray-900 mb-2">Refresh</h3>
@@ -1407,6 +1420,40 @@ const handleFixImageUrls = async () => {
   } catch (error) {
     console.error('❌ Image URL fix failed:', error)
     syncStatus.value = { type: 'error', message: 'Image URL fix failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Upload images to MinIO
+const handleUploadImagesToMinIO = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/upload-images-to-minio`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    // Refresh products to show updated image URLs
+    await productStore.fetchProducts(undefined, true)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `MinIO upload completed! Uploaded ${result.stats?.uploaded || 0} images, skipped ${result.stats?.skipped || 0}, errors: ${result.stats?.errors || 0}.`
+    }
+  } catch (error) {
+    console.error('❌ MinIO upload failed:', error)
+    syncStatus.value = { type: 'error', message: 'MinIO upload failed. Please try again.' }
   } finally {
     isLoading.value = false
   }
