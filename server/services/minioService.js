@@ -3,7 +3,10 @@ import dotenv from 'dotenv'
 import fs from 'fs'
 import path from 'path'
 
-dotenv.config()
+// Load .env file only in development
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config()
+}
 
 class MinIOService {
   constructor() {
@@ -19,6 +22,12 @@ class MinIOService {
       const minioAccessKey = process.env.MINIO_ACCESS_KEY
       const minioSecretKey = process.env.MINIO_SECRET_KEY
       const minioUseSSL = process.env.MINIO_USE_SSL === 'true'
+
+      console.log('🔍 MinIO Configuration Check:')
+      console.log(`   Endpoint: ${minioEndpoint}`)
+      console.log(`   Access Key: ${minioAccessKey ? '✓ Set' : '✗ Missing'}`)
+      console.log(`   Secret Key: ${minioSecretKey ? '✓ Set' : '✗ Missing'}`)
+      console.log(`   Use SSL: ${minioUseSSL}`)
 
       // Only initialize if credentials are provided
       if (!minioAccessKey || !minioSecretKey) {
