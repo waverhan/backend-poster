@@ -18,10 +18,19 @@ class MinIOService {
 
   initializeClient() {
     try {
-      const minioEndpoint = process.env.MINIO_ENDPOINT || 'localhost:9000'
+      let minioEndpoint = process.env.MINIO_ENDPOINT || 'localhost:9000'
       const minioAccessKey = process.env.MINIO_ACCESS_KEY
       const minioSecretKey = process.env.MINIO_SECRET_KEY
-      const minioUseSSL = process.env.MINIO_USE_SSL === 'true'
+      let minioUseSSL = process.env.MINIO_USE_SSL === 'true'
+
+      // Clean up endpoint - remove protocol if present
+      minioEndpoint = minioEndpoint.replace(/^https?:\/\//, '')
+
+      // Fix port if it's wrong (423 should be 443)
+      if (minioEndpoint.includes(':423')) {
+        minioEndpoint = minioEndpoint.replace(':423', ':443')
+        minioUseSSL = true
+      }
 
       console.log('🔍 MinIO Configuration Check:')
       console.log(`   Endpoint: ${minioEndpoint}`)
