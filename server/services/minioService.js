@@ -32,6 +32,12 @@ class MinIOService {
         minioUseSSL = true
       }
 
+      // For HTTPS (SSL), remove the port from endpoint if it's 443
+      // MinIO client handles port 443 automatically when useSSL is true
+      if (minioUseSSL && minioEndpoint.endsWith(':443')) {
+        minioEndpoint = minioEndpoint.replace(':443', '')
+      }
+
       console.log('🔍 MinIO Configuration Check:')
       console.log(`   Endpoint: ${minioEndpoint}`)
       console.log(`   Access Key: ${minioAccessKey ? `✓ Set (${minioAccessKey})` : '✗ Missing'}`)
