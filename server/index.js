@@ -104,6 +104,44 @@ app.use('/images', (req, res, next) => {
   dotfiles: 'ignore' // Ignore dotfiles
 }))
 
+// Middleware to handle MinIO image URLs in product responses
+app.use((req, res, next) => {
+  // Store original json method
+  const originalJson = res.json.bind(res)
+
+  // Override json method to transform MinIO URLs
+  res.json = function(data) {
+    // Transform MinIO URLs to accessible endpoints
+    const transformData = (obj) => {
+      if (Array.isArray(obj)) {
+        return obj.map(transformData)
+      } else if (obj !== null && typeof obj === 'object') {
+        const transformed = {}
+        for (const key in obj) {
+          if (key === 'image_url' || key === 'display_image_url') {
+            if (typeof obj[key] === 'string' && obj[key].startsWith('minio://')) {
+              // Convert minio://products/filename to /api/upload/minio-image/filename
+              const filename = obj[key].replace('minio://', '').replace('products/', '')
+              transformed[key] = `/api/upload/minio-image/${filename}`
+            } else {
+              transformed[key] = obj[key]
+            }
+          } else {
+            transformed[key] = transformData(obj[key])
+          }
+        }
+        return transformed
+      }
+      return obj
+    }
+
+    const transformedData = transformData(data)
+    return originalJson(transformedData)
+  }
+
+  next()
+})
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'PWA POS Backend is running' })

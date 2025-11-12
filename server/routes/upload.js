@@ -85,6 +85,26 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
   }
 })
 
+// GET /api/upload/minio-image/:filename - Serve MinIO images
+router.get('/minio-image/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params
+
+    // Get presigned URL from MinIO
+    const url = await minioService.getImageUrl(`products/${filename}`)
+
+    if (url) {
+      // Redirect to MinIO presigned URL
+      res.redirect(url)
+    } else {
+      res.status(404).json({ error: 'Image not found' })
+    }
+  } catch (error) {
+    console.error('Error serving MinIO image:', error)
+    res.status(500).json({ error: 'Failed to serve image' })
+  }
+})
+
 // Error handling middleware for multer
 router.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -92,11 +112,11 @@ router.use((error, req, res, next) => {
       return res.status(400).json({ error: 'File size too large. Maximum size is 10MB.' })
     }
   }
-  
+
   if (error.message === 'Only image files are allowed') {
     return res.status(400).json({ error: 'Only image files are allowed' })
   }
-  
+
   console.error('Upload error:', error)
   res.status(500).json({ error: 'Upload failed' })
 })

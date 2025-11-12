@@ -1422,6 +1422,88 @@ router.post('/images-only', async (req, res) => {
   }
 })
 
+// POST /api/sync/upload-images-to-minio - Upload all product images to MinIO
+router.post('/upload-images-to-minio', async (req, res) => {
+  try {
+    console.log('📤 Starting image upload to MinIO...')
+
+    // Get all products with local image URLs
+    const products = await prisma.product.findMany({
+      where: {
+        is_active: true,
+        image_url: { not: null }
+      },
+      select: {
+        id: true,
+        poster_product_id: true,
+        name: true,
+        image_url: true,
+        display_image_url: true
+      }
+    })
+
+    console.log(`📊 Found ${products.length} products to process`)
+
+    let uploadedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+
+    for (const product of products) {
+      try {
+        // Skip if already using MinIO
+        if (product.image_url && product.image_url.startsWith('minio://')) {
+          skippedCount++
+          continue
+        }
+
+        // Upload local image to MinIO
+        const minioUrl = await imageService.uploadLocalImageToMinIO(product.poster_product_id)
+
+        if (minioUrl) {
+          // Update product with MinIO URL
+          await prisma.product.update({
+            where: { id: product.id },
+            data: {
+              image_url: minioUrl,
+              display_image_url: minioUrl
+            }
+          })
+
+          uploadedCount++
+          console.log(`✅ Uploaded image for ${product.name} to MinIO`)
+        } else {
+          skippedCount++
+        }
+      } catch (error) {
+        console.error(`❌ Error processing ${product.name}:`, error.message)
+        errorCount++
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Image upload to MinIO completed! Uploaded ${uploadedCount} images.`,
+      stats: {
+        total_products: products.length,
+        uploaded: uploadedCount,
+        skipped: skippedCount,
+        errors: errorCount
+      }
+    }
+
+    console.log('🎉 Image upload completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Image upload to MinIO failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Image upload to MinIO failed',
+      message: error.message
+    })
+  }
+})
+
 // GET /api/sync/logs - Get sync logs
 router.get('/logs', async (req, res) => {
   try {

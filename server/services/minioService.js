@@ -111,6 +111,25 @@ class MinIOService {
     }
   }
 
+  // Get public URL for MinIO object (for direct access)
+  getPublicUrl(objectName) {
+    if (!this.isConfigured) return null
+
+    try {
+      const minioEndpoint = process.env.MINIO_ENDPOINT || 'localhost:9000'
+      const useSSL = process.env.MINIO_USE_SSL === 'true'
+      const protocol = useSSL ? 'https' : 'http'
+
+      // Remove port from endpoint if present for URL construction
+      const endpointHost = minioEndpoint.split(':')[0]
+
+      return `${protocol}://${minioEndpoint}/${this.bucketName}/${objectName}`
+    } catch (error) {
+      console.error('❌ Failed to construct public URL:', error)
+      return null
+    }
+  }
+
   async listProductImages() {
     if (!this.isConfigured) return []
 

@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import axios from 'axios'
 import { fileURLToPath } from 'url'
+import { minioService } from './minioService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -15,7 +16,7 @@ class ImageService {
   ensureImagesDirectory() {
     if (!fs.existsSync(this.imagesDir)) {
       fs.mkdirSync(this.imagesDir, { recursive: true })
-      
+
     }
   }
 
@@ -76,7 +77,7 @@ class ImageService {
     return null
   }
 
-  // Download and save image locally
+  // Download and save image locally, then upload to MinIO
   async downloadImage(imageUrl, productId) {
     try {
       if (!imageUrl) return null
@@ -98,9 +99,27 @@ class ImageService {
       response.data.pipe(writer)
 
       return new Promise((resolve, reject) => {
-        writer.on('finish', () => {
-          
-          resolve(`/images/products/${filename}`)
+        writer.on('finish', async () => {
+          try {
+            // If MinIO is configured, upload to MinIO
+            if (minioService.isMinIOEnabled()) {
+              const minioPath = await minioService.uploadProductImage(filepath, filename)
+              if (minioPath) {
+                // Return MinIO path
+                resolve(`minio://${minioPath}`)
+              } else {
+                // Fallback to local path if MinIO upload fails
+                resolve(`/images/products/${filename}`)
+              }
+            } else {
+              // MinIO not configured, use local path
+              resolve(`/images/products/${filename}`)
+            }
+          } catch (error) {
+            console.error(`❌ Error uploading to MinIO:`, error.message)
+            // Fallback to local path
+            resolve(`/images/products/${filename}`)
+          }
         })
         writer.on('error', (error) => {
           console.error(`❌ Failed to save image ${filename}:`, error.message)
@@ -199,11 +218,68 @@ class ImageService {
     return results
   }
 
+  // Upload existing local image to MinIO
+  async uploadLocalImageToMinIO(productId) {
+    try {
+      const extensions = ['png', 'jpg', 'jpeg']
+
+      for (const ext of extensions) {
+        const filename = `product_${productId}.${ext}`
+        const filepath = path.join(this.imagesDir, filename)
+
+        if (fs.existsSync(filepath)) {
+          const minioPath = await minioService.uploadProductImage(filepath, filename)
+          if (minioPath) {
+            return `minio://${minioPath}`
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error(`❌ Failed to upload local image to MinIO for product ${productId}:`, error.message)
+      return null
+    }
+  }
+
+  // Batch upload all local images to MinIO
+  async uploadAllLocalImagesToMinIO() {
+    try {
+      const files = fs.readdirSync(this.imagesDir)
+      const results = []
+
+      for (const file of files) {
+        if (file.startsWith('product_')) {
+          const filepath = path.join(this.imagesDir, file)
+          const minioPath = await minioService.uploadProductImage(filepath, file)
+
+          if (minioPath) {
+            results.push({
+              filename: file,
+              minioPath: `minio://${minioPath}`,
+              success: true
+            })
+          } else {
+            results.push({
+              filename: file,
+              success: false
+            })
+          }
+        }
+      }
+
+      return results
+    } catch (error) {
+      console.error('❌ Failed to upload all images to MinIO:', error.message)
+      return []
+    }
+  }
+
   // Clean up old/unused images
   async cleanupImages() {
     try {
       const files = fs.readdirSync(this.imagesDir)
-      
+
 
       // This is a placeholder - you might want to implement logic to remove
       // images for products that no longer exist
