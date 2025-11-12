@@ -120,21 +120,19 @@ model User {
 
   // Relations
   orders            Order[]
-  verification_codes VerificationCode[]
 
   @@map("users")
 }
 
 model VerificationCode {
   id        String   @id @default(cuid())
-  phone     String   // Phone number for verification
+  phone     String   @unique // Phone number for verification
   code      String   // The verification code
   attempts  Int      @default(0) // Number of failed attempts
   expiresAt DateTime // When the code expires
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([phone])
   @@index([expiresAt])
   @@map("verification_codes")
 }
