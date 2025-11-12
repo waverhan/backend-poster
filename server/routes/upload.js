@@ -3,6 +3,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import { minioService } from '../services/minioService.js'
 
 const router = express.Router()
 
@@ -47,23 +48,36 @@ const upload = multer({
 })
 
 // POST /api/upload/product-image
-router.post('/product-image', upload.single('image'), (req, res) => {
+router.post('/product-image', upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' })
     }
 
-    // Return the relative path that can be used in the database
-    const imagePath = `/images/products/${req.file.filename}`
-    
-    
-    
+    let imagePath = `/images/products/${req.file.filename}`
+    let storageType = 'local'
+
+    // Try to upload to MinIO if configured
+    if (minioService.isMinIOEnabled()) {
+      const minioPath = await minioService.uploadProductImage(
+        req.file.path,
+        req.file.filename
+      )
+
+      if (minioPath) {
+        imagePath = minioPath
+        storageType = 'minio'
+        console.log(`✅ Image uploaded to MinIO: ${minioPath}`)
+      }
+    }
+
     res.json({
       success: true,
       imagePath,
       filename: req.file.filename,
       originalName: req.file.originalname,
-      size: req.file.size
+      size: req.file.size,
+      storageType
     })
   } catch (error) {
     console.error('Error uploading image:', error)

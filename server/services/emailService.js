@@ -386,27 +386,48 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
     }
 
     try {
-      const companyEmail = process.env.SHOP_EMAIL || 'info@opillia.com.ua'
       const shopName = process.env.SHOP_NAME || 'Opillia Shop'
+
+      // Get list of email addresses for new orders
+      const emailAddresses = this.getOrderNotificationEmails()
+
+      if (emailAddresses.length === 0) {
+        console.log('⚠️  No email addresses configured for order notifications')
+        return { success: false, error: 'No email addresses configured' }
+      }
 
       const emailContent = this.generateCompanyOrderNotification(order)
 
       const mailOptions = {
         from: `"${shopName}" <${process.env.SMTP_USER}>`,
-        to: companyEmail,
+        to: emailAddresses.join(', '),
         subject: emailContent.subject,
         text: emailContent.text,
         html: emailContent.html
       }
 
       const result = await this.transporter.sendMail(mailOptions)
-      console.log(`✅ Company notification sent to ${companyEmail}`)
+      console.log(`✅ Company notification sent to: ${emailAddresses.join(', ')}`)
 
       return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('❌ Failed to send company notification:', error)
       return { success: false, error: error.message }
     }
+  }
+
+  getOrderNotificationEmails() {
+    // Get primary email from SHOP_EMAIL
+    const primaryEmail = process.env.SHOP_EMAIL || 'info@opillia.com.ua'
+
+    // Get additional emails from SHOP_NOTIFICATION_EMAILS (comma-separated)
+    const additionalEmails = process.env.SHOP_NOTIFICATION_EMAILS
+      ? process.env.SHOP_NOTIFICATION_EMAILS.split(',').map(email => email.trim())
+      : []
+
+    // Combine and remove duplicates
+    const allEmails = [primaryEmail, ...additionalEmails]
+    return [...new Set(allEmails)].filter(email => email && email.length > 0)
   }
 
   generateCompanyOrderNotification(order) {
