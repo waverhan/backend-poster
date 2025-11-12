@@ -14,7 +14,12 @@
     "production": {
       "variables": {
         "NODE_ENV": "production",
-        "PORT": "3000"
+        "PORT": "3000",
+        "MINIO_ENDPOINT": "bucket-production-515e.up.railway.app:443",
+        "MINIO_ACCESS_KEY": "minioadmin",
+        "MINIO_USE_SSL": "true",
+        "MINIO_BUCKET": "opillia-images",
+        "SHOP_NOTIFICATION_EMAILS": "waverhan@gmail.com,dzhodzhyk.natalja@gmail.com"
       }
     }
   }
