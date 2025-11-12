@@ -25,13 +25,15 @@ class MinIOService {
 
       console.log('🔍 MinIO Configuration Check:')
       console.log(`   Endpoint: ${minioEndpoint}`)
-      console.log(`   Access Key: ${minioAccessKey ? '✓ Set' : '✗ Missing'}`)
-      console.log(`   Secret Key: ${minioSecretKey ? '✓ Set' : '✗ Missing'}`)
+      console.log(`   Access Key: ${minioAccessKey ? `✓ Set (${minioAccessKey})` : '✗ Missing'}`)
+      console.log(`   Secret Key: ${minioSecretKey ? `✓ Set (${minioSecretKey.substring(0, 10)}...)` : '✗ Missing'}`)
       console.log(`   Use SSL: ${minioUseSSL}`)
+      console.log(`   Bucket: ${process.env.MINIO_BUCKET || 'opillia-images'}`)
 
       // Only initialize if credentials are provided
       if (!minioAccessKey || !minioSecretKey) {
         console.log('⚠️  MinIO credentials not provided. Using local file storage.')
+        console.log('   Available env vars:', Object.keys(process.env).filter(k => k.includes('MINIO')))
         return
       }
 

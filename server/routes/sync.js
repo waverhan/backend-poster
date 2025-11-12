@@ -1426,6 +1426,7 @@ router.post('/images-only', async (req, res) => {
 router.post('/upload-images-to-minio', async (req, res) => {
   try {
     console.log('📤 Starting image upload to MinIO...')
+    console.log(`🔍 MinIO Service Status: ${imageService.minioService?.isMinIOEnabled() ? '✅ Enabled' : '❌ Disabled'}`)
 
     // Get all products with image URLs (both local and MinIO)
     const products = await prisma.product.findMany({
@@ -1447,6 +1448,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
     let uploadedCount = 0
     let skippedCount = 0
     let errorCount = 0
+    let noFileCount = 0
 
     for (const product of products) {
       try {
@@ -1472,6 +1474,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
           }
         } else {
           // No local image file found
+          noFileCount++
           skippedCount++
         }
       } catch (error) {
@@ -1487,6 +1490,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
         total_products: products.length,
         uploaded: uploadedCount,
         skipped: skippedCount,
+        no_local_file: noFileCount,
         errors: errorCount
       }
     }
