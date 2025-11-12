@@ -710,15 +710,34 @@ router.post('/', optionalAuth, async (req, res) => {
           products: posterProducts
         }
 
-        // Add fulfillment type to comment and address for delivery
+        // Build comprehensive comment with all order details
+        let commentParts = []
+
+        // Add fulfillment type
         if (order.fulfillment === 'DELIVERY') {
-          posterOrderData.comment = ' Доставка'
+          commentParts.push('📦 Доставка')
           if (order.delivery_address) {
             posterOrderData.address = order.delivery_address
+            commentParts.push(`Адреса: ${order.delivery_address}`)
           }
         } else {
-          posterOrderData.comment = ' Самовивіз з магазину'
+          commentParts.push('🏪 Самовивіз з магазину')
         }
+
+        // Add call preference
+        if (order.no_callback_confirmation) {
+          commentParts.push('☎️ Дзвонити НЕ потрібно')
+        } else {
+          commentParts.push('☎️ Можна дзвонити')
+        }
+
+        // Add customer notes if provided
+        if (order.notes && order.notes.trim()) {
+          commentParts.push(`📝 Коментар: ${order.notes}`)
+        }
+
+        // Combine all parts into final comment
+        posterOrderData.comment = commentParts.join(' | ')
 
         // Send to Poster POS API
         const posterResponse = await axios.post(
@@ -951,18 +970,35 @@ router.post('/:id/send-to-poster', async (req, res) => {
       products: posterProducts
     }
 
-    // Add fulfillment type, client info, and callback preference to comment
-    const clientInfo = `${order.customer?.name || 'Клієнт'} (${order.customer?.email || 'email не вказано'})`
-    const callbackInfo = order.no_callback_confirmation ? 'Без дзвінка' : 'Потрібен дзвінок'
+    // Build comprehensive comment with all order details
+    let commentParts = []
 
+    // Add fulfillment type
     if (order.fulfillment === 'DELIVERY') {
-      posterOrderData.comment = `Доставка | ${clientInfo} | ${callbackInfo}`
+      commentParts.push('📦 Доставка')
       if (order.delivery_address) {
         posterOrderData.address = order.delivery_address
+        commentParts.push(`Адреса: ${order.delivery_address}`)
       }
     } else {
-      posterOrderData.comment = `Самовивіз | ${clientInfo} | ${callbackInfo}`
+      commentParts.push('🏪 Самовивіз')
     }
+
+    // Add client info
+    const clientInfo = `${order.customer?.name || 'Клієнт'} (${order.customer?.email || 'email не вказано'})`
+    commentParts.push(`👤 ${clientInfo}`)
+
+    // Add call preference
+    const callbackInfo = order.no_callback_confirmation ? '☎️ Дзвонити НЕ потрібно' : '☎️ Можна дзвонити'
+    commentParts.push(callbackInfo)
+
+    // Add customer notes if provided
+    if (order.notes && order.notes.trim()) {
+      commentParts.push(`📝 Коментар: ${order.notes}`)
+    }
+
+    // Combine all parts into final comment
+    posterOrderData.comment = commentParts.join(' | ')
 
     // Send to Poster POS API
     
