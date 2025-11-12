@@ -1427,7 +1427,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
   try {
     console.log('📤 Starting image upload to MinIO...')
 
-    // Get all products with local image URLs
+    // Get all products with image URLs (both local and MinIO)
     const products = await prisma.product.findMany({
       where: {
         is_active: true,
@@ -1450,28 +1450,28 @@ router.post('/upload-images-to-minio', async (req, res) => {
 
     for (const product of products) {
       try {
-        // Skip if already using MinIO
-        if (product.image_url && product.image_url.startsWith('minio://')) {
-          skippedCount++
-          continue
-        }
-
+        // Always try to upload - even if URL says minio://, the file might not be there
         // Upload local image to MinIO
         const minioUrl = await imageService.uploadLocalImageToMinIO(product.poster_product_id)
 
         if (minioUrl) {
-          // Update product with MinIO URL
-          await prisma.product.update({
-            where: { id: product.id },
-            data: {
-              image_url: minioUrl,
-              display_image_url: minioUrl
-            }
-          })
-
-          uploadedCount++
-          console.log(`✅ Uploaded image for ${product.name} to MinIO`)
+          // Update product with MinIO URL if it changed
+          if (product.image_url !== minioUrl) {
+            await prisma.product.update({
+              where: { id: product.id },
+              data: {
+                image_url: minioUrl,
+                display_image_url: minioUrl
+              }
+            })
+            uploadedCount++
+            console.log(`✅ Uploaded image for ${product.name} to MinIO`)
+          } else {
+            // Already has correct MinIO URL
+            skippedCount++
+          }
         } else {
+          // No local image file found
           skippedCount++
         }
       } catch (error) {
