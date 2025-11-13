@@ -79,17 +79,20 @@ class ImageService {
   }
 
   // Optimize image: compress and convert to WebP
-  async optimizeImage(inputPath, outputPath, format = 'webp') {
+  // targetSize: max dimension in pixels (default 600 for product cards displayed at 490x490)
+  async optimizeImage(inputPath, outputPath, format = 'webp', targetSize = 600) {
     try {
       const image = sharp(inputPath)
 
       // Get image metadata to determine optimal size
       const metadata = await image.metadata()
 
-      // Resize to reasonable dimensions (max 1200px width) and compress
+      // Resize to target dimensions (default 600px for product cards at 490x490 display)
+      // This provides 1.2x pixel density for crisp display on high-DPI screens
       let pipeline = image
-        .resize(1200, 1200, {
-          fit: 'inside',
+        .resize(targetSize, targetSize, {
+          fit: 'cover',
+          position: 'center',
           withoutEnlargement: true
         })
 
@@ -109,7 +112,7 @@ class ImageService {
       const optimizedSize = fs.statSync(outputPath).size
       const savings = Math.round((1 - optimizedSize / originalSize) * 100)
 
-      console.log(`✅ Optimized image: ${path.basename(outputPath)} (${savings}% smaller)`)
+      console.log(`✅ Optimized image: ${path.basename(outputPath)} (${savings}% smaller, resized to ${targetSize}x${targetSize})`)
 
       return outputPath
     } catch (error) {

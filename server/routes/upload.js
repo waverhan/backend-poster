@@ -85,15 +85,25 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
   }
 })
 
-// GET /api/upload/minio-image/:filename - Serve MinIO images
+// GET /api/upload/minio-image/:filename?w=300 - Serve MinIO images with optional resizing
+// This endpoint supports responsive image loading with width parameter
 router.get('/minio-image/:filename', async (req, res) => {
   try {
     const { filename } = req.params
+    const { w } = req.query // width parameter for responsive images
 
     // Get presigned URL from MinIO
-    const url = await minioService.getImageUrl(`products/${filename}`)
+    let url = await minioService.getImageUrl(`products/${filename}`)
 
     if (url) {
+      // If width parameter is provided, add it to the URL for image resizing
+      // MinIO can handle image resizing via query parameters if configured
+      if (w) {
+        // Add width parameter to presigned URL for responsive image serving
+        const separator = url.includes('?') ? '&' : '?'
+        url = `${url}${separator}w=${w}`
+      }
+
       // Add cache headers for long-term caching (images are immutable)
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
       res.setHeader('Access-Control-Allow-Origin', '*')

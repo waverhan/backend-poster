@@ -151,6 +151,30 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: 'esbuild',
-    sourcemap: false
+    sourcemap: false,
+    // Enable CSS code splitting to defer non-critical styles
+    cssCodeSplit: true,
+    // Optimize chunk sizes
+    rollupOptions: {
+      output: {
+        // Split vendor code into separate chunk
+        manualChunks: {
+          'vendor': [
+            'vue',
+            'vue-router',
+            'pinia',
+            'axios'
+          ],
+          'ui-components': [
+            'leaflet',
+            'workbox-window'
+          ]
+        },
+        // Optimize chunk naming for better caching
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]'
+      }
+    }
   }
 })

@@ -102,19 +102,33 @@
     }
     </script>
 
-    <!-- Google Analytics with Enhanced E-commerce -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y3NZ5WWN9G"></script>
+    <!-- Google Analytics with Enhanced E-commerce - Deferred for better performance -->
     <script>
+      // Initialize dataLayer before gtag script loads
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-Y3NZ5WWN9G', {
-        // Enhanced E-commerce settings
-        send_page_view: true,
-        allow_enhanced_conversions: true,
-        currency: 'UAH'
-      });
+
+      // Defer gtag initialization until after page load to reduce forced reflows
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          gtag('js', new Date());
+          gtag('config', 'G-Y3NZ5WWN9G', {
+            send_page_view: true,
+            allow_enhanced_conversions: true,
+            currency: 'UAH'
+          });
+        });
+      } else {
+        gtag('js', new Date());
+        gtag('config', 'G-Y3NZ5WWN9G', {
+          send_page_view: true,
+          allow_enhanced_conversions: true,
+          currency: 'UAH'
+        });
+      }
     </script>
+    <!-- Load gtag script with defer attribute to avoid blocking render -->
+    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-Y3NZ5WWN9G"></script>
 
     <title>Опілля - Найкращі напої та делікатеси з доставкою по Києву</title>
   </head>
