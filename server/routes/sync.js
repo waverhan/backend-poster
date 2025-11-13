@@ -5,6 +5,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { createCategory, createProduct, createBranch, updateInventory, createSyncLog, updateSyncLog, prisma } from '../services/database.js'
 import { imageService } from '../services/imageService.js'
+import { minioService } from '../services/minioService.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
