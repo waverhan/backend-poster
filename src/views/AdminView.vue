@@ -192,6 +192,19 @@
             </button>
           </div>
 
+          <!-- Migrate Images to MinIO -->
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h3 class="font-medium text-gray-900 mb-2">Migrate Images to MinIO</h3>
+            <p class="text-sm text-gray-600 mb-4">Update database to use MinIO URLs instead of local paths (fixes images after deployment)</p>
+            <button
+              @click="handleMigrateImagesToMinIO"
+              :disabled="isLoading"
+              class="w-full bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Migrating...' : 'Migrate to MinIO' }}
+            </button>
+          </div>
+
           <!-- Refresh Data -->
           <div class="border border-gray-200 rounded-lg p-4">
             <h3 class="font-medium text-gray-900 mb-2">Refresh</h3>
@@ -1498,6 +1511,37 @@ const handleOptimizeImages = async () => {
   } catch (error) {
     console.error('❌ Image optimization failed:', error)
     syncStatus.value = { type: 'error', message: 'Image optimization failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Migrate images to MinIO
+const handleMigrateImagesToMinIO = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/migrate-images-to-minio`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Image migration completed! Migrated ${result.stats?.migrated || 0} products to MinIO. Skipped: ${result.stats?.skipped || 0}, Errors: ${result.stats?.errors || 0}.`
+    }
+  } catch (error) {
+    console.error('❌ Image migration failed:', error)
+    syncStatus.value = { type: 'error', message: 'Image migration failed. Please try again.' }
   } finally {
     isLoading.value = false
   }

@@ -1870,4 +1870,99 @@ router.post('/import-new-products', async (req, res) => {
   }
 })
 
+// POST /api/sync/migrate-images-to-minio - Migrate all image URLs from local to MinIO
+router.post('/migrate-images-to-minio', async (req, res) => {
+  try {
+    console.log('🔄 Starting image URL migration to MinIO...')
+
+    if (!minioService.isMinIOEnabled()) {
+      return res.status(400).json({
+        success: false,
+        error: 'MinIO not configured',
+        message: 'MinIO service is not enabled. Please configure MinIO first.'
+      })
+    }
+
+    // Get all products with local image URLs
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { image_url: { startsWith: '/images/products/' } },
+          { display_image_url: { startsWith: '/images/products/' } }
+        ]
+      },
+      select: { id: true, poster_product_id: true, image_url: true, display_image_url: true }
+    })
+
+    console.log(`📊 Found ${products.length} products with local image URLs`)
+
+    let migratedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+
+    for (const product of products) {
+      try {
+        // Extract filename from local path
+        let filename = null
+        if (product.image_url && product.image_url.startsWith('/images/products/')) {
+          filename = product.image_url.replace('/images/products/', '')
+        } else if (product.display_image_url && product.display_image_url.startsWith('/images/products/')) {
+          filename = product.display_image_url.replace('/images/products/', '')
+        }
+
+        if (!filename) {
+          skippedCount++
+          continue
+        }
+
+        // Check if image exists in MinIO
+        try {
+          const url = await minioService.getImageUrl(`products/${filename}`)
+          if (url) {
+            // Update product with MinIO URL
+            await prisma.product.update({
+              where: { id: product.id },
+              data: {
+                image_url: `minio://${filename}`,
+                display_image_url: `minio://${filename}`
+              }
+            })
+            migratedCount++
+            console.log(`✅ Migrated: ${filename}`)
+          } else {
+            skippedCount++
+          }
+        } catch (e) {
+          skippedCount++
+        }
+      } catch (error) {
+        console.error(`❌ Error migrating product ${product.id}:`, error.message)
+        errorCount++
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Image URL migration completed! Migrated ${migratedCount} products to MinIO.`,
+      stats: {
+        total_products: products.length,
+        migrated: migratedCount,
+        skipped: skippedCount,
+        errors: errorCount
+      }
+    }
+
+    console.log('🎉 Image migration completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Image migration failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Image migration failed',
+      message: error.message
+    })
+  }
+})
+
 export default router

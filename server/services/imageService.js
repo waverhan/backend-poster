@@ -199,7 +199,19 @@ class ImageService {
       // Check if we already have the image locally
       const localImagePath = this.getLocalImagePath(productId)
       if (localImagePath) {
-        
+        // If MinIO is configured, prefer MinIO path for persistence
+        if (minioService.isMinIOEnabled()) {
+          // Check if WebP version exists in MinIO
+          const webpFilename = `product_${productId}.webp`
+          try {
+            const url = await minioService.getImageUrl(`products/${webpFilename}`)
+            if (url) {
+              return `minio://${webpFilename}`
+            }
+          } catch (e) {
+            // Fall back to local path if MinIO check fails
+          }
+        }
         return `/images/products/${path.basename(localImagePath)}`
       }
 
