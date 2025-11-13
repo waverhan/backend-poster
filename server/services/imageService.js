@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import axios from 'axios'
 import { fileURLToPath } from 'url'
+import sharp from 'sharp'
 import { minioService } from './minioService.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -77,6 +78,46 @@ class ImageService {
     return null
   }
 
+  // Optimize image: compress and convert to WebP
+  async optimizeImage(inputPath, outputPath, format = 'webp') {
+    try {
+      const image = sharp(inputPath)
+
+      // Get image metadata to determine optimal size
+      const metadata = await image.metadata()
+
+      // Resize to reasonable dimensions (max 1200px width) and compress
+      let pipeline = image
+        .resize(1200, 1200, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+
+      // Convert to specified format with compression
+      if (format === 'webp') {
+        pipeline = pipeline.webp({ quality: 80 })
+      } else if (format === 'jpeg') {
+        pipeline = pipeline.jpeg({ quality: 80, progressive: true })
+      } else if (format === 'png') {
+        pipeline = pipeline.png({ compressionLevel: 9 })
+      }
+
+      await pipeline.toFile(outputPath)
+
+      // Get file sizes for logging
+      const originalSize = fs.statSync(inputPath).size
+      const optimizedSize = fs.statSync(outputPath).size
+      const savings = Math.round((1 - optimizedSize / originalSize) * 100)
+
+      console.log(`✅ Optimized image: ${path.basename(outputPath)} (${savings}% smaller)`)
+
+      return outputPath
+    } catch (error) {
+      console.error(`❌ Failed to optimize image ${inputPath}:`, error.message)
+      throw error
+    }
+  }
+
   // Download and save image locally, then upload to MinIO
   async downloadImage(imageUrl, productId) {
     try {
@@ -101,23 +142,42 @@ class ImageService {
       return new Promise((resolve, reject) => {
         writer.on('finish', async () => {
           try {
-            // If MinIO is configured, upload to MinIO
+            // Optimize image to WebP format
+            const webpFilename = `product_${productId}.webp`
+            const webpPath = path.join(this.imagesDir, webpFilename)
+
+            try {
+              await this.optimizeImage(filepath, webpPath, 'webp')
+            } catch (optimizeError) {
+              console.warn(`⚠️ Could not optimize to WebP, using original:`, optimizeError.message)
+            }
+
+            // If MinIO is configured, upload both original and WebP
             if (minioService.isMinIOEnabled()) {
-              const minioPath = await minioService.uploadProductImage(filepath, filename)
-              if (minioPath) {
-                // Return MinIO path
-                resolve(`minio://${minioPath}`)
-              } else {
-                // Fallback to local path if MinIO upload fails
-                resolve(`/images/products/${filename}`)
+              try {
+                // Upload WebP version if it exists
+                if (fs.existsSync(webpPath)) {
+                  await minioService.uploadProductImage(webpPath, webpFilename)
+                }
+                // Also upload original as fallback
+                const minioPath = await minioService.uploadProductImage(filepath, filename)
+                if (minioPath) {
+                  // Return MinIO path (WebP preferred)
+                  resolve(`minio://${webpFilename}`)
+                } else {
+                  resolve(`/images/products/${webpFilename}`)
+                }
+              } catch (minioError) {
+                console.error(`❌ Error uploading to MinIO:`, minioError.message)
+                resolve(`/images/products/${webpFilename}`)
               }
             } else {
-              // MinIO not configured, use local path
-              resolve(`/images/products/${filename}`)
+              // MinIO not configured, use local WebP path
+              resolve(`/images/products/${webpFilename}`)
             }
           } catch (error) {
-            console.error(`❌ Error uploading to MinIO:`, error.message)
-            // Fallback to local path
+            console.error(`❌ Error processing image ${filename}:`, error.message)
+            // Fallback to original file
             resolve(`/images/products/${filename}`)
           }
         })

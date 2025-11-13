@@ -1508,6 +1508,83 @@ router.post('/upload-images-to-minio', async (req, res) => {
   }
 })
 
+// POST /api/sync/optimize-images - Optimize existing images to WebP format
+router.post('/optimize-images', async (req, res) => {
+  try {
+    console.log('🖼️ Starting image optimization to WebP format...')
+
+    const imagesDir = path.join(__dirname, '../public/images/products')
+
+    if (!fs.existsSync(imagesDir)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Images directory not found'
+      })
+    }
+
+    const files = fs.readdirSync(imagesDir)
+    const imageFiles = files.filter(f => /\.(jpg|jpeg|png)$/i.test(f))
+
+    console.log(`📊 Found ${imageFiles.length} images to optimize`)
+
+    let optimizedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+    let totalSavings = 0
+
+    for (const file of imageFiles) {
+      try {
+        const inputPath = path.join(imagesDir, file)
+        const webpFilename = file.replace(/\.(jpg|jpeg|png)$/i, '.webp')
+        const outputPath = path.join(imagesDir, webpFilename)
+
+        // Skip if WebP already exists
+        if (fs.existsSync(outputPath)) {
+          skippedCount++
+          continue
+        }
+
+        // Optimize to WebP
+        await imageService.optimizeImage(inputPath, outputPath, 'webp')
+
+        // Calculate savings
+        const originalSize = fs.statSync(inputPath).size
+        const optimizedSize = fs.statSync(outputPath).size
+        const savings = originalSize - optimizedSize
+        totalSavings += savings
+
+        optimizedCount++
+      } catch (error) {
+        console.error(`❌ Error optimizing ${file}:`, error.message)
+        errorCount++
+      }
+    }
+
+    const result = {
+      success: true,
+      message: `Image optimization completed! Optimized ${optimizedCount} images to WebP format.`,
+      stats: {
+        total_images: imageFiles.length,
+        optimized: optimizedCount,
+        skipped: skippedCount,
+        errors: errorCount,
+        total_savings_kb: Math.round(totalSavings / 1024)
+      }
+    }
+
+    console.log('🎉 Image optimization completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Image optimization failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Image optimization failed',
+      message: error.message
+    })
+  }
+})
+
 // GET /api/sync/logs - Get sync logs
 router.get('/logs', async (req, res) => {
   try {

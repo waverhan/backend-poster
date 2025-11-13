@@ -856,7 +856,7 @@ const selectBranch = async (branch: Branch) => {
   await loadCategories()
 }
 
-const loadCategories = async () => {
+const loadCategories = async (retryCount = 0, maxRetries = 3) => {
   loading.value.categories = true
   loading.value.products = true
 
@@ -865,12 +865,22 @@ const loadCategories = async () => {
     const hasCategories = categoriesWithProducts.value.length > 0
     const hasProducts = products.value.length > 0
 
-    
+
 
     // Only fetch categories if not already loaded
     if (!hasCategories) {
       console.log('📥 Fetching categories...')
-      await productStore.fetchCategories(false) // Don't force if we have cache
+      try {
+        await productStore.fetchCategories(false) // Don't force if we have cache
+      } catch (catError) {
+        console.error('❌ Failed to fetch categories:', catError)
+        if (retryCount < maxRetries) {
+          console.log(`🔄 Retrying categories fetch (${retryCount + 1}/${maxRetries})...`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+          return loadCategories(retryCount + 1, maxRetries)
+        }
+        throw catError
+      }
     } else {
       console.log('⚡ Using cached categories')
     }
@@ -879,7 +889,17 @@ const loadCategories = async () => {
     const branchId = selectedBranch.value?.id
     if (!hasProducts || branchId) {
       console.log('📥 Fetching products for branch:', branchId)
-      await productStore.fetchProducts(undefined, false, branchId, true) // Don't force if we have cache
+      try {
+        await productStore.fetchProducts(undefined, false, branchId, true) // Don't force if we have cache
+      } catch (prodError) {
+        console.error('❌ Failed to fetch products:', prodError)
+        if (retryCount < maxRetries) {
+          console.log(`🔄 Retrying products fetch (${retryCount + 1}/${maxRetries})...`)
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+          return loadCategories(retryCount + 1, maxRetries)
+        }
+        throw prodError
+      }
     } else {
       console.log('⚡ Using cached products')
     }
@@ -887,19 +907,23 @@ const loadCategories = async () => {
     // Auto-select first category if no category is selected
     if (!selectedCategory.value && categoriesWithProducts.value.length > 0) {
       const firstCategory = categoriesWithProducts.value[0]
-      
+
       productStore.selectCategory(firstCategory)
     }
 
-    
+
 
   } catch (error) {
-    console.error('❌ Failed to load categories and products:', error)
+    console.error('❌ Failed to load categories and products after retries:', error)
     notificationStore.add({
       type: 'error',
       title: 'Failed to load data',
-      message: 'Please check your internet connection and try again',
-      duration: 5000
+      message: 'Please check your internet connection and try again. You can click "Retry" to try again.',
+      duration: 5000,
+      action: {
+        label: 'Retry',
+        callback: () => loadCategories(0, maxRetries)
+      }
     })
   } finally {
     loading.value.categories = false

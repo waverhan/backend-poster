@@ -179,6 +179,19 @@
             </button>
           </div>
 
+          <!-- Optimize Images -->
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h3 class="font-medium text-gray-900 mb-2">Image Optimization</h3>
+            <p class="text-sm text-gray-600 mb-4">Optimize images to WebP format for faster loading</p>
+            <button
+              @click="handleOptimizeImages"
+              :disabled="isLoading"
+              class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ isLoading ? 'Optimizing...' : 'Optimize Images' }}
+            </button>
+          </div>
+
           <!-- Refresh Data -->
           <div class="border border-gray-200 rounded-lg p-4">
             <h3 class="font-medium text-gray-900 mb-2">Refresh</h3>
@@ -1454,6 +1467,37 @@ const handleUploadImagesToMinIO = async () => {
   } catch (error) {
     console.error('❌ MinIO upload failed:', error)
     syncStatus.value = { type: 'error', message: 'MinIO upload failed. Please try again.' }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Optimize images to WebP format
+const handleOptimizeImages = async () => {
+  isLoading.value = true
+  syncStatus.value = null
+
+  try {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/optimize-images`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Image optimization completed! Optimized ${result.stats?.optimized || 0} images to WebP format. Saved ${result.stats?.total_savings_kb || 0} KB.`
+    }
+  } catch (error) {
+    console.error('❌ Image optimization failed:', error)
+    syncStatus.value = { type: 'error', message: 'Image optimization failed. Please try again.' }
   } finally {
     isLoading.value = false
   }

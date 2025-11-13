@@ -14,6 +14,8 @@
               :src="imageUrl"
               :alt="product.display_name"
               class="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               @error="onImageError"
               @load="onImageLoad"
             />
