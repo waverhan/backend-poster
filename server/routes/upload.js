@@ -94,6 +94,12 @@ router.get('/minio-image/:filename', async (req, res) => {
     const url = await minioService.getImageUrl(`products/${filename}`)
 
     if (url) {
+      // Add cache headers for long-term caching (images are immutable)
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
+      res.setHeader('Access-Control-Allow-Origin', '*')
+      res.setHeader('Access-Control-Allow-Methods', 'GET')
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+
       // Redirect to MinIO presigned URL
       res.redirect(url)
     } else {

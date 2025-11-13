@@ -865,22 +865,18 @@ const loadCategories = async (retryCount = 0, maxRetries = 3) => {
     const hasCategories = categoriesWithProducts.value.length > 0
     const hasProducts = products.value.length > 0
 
-
+    // Parallelize API calls for better performance
+    const promises: Promise<any>[] = []
 
     // Only fetch categories if not already loaded
     if (!hasCategories) {
       console.log('📥 Fetching categories...')
-      try {
-        await productStore.fetchCategories(false) // Don't force if we have cache
-      } catch (catError) {
-        console.error('❌ Failed to fetch categories:', catError)
-        if (retryCount < maxRetries) {
-          console.log(`🔄 Retrying categories fetch (${retryCount + 1}/${maxRetries})...`)
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
-          return loadCategories(retryCount + 1, maxRetries)
-        }
-        throw catError
-      }
+      promises.push(
+        productStore.fetchCategories(false).catch(catError => {
+          console.error('❌ Failed to fetch categories:', catError)
+          throw catError
+        })
+      )
     } else {
       console.log('⚡ Using cached categories')
     }
@@ -889,29 +885,35 @@ const loadCategories = async (retryCount = 0, maxRetries = 3) => {
     const branchId = selectedBranch.value?.id
     if (!hasProducts || branchId) {
       console.log('📥 Fetching products for branch:', branchId)
+      promises.push(
+        productStore.fetchProducts(undefined, false, branchId, true).catch(prodError => {
+          console.error('❌ Failed to fetch products:', prodError)
+          throw prodError
+        })
+      )
+    } else {
+      console.log('⚡ Using cached products')
+    }
+
+    // Execute all promises in parallel
+    if (promises.length > 0) {
       try {
-        await productStore.fetchProducts(undefined, false, branchId, true) // Don't force if we have cache
-      } catch (prodError) {
-        console.error('❌ Failed to fetch products:', prodError)
+        await Promise.all(promises)
+      } catch (error) {
         if (retryCount < maxRetries) {
-          console.log(`🔄 Retrying products fetch (${retryCount + 1}/${maxRetries})...`)
+          console.log(`🔄 Retrying fetch (${retryCount + 1}/${maxRetries})...`)
           await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
           return loadCategories(retryCount + 1, maxRetries)
         }
-        throw prodError
+        throw error
       }
-    } else {
-      console.log('⚡ Using cached products')
     }
 
     // Auto-select first category if no category is selected
     if (!selectedCategory.value && categoriesWithProducts.value.length > 0) {
       const firstCategory = categoriesWithProducts.value[0]
-
       productStore.selectCategory(firstCategory)
     }
-
-
 
   } catch (error) {
     console.error('❌ Failed to load categories and products after retries:', error)
@@ -1128,17 +1130,34 @@ onMounted(async () => {
 
     console.log('🔍 Shop initialization - Cache status:', { hasCategories, hasProducts, hasBranches })
 
-    // Load banners for the slider (lightweight)
-    await bannerStore.fetchBanners()
+    // Parallelize initial data loading for better performance
+    const initialPromises: Promise<any>[] = []
+
+    // Always load banners (lightweight)
+    initialPromises.push(bannerStore.fetchBanners())
 
     // Only load data if we don't have it cached
     if (!hasBranches || !hasCategories || !hasProducts) {
-      console.log('📥 Loading fresh data...')
-      // Load default branch (Branch 4) and show products immediately for better UX
-      await loadDefaultBranch()
+      console.log('📥 Loading fresh data in parallel...')
+      // Load branches, categories, and products in parallel
+      initialPromises.push(branchStore.fetchBranches(true))
+      initialPromises.push(productStore.fetchCategories(true))
+
+      // Wait for branches to be loaded before fetching products for the default branch
+      await Promise.all(initialPromises.slice(0, 3))
+
+      // Now fetch products for the default branch
+      const defaultBranch = branches.value.find(b => b.id === 4) || branches.value[0]
+      if (defaultBranch) {
+        branchStore.selectBranch(defaultBranch)
+        await productStore.fetchProducts(undefined, true, defaultBranch.id, true)
+      }
     } else {
-      console.log('⚡ Using cached data - skipping load')
-      // We have cached data, just ensure a branch is selected
+      console.log('⚡ Using cached data - loading banners only')
+      // We have cached data, just load banners
+      await Promise.all(initialPromises)
+
+      // Ensure a branch is selected
       if (!selectedBranch.value && branches.value.length > 0) {
         // Select default branch (Branch 4 - Голосіївський 5)
         const defaultBranch = branches.value.find(b => b.id === 4) || branches.value[0]
