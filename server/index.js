@@ -38,7 +38,30 @@ dotenv.config()
 
 const app = express()
 const port = process.env.PORT || 3001
-const prisma = new PrismaClient()
+
+// Initialize Prisma with connection pooling and error handling
+const prisma = new PrismaClient({
+  log: ['error', 'warn'],
+  errorFormat: 'pretty'
+})
+
+// Handle Prisma connection errors
+prisma.$on('error', (e) => {
+  console.error('❌ Prisma error:', e)
+})
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('📴 SIGTERM received, closing database connection...')
+  await prisma.$disconnect()
+  process.exit(0)
+})
+
+process.on('SIGINT', async () => {
+  console.log('📴 SIGINT received, closing database connection...')
+  await prisma.$disconnect()
+  process.exit(0)
+})
 
 // Middleware - Simple CORS configuration that allows all origins
 app.use(cors({

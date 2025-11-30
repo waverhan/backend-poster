@@ -13,4 +13,7 @@ echo "🔄 Running Untappd mappings migration..."
 node migrations/add-untappd-mappings.js || echo "⚠️ Untappd mappings migration failed or already applied"
 
 echo "🚀 Starting the application..."
-node index.js
+# Enable garbage collection and set memory limits to prevent crashes
+# --expose-gc: Enable manual garbage collection
+# --max-old-space-size=512: Limit heap to 512MB to prevent OOM
+node --expose-gc --max-old-space-size=512 index.js

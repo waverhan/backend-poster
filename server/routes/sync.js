@@ -339,7 +339,7 @@ router.post('/full', async (req, res) => {
   }
 })
 
-// POST /api/sync/inventory - Quick inventory sync
+// POST /api/sync/inventory - Quick inventory sync with memory optimization
 router.post('/inventory', async (req, res) => {
   let syncLogId = null
 
@@ -348,62 +348,96 @@ router.post('/inventory', async (req, res) => {
     const syncLog = await createSyncLog('inventory', 'running')
     syncLogId = syncLog.id
 
-    const branches = await prisma.branch.findMany({ where: { is_active: true } })
-    const products = await prisma.product.findMany({ where: { is_active: true } })
+    const branches = await prisma.branch.findMany({
+      where: { is_active: true },
+      select: { id: true, poster_id: true, name: true }
+    })
 
     let totalInventoryRecords = 0
 
     for (const branch of branches) {
       try {
+        console.log(`🔄 Syncing inventory for branch: ${branch.name}`)
+
         const inventoryResponse = await axios.get(`${POSTER_API_BASE}/storage.getStorageLeftovers`, {
           params: {
             token: POSTER_TOKEN,
             storage_id: branch.poster_id
-          }
+          },
+          timeout: 30000 // 30 second timeout
         })
 
         const inventoryData = inventoryResponse.data.response || []
+        console.log(`📊 Found ${inventoryData.length} inventory items for ${branch.name}`)
 
-
-        // Debug: Log sample inventory item to verify field names
-        if (inventoryData.length > 0) {
-
-        }
-
-        // Create inventory map
+        // Create inventory map from API response
         const inventoryMap = new Map()
-        let sampleProcessed = false
         inventoryData.forEach(item => {
           if (item.ingredient_id) {
             const quantity = parseFloat(item.storage_ingredient_left) || 0
-            inventoryMap.set(item.ingredient_id, {
+            inventoryMap.set(String(item.ingredient_id), {
               quantity: quantity,
               unit: item.ingredient_unit || 'pcs'
             })
-
-            // Log first processed item for debugging
-            if (!sampleProcessed) {
-
-              sampleProcessed = true
-            }
           }
         })
 
-        // Update inventory for each product
-        for (const product of products) {
-          // Use ingredient_id to match with inventory data
-          const inventory = inventoryMap.get(product.ingredient_id)
+        // Process products in batches to avoid memory issues
+        const batchSize = 100
+        let offset = 0
+        let batchCount = 0
 
-          if (inventory) {
-            await updateInventory(
-              product.id,
-              branch.id,
-              inventory.quantity,
-              inventory.unit
-            )
-            totalInventoryRecords++
+        while (true) {
+          const products = await prisma.product.findMany({
+            where: { is_active: true },
+            select: { id: true, ingredient_id: true, name: true },
+            skip: offset,
+            take: batchSize
+          })
+
+          if (products.length === 0) break
+
+          batchCount++
+          console.log(`📦 Processing batch ${batchCount} (${products.length} products)`)
+
+          // Update inventory for each product in this batch
+          for (const product of products) {
+            try {
+              const inventory = inventoryMap.get(String(product.ingredient_id))
+
+              if (inventory) {
+                await updateInventory(
+                  product.id,
+                  branch.id,
+                  inventory.quantity,
+                  inventory.unit
+                )
+                totalInventoryRecords++
+              } else {
+                // Product not available at this branch - set quantity to 0
+                await updateInventory(
+                  product.id,
+                  branch.id,
+                  0,
+                  'pcs'
+                )
+              }
+            } catch (updateError) {
+              console.error(`❌ Error updating inventory for product ${product.name}:`, updateError.message)
+            }
+          }
+
+          offset += batchSize
+
+          // Clear memory between batches
+          if (batchCount % 5 === 0) {
+            if (global.gc) {
+              global.gc()
+            }
           }
         }
+
+        console.log(`✅ Completed inventory sync for ${branch.name}: ${totalInventoryRecords} records updated`)
 
       } catch (error) {
         console.error(`❌ Failed to sync inventory for branch ${branch.name}:`, error.message)
@@ -415,7 +449,6 @@ router.post('/inventory', async (req, res) => {
       message: 'Inventory sync completed successfully',
       stats: {
         branches: branches.length,
-        products: products.length,
         inventory_records: totalInventoryRecords
       }
     }
@@ -425,6 +458,7 @@ router.post('/inventory', async (req, res) => {
       await updateSyncLog(syncLogId, 'completed', totalInventoryRecords)
     }
 
+    console.log('🎉 Inventory sync completed:', result.stats)
     res.json(result)
 
   } catch (error) {
