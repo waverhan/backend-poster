@@ -120,18 +120,9 @@
       <!-- Bottom Section -->
       <div class="border-t border-gray-200 pt-6">
         <div class="text-center">
-          <p class="text-sm text-gray-500 mb-2">
+          <p class="text-sm text-gray-500 mb-4">
             © {{ new Date().getFullYear() }} {{ siteConfig.company_name }}. {{ siteConfig.site_description }}
           </p>
-          <div class="flex justify-center space-x-4 text-xs text-gray-400 mb-4">
-            <span>🚀 Vue 3 + Capacitor.js</span>
-            <span>•</span>
-            <span>📱 Progressive Web App</span>
-            <span>•</span>
-            <span>🔌 Poster API</span>
-            <span>•</span>
-            <span>🤖 AI-Powered</span>
-          </div>
 
           <!-- Social Media Links -->
           <div v-if="hasSocialLinks" class="flex justify-center space-x-4">
