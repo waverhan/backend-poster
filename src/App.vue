@@ -8,11 +8,11 @@
       📡 {{ $t('ui.offline') }}
     </div>
 
+    <!-- Header (Outside flex container for sticky positioning) -->
+    <AppHeader />
+
     <!-- Main App Content -->
     <div class="flex flex-col min-h-screen">
-      <!-- Header -->
-      <AppHeader />
-
       <!-- Main Content -->
       <main class="flex-1">
         <RouterView v-slot="{ Component, route }">
@@ -35,7 +35,7 @@
     <NotificationContainer />
 
     <!-- Loading Overlay -->
-    <LoadingOverlay v-if="isGlobalLoading" />
+    <LoadingOverlay />
 
     <!-- AI Chat Widget -->
     <ChatWidget @product-selected="handleProductSelected" />
@@ -97,7 +97,7 @@ const { isGlobalLoading } = storeToRefs(loadingStore)
 
 // Methods
 const handleProductSelected = (product: Product) => {
-  router.push(`/product/${product.id}`)
+  router.push(`/product/${product.slug || product.id}`)
 }
 
 // Lifecycle
@@ -121,6 +121,9 @@ onMounted(async () => {
   // Preload branches and categories for better UX
   try {
     console.log('🚀 App.vue: Starting data preloading...')
+    loadingStore.setGlobalLoading(true)
+    loadingStore.startLoading('categories')
+    loadingStore.startLoading('products')
 
     // Load branches first
     await branchStore.fetchBranches()
@@ -134,12 +137,35 @@ onMounted(async () => {
       branchStore.selectBranch(defaultBranch)
       console.log('🎯 App.vue: Selected default branch:', defaultBranch.name)
 
-      // Preload categories and products for the default branch
-      await productStore.fetchCategories(true) // force = true for fresh data
-      console.log('📥 App.vue: Categories loaded:', productStore.categories.length)
+      // STEP 1: Load categories first (CRITICAL - must complete before products)
+      console.log('📥 App.vue: STEP 1 - Loading categories...')
+      const categories = await productStore.fetchCategories(true, true, false) // force=true, useDatabase=true, includeInactive=false
+      console.log('📥 App.vue: STEP 1 - Categories loaded:', categories?.length || 0)
 
-      await productStore.fetchProducts(undefined, true, defaultBranch.id, true) // categoryId=undefined, force=true, branchId, useDatabase=true
-      console.log('📥 App.vue: Products loaded:', productStore.products.length)
+      if (!categories || categories.length === 0) {
+        console.error('❌ App.vue: No categories returned from fetchCategories!')
+        throw new Error('Failed to load categories')
+      }
+
+      // STEP 2: Load products for all categories in background
+      console.log('📥 App.vue: STEP 2 - Loading products for all categories...')
+      const firstCategory = categories[0]
+      productStore.selectCategory(firstCategory)
+
+      // Load first category products (blocking)
+      await productStore.fetchProducts(firstCategory.id, true, defaultBranch.id, true)
+      console.log('📥 App.vue: STEP 2 - First category products loaded:', productStore.products.length)
+
+      // Load other categories in background (non-blocking)
+      if (categories.length > 1) {
+        categories.slice(1).forEach((category, index) => {
+          setTimeout(() => {
+            productStore.fetchProducts(category.id, true, defaultBranch.id, true).catch(err => {
+              console.warn(`⚠️ App.vue: Failed to load category ${category.display_name}:`, err)
+            })
+          }, 500 + (index * 300))
+        })
+      }
 
       console.log('✅ App.vue: Preloaded categories and products for default branch')
     } else {
@@ -148,6 +174,10 @@ onMounted(async () => {
   } catch (error) {
     console.warn('⚠️ App.vue: Failed to preload data:', error)
     // Don't show error notification on app startup - let individual pages handle their own loading
+  } finally {
+    loadingStore.stopLoading('categories')
+    loadingStore.stopLoading('products')
+    loadingStore.setGlobalLoading(false)
   }
 
   // Welcome notification removed - was showing unwanted popup

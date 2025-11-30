@@ -1,82 +1,65 @@
-# Blog redirects - redirect old blog posts to new blog subdomain
-# Redirect all blog posts from opillia.com.ua to blog.opillia.com.ua
+# Old website redirects to new shop pages
+# Converted from CSV format - all old URLs redirect to new shop pages
 
-# Blog category and page redirects (highest priority - forced)
-/ohliady https://blog.opillia.com.ua/ohliady/ 301!
-/ohliady/ https://blog.opillia.com.ua/ohliady/ 301!
-/ohliady/* https://blog.opillia.com.ua/ohliady/:splat 301!
-/novyny https://blog.opillia.com.ua/novyny/ 301!
-/novyny/ https://blog.opillia.com.ua/novyny/ 301!
-/novyny/* https://blog.opillia.com.ua/novyny/:splat 301!
-/sales https://blog.opillia.com.ua/sales/ 301!
-/sales/ https://blog.opillia.com.ua/sales/ 301!
-/sales/* https://blog.opillia.com.ua/sales/:splat 301!
-/karta-sajtu https://blog.opillia.com.ua/karta-sajtu/ 301
-/karta-sajtu/ https://blog.opillia.com.ua/karta-sajtu/ 301
-/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi https://blog.opillia.com.ua/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ 301
-/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ https://blog.opillia.com.ua/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ 301
-/contact-us https://blog.opillia.com.ua/contact-us/ 301
-/contact-us/ https://blog.opillia.com.ua/contact-us/ 301
-/home https://blog.opillia.com.ua/home/ 301
-/home/ https://blog.opillia.com.ua/home/ 301
+/karta-sajtu/ /sitemap 301
+/pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ /about 301
+/contact-us/ /contact 301
+/product-category/sydr/ /shop?category=sidr 301
+/zakusky/syrni-zakusky/ /shop?category=zakuski-vagovi 301
+/pyvo-opillia-1851-export-1-1l-sht/ /shop?category=pivo-rozlivne 301
+/vyno-ridnyj-kraj/ /shop?category=vino 301
+/product/pyvo-opillia-export-koryfei-sklo-0-5-l-sht/ /shop?category=pivo-rozlivne 301
+/upakovka-pyvo-opillia-export-koryfei-pet-1-5-l-kh-6sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-klasychne-0-5-l-sklo-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-wheat-0-5l-sklo/ /shop?category=pivo-rozlivne 301
+/podarunkovyj-nabir-pyvo-opillia/ /shop?category=pivo-rozlivne 301
+/product/pyvo-bochkove-firmove-sht/ /shop?category=pivo-rozlivne 301
+/product-category/zakusky/syrni-zakusky/ /shop?category=zakuski-vagovi 301
+/product/vyno-trakijske-manho-l/ /shop?category=vino 301
+/kelykhy/ /shop?category=kelihi 301
+/vyno/ /shop?category=vino 301
+/pyvo-volfas-engelman-baltic-porter-zhb-0-568-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-hollandia-strong-svetloe-fyltrovannoe-7-5-0-5-l/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-export-zero/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-koryfej-1-5-l-sht/ /shop?category=pivo-rozlivne 301
+/product/vyno-pani-slyva-l/ /shop?category=vino 301
+/pyvo-opillia-koryfej-0-5-l-sklo-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-export-koryfei-0-5-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-firmove-u-pliashtsi/ /shop?category=pivo-rozlivne 301
+/pyvo/rozlyvne/ /shop?category=pivo-rozlivne 301
+/pyvo-zhyhul-firmovyj-1-5l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-dunkel-l/ /shop?category=pivo-rozlivne 301
+/2023/10/vyno-chateau-petrus-smak-elehantnosti-ta-tradytsii/ /shop?category=vino 301
+/pyvo-opillia-zhyhulivske-pet-1-5-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-bavaria-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-volfas-engelman-ipa-zhb-0-568-l-sht/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-mitsne-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=pivo-rozlivne 301
+/2023/09/hariache-pyvo-opillia-retsepty-ta-tradytsii-dlia-sviatkovoho-nastroiu/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-klasychne-0-5-l-sklo-sht/ /shop?category=pivo-rozlivne 301
+/pyvo/u-pliashtsi/ /shop?category=pivo-rozlivne 301
+/product/pyvo-dab-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-ipa-cherkaska-bavariia/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-videnske-l/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-koryfej-2-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-klasychne-1l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-rizdviane-zymova-vyshnia-zhb-0-5-l/ /shop?category=pivo-rozlivne 301
+/vyno-saperavi/ /shop?category=vino 301
+/pyvo-opillia-bile-zhb-0-5-l/ /shop?category=pivo-rozlivne 301
+/pyvo-volfas-engelman-balta-pinta-zhb-0-568-l/ /shop?category=pivo-rozlivne 301
+/pyvo-alt-hopfen/ /shop?category=pivo-rozlivne 301
+/zakusky/m-iaso/ /shop?category=zakuski-shtuchni 301
+/pyvo-opillia-porter-l/ /shop?category=pivo-rozlivne 301
+/zakusky/ryba-2/ /shop?category=zakuski-shtuchni 301
+/vyno-kniahynia-lydyia/ /shop?category=vino 301
+/product/pyvo-opillia-videnske-sklo-0-5-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-wheat-l/ /shop?category=pivo-rozlivne 301
+/product-category/vyno/ /shop?category=vino 301
+/catalog/bezalkogolnye-napitki/ /shop?category=napoyi-ba 301
 
-# Specific blog post redirects (examples from sitemap)
-/2024/10/mizhnarodnyj-den-pyva-2024-data-sviatkuvannia-ta-istoriia-sviata/ https://blog.opillia.com.ua/2024/10/mizhnarodnyj-den-pyva-2024-data-sviatkuvannia-ta-istoriia-sviata/ 301
-/2023/05/domashnij-kvas/ https://blog.opillia.com.ua/2023/05/domashnij-kvas/ 301
-
-# General blog redirects - catch all blog posts by year/month pattern
-/2024/:month/:slug/ https://blog.opillia.com.ua/2024/:month/:slug/ 301
-/2023/:month/:slug/ https://blog.opillia.com.ua/2023/:month/:slug/ 301
-/2022/:month/:slug/ https://blog.opillia.com.ua/2022/:month/:slug/ 301
-/2021/:month/:slug/ https://blog.opillia.com.ua/2021/:month/:slug/ 301
-/2020/:month/:slug/ https://blog.opillia.com.ua/2020/:month/:slug/ 301
-/2019/:month/:slug/ https://blog.opillia.com.ua/2019/:month/:slug/ 301
-/2018/:month/:slug/ https://blog.opillia.com.ua/2018/:month/:slug/ 301
-
-# General blog redirects - catch all blog posts by year only (no month folder)
-/2024/:slug/ https://blog.opillia.com.ua/2024/:slug/ 301
-/2023/:slug/ https://blog.opillia.com.ua/2023/:slug/ 301
-/2022/:slug/ https://blog.opillia.com.ua/2022/:slug/ 301
-/2021/:slug/ https://blog.opillia.com.ua/2021/:slug/ 301
-/2020/:slug/ https://blog.opillia.com.ua/2020/:slug/ 301
-/2019/:slug/ https://blog.opillia.com.ua/2019/:slug/ 301
-/2018/:slug/ https://blog.opillia.com.ua/2018/:slug/ 301
-
-# Redirect common blog paths
-/blog/* https://blog.opillia.com.ua/:splat 301
-/category/* https://blog.opillia.com.ua/category/:splat 301
-/tag/* https://blog.opillia.com.ua/tag/:splat 301
-/author/* https://blog.opillia.com.ua/author/:splat 301
-
-# WordPress common paths
-/wp-content/* https://blog.opillia.com.ua/wp-content/:splat 301
-/wp-admin/* https://blog.opillia.com.ua/wp-admin/:splat 301
-/wp-includes/* https://blog.opillia.com.ua/wp-includes/:splat 301
-
-# Feed redirects
-/feed/ https://blog.opillia.com.ua/feed/ 301
-/rss/ https://blog.opillia.com.ua/rss/ 301
-/sitemap.xml https://blog.opillia.com.ua/sitemap.xml 301
-
-# 404 Error Handling - Redirect common 404 patterns to homepage
-# These catch URLs that don't exist and redirect to homepage instead of showing 404
-/404 / 301
-/page-not-found / 301
-/error / 301
-/not-found / 301
-
-# Common old URLs that might cause 404s - redirect to homepage
-/index.php / 301
-/index.html / 301
-/default.html / 301
-/main.html / 301
-
-# Old WordPress URLs that might not be caught by other rules
-/wp-login.php / 301
-/wp-register.php / 301
-/xmlrpc.php / 301
-/readme.html / 301
-/license.txt / 301
+# Sitemap is now served from backend API with dynamic categories and products
+/sitemap.xml https://backend-api-production-b3a0.up.railway.app/api/sitemap.xml 200!
 
 # Common bot/crawler URLs that cause 404s
 /robots.txt /robots.txt 200

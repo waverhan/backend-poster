@@ -13,30 +13,67 @@
       </div>
 
       <div v-else class="space-y-6">
+        <!-- Free Delivery Notification Banner -->
+        <div v-if="freeDeliveryNotification" class="mb-6 p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-lg">
+          <div class="flex items-center gap-4">
+            <!-- Progress Bar -->
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-gray-600 text-sm">Spend</span>
+                <span class="text-2xl font-bold text-red-600">₴ {{ freeDeliveryNotification.remaining }}</span>
+                <span class="text-gray-600 text-sm">more and enjoy</span>
+                <span class="font-bold text-gray-800">free_shipping!</span>
+              </div>
+              <!-- Progress Bar -->
+              <div class="w-full bg-gray-300 rounded-full h-3 overflow-hidden">
+                <div
+                  class="bg-gradient-to-r from-red-500 to-red-600 h-full rounded-full transition-all duration-300"
+                  :style="{ width: freeDeliveryNotification.percentage + '%' }"
+                ></div>
+              </div>
+            </div>
+            <!-- Truck Icon -->
+            <div class="flex-shrink-0">
+              <div class="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center text-white text-2xl shadow-lg">
+                🚚
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scroll Indicator at Top -->
+        <div class="mb-6 p-4 bg-blue-50 border-2 border-blue-400 rounded-lg">
+          <div class="flex items-center justify-center gap-3 text-blue-700 font-semibold animate-bounce">
+            <span class="text-2xl">👇</span>
+            <span>Прокрутіть вниз для вибору способу доставки</span>
+            <span class="text-2xl">👇</span>
+          </div>
+        </div>
+
         <!-- Cart Items (Regular Products Only) -->
         <div class="card p-6">
-          <h2 class="text-xl font-bold mb-4">{{ $t('cart.items') }} ({{ regularItemsCount }})</h2>
-          <div class="space-y-4">
+          <h2 class="text-xl font-bold mb-4">{{ $t('cart.items') }} ({{ regularItemsCount + bottleItems.length }})</h2>
+          <div :class="['space-y-2', (regularItemsCount + bottleItems.length) > 4 ? 'max-h-96 overflow-y-auto pr-2' : 'space-y-4']">
             <div
               v-for="item in regularItems"
               :key="item.cart_item_id || item.product_id"
-              class="py-4 border-b border-gray-200 last:border-b-0"
+              class="py-4 border-b border-gray-200"
             >
               <!-- Mobile Layout -->
               <div class="block sm:hidden">
-                <div class="flex items-start space-x-3">
-                  <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div class="flex items-start space-x-2">
+                  <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <img
                       v-if="item.image_url"
                       :src="getImageUrl(item.image_url)"
                       :alt="item.name"
                       class="w-full h-full object-cover rounded-lg"
                     />
-                    <span v-else class="text-lg">🍽️</span>
+                    <span v-else class="text-sm">🍽️</span>
                   </div>
                   <div class="flex-1 min-w-0">
-                    <h3 class="font-medium text-sm">{{ item.name }}</h3>
-                    <p class="text-gray-600 text-sm">
+                    <h3 class="font-medium text-xs">{{ item.name }}</h3>
+                    <p class="text-gray-600 text-xs">
                       {{ formatItemPrice(item) }} ₴
                       <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
                       <span v-else-if="item.custom_unit">per {{ formatCustomUnit(item) }}</span>
@@ -46,38 +83,38 @@
                     <!-- Bottle sync happens automatically in background -->
 
                     <!-- Mobile quantity controls and total -->
-                    <div class="flex items-center justify-between mt-2">
-                      <div class="flex items-center space-x-2">
+                    <div class="flex items-center justify-between mt-1">
+                      <div class="flex items-center space-x-1">
                         <!-- Quantity controls (hidden for bottle products) -->
-                        <div v-if="!item.is_bottle_product" class="flex items-center space-x-1">
+                        <div v-if="!item.is_bottle_product" class="flex items-center space-x-0.5">
                           <button
                             @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
-                            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
+                            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-xs"
                           >
                             -
                           </button>
-                          <span class="w-6 text-center text-sm">{{ formatQuantityDisplay(item) }}</span>
+                          <span class="w-5 text-center text-xs">{{ formatQuantityDisplay(item) }}</span>
                           <button
                             @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
-                            class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
+                            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-xs"
                           >
                             +
                           </button>
                         </div>
                         <!-- Show quantity only for bottle products -->
-                        <div v-else class="flex items-center space-x-1">
-                          <span class="w-6 text-center text-sm text-gray-500">{{ item.quantity }}</span>
+                        <div v-else class="flex items-center space-x-0.5">
+                          <span class="w-5 text-center text-xs text-gray-500">{{ item.quantity }}</span>
                         </div>
                         <!-- Draft beverage info - Hidden -->
                       </div>
 
-                      <div class="flex items-center space-x-2">
-                        <div class="font-bold text-sm">{{ formatItemTotal(item) }} ₴</div>
+                      <div class="flex items-center space-x-1">
+                        <div class="font-bold text-xs">{{ formatItemTotal(item) }} ₴</div>
                         <!-- Hide delete button for bottle products -->
                         <button
                           v-if="!item.is_bottle_product"
                           @click="removeItem(item.cart_item_id || item.product_id)"
-                          class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
+                          class="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center text-xs"
                         >
                           🗑️
                         </button>
@@ -89,19 +126,19 @@
 
               <!-- Desktop Layout -->
               <div class="hidden sm:flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                  <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div class="flex items-center space-x-3">
+                  <div class="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                     <img
                       v-if="item.image_url"
                       :src="getImageUrl(item.image_url)"
                       :alt="item.name"
                       class="w-full h-full object-cover rounded-lg"
                     />
-                    <span v-else class="text-2xl">🍽️</span>
+                    <span v-else class="text-xl">🍽️</span>
                   </div>
                   <div>
-                    <h3 class="font-medium">{{ item.name }}</h3>
-                    <p class="text-gray-600">
+                    <h3 class="font-medium text-sm">{{ item.name }}</h3>
+                    <p class="text-gray-600 text-xs">
                       {{ formatItemPrice(item) }} ₴
                       <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
                       <span v-else-if="item.custom_unit">{{ $t('cart.per') }} {{ formatCustomUnit(item) }}</span>
@@ -112,74 +149,96 @@
                   </div>
                 </div>
 
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
                   <!-- Quantity controls (hidden for bottle products) -->
-                  <div v-if="!item.is_bottle_product" class="flex items-center space-x-2">
+                  <div v-if="!item.is_bottle_product" class="flex items-center space-x-1">
                     <button
                       @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
-                      class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+                      class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
                     >
                       -
                     </button>
-                    <span class="w-8 text-center">{{ formatQuantityDisplay(item) }}</span>
+                    <span class="w-7 text-center text-sm">{{ formatQuantityDisplay(item) }}</span>
                     <button
                       @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
-                      class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"
+                      class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-sm"
                     >
                       +
                     </button>
                   </div>
                   <!-- Show quantity only for bottle products -->
-                  <div v-else class="flex items-center space-x-2">
-                    <span class="w-8 text-center text-gray-500">{{ item.quantity }}</span>
+                  <div v-else class="flex items-center space-x-1">
+                    <span class="w-7 text-center text-sm text-gray-500">{{ item.quantity }}</span>
                   </div>
 
                   <!-- Draft beverage info - Hidden -->
 
                   <div class="text-right">
-                    <div class="font-bold">{{ formatItemTotal(item) }} ₴</div>
+                    <div class="font-bold text-sm">{{ formatItemTotal(item) }} ₴</div>
                   </div>
 
                   <!-- Hide delete button for bottle products -->
                   <button
                     v-if="!item.is_bottle_product"
                     @click="removeItem(item.cart_item_id || item.product_id)"
-                    class="w-8 h-8 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center"
+                    class="w-7 h-7 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center text-sm"
                   >
                     🗑️
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Bottles Section (Auto-added for draft beverages) -->
-        <div v-if="bottleItems.length > 0" class="card p-6">
-          <h2 class="text-xl font-bold mb-4">🍾 Пляшки (автоматично додано)</h2>
-          <div class="space-y-2">
-            <div
-              v-for="bottle in bottleItems"
-              :key="bottle.cart_item_id || bottle.product_id"
-              class="flex items-center justify-between py-2 text-sm text-gray-600"
-            >
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                  🍾
+            <!-- Bottles Section (Auto-added for draft beverages) - Inside scroll -->
+            <div v-if="bottleItems.length > 0">
+              <div
+                v-for="bottle in bottleItems"
+                :key="bottle.cart_item_id || bottle.product_id"
+                class="py-4 border-b border-gray-200 last:border-b-0"
+              >
+                <!-- Mobile Layout -->
+                <div class="block sm:hidden">
+                  <div class="flex items-start space-x-2">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      🍾
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-medium text-xs">{{ bottle.name }}</h3>
+                      <p class="text-gray-600 text-xs">{{ bottle.price }} ₴ за шт</p>
+
+                      <div class="flex items-center justify-between mt-1">
+                        <div class="flex items-center space-x-1">
+                          <span class="w-5 text-center text-xs text-gray-500">{{ bottle.quantity }} шт</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                          <div class="font-bold text-xs">{{ (bottle.price * bottle.quantity).toFixed(2) }} ₴</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span class="font-medium">{{ bottle.name }}</span>
-                  <div class="text-xs text-gray-500">{{ bottle.price }} ₴ за шт</div>
+
+                <!-- Desktop Layout -->
+                <div class="hidden sm:flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 text-2xl">
+                      🍾
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-sm">{{ bottle.name }}</h3>
+                      <p class="text-gray-600 text-xs">{{ bottle.price }} ₴ за шт</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                      <div class="text-sm text-gray-500">{{ bottle.quantity }} шт</div>
+                      <div class="font-bold text-sm">{{ (bottle.price * bottle.quantity).toFixed(2) }} ₴</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="flex items-center space-x-2">
-                <span class="font-medium">{{ bottle.quantity }} шт</span>
-                <span class="font-bold">{{ (bottle.price * bottle.quantity).toFixed(2) }} ₴</span>
               </div>
             </div>
-          </div>
-          <div class="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
-            * Пляшки автоматично додаються для розливного пива
           </div>
         </div>
 
@@ -236,10 +295,74 @@
             </div>
           </div>
 
+          <!-- Free Delivery Threshold Message -->
+          <div v-if="freeDeliveryThreshold > 0 && subtotal < freeDeliveryThreshold && selectedMethodType === 'delivery'" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center gap-2 text-blue-800">
+              <span>🚚</span>
+              <span class="text-sm font-medium">
+                Витратьте ще {{ (freeDeliveryThreshold - subtotal).toFixed(2) }} ₴ для безплатної доставки!
+              </span>
+            </div>
+          </div>
+
+          <!-- Applied Discounts -->
+          <div v-if="applicableDiscounts.length > 0" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div class="text-sm font-medium text-green-900 mb-2">✅ Застосовані знижки:</div>
+            <div class="space-y-2">
+              <div v-for="discount in applicableDiscounts" :key="discount.id" class="text-sm text-green-800">
+                <!-- First Order Discount -->
+                <div v-if="discount.type === 'first_order'" class="flex justify-between items-center">
+                  <span>🎁 {{ discount.name }} ({{ discount.discount_value }}%):</span>
+                  <span class="font-semibold text-green-600">-{{ calculateDiscountAmount(discount).toFixed(2) }} ₴</span>
+                </div>
+                <!-- Happy Hours Discount -->
+                <div v-else-if="discount.type === 'happy_hours'" class="flex justify-between items-center">
+                  <span>⏰ {{ discount.name }} ({{ discount.discount_value }}%):</span>
+                  <span class="font-semibold text-green-600">-{{ calculateDiscountAmount(discount).toFixed(2) }} ₴</span>
+                </div>
+                <!-- Free Delivery -->
+                <div v-else-if="discount.type === 'free_delivery'" class="flex justify-between items-center">
+                  <span>🚚 Безплатна доставка</span>
+                  <span class="font-semibold text-green-600">Включено!</span>
+                </div>
+                <!-- Fixed Shipping -->
+                <div v-else-if="discount.type === 'fixed_shipping'" class="flex justify-between items-center">
+                  <span>📦 Фіксована доставка (99 ₴)</span>
+                  <span class="font-semibold text-green-600">Включено!</span>
+                </div>
+                <!-- Beer Promo -->
+                <div v-else-if="discount.type === 'beer_promo'" class="flex justify-between items-center">
+                  <span>🍺 {{ discount.name }}</span>
+                  <span class="font-semibold text-green-600">Включено!</span>
+                </div>
+                <!-- Other discounts -->
+                <div v-else class="flex justify-between items-center">
+                  <span>{{ discount.name }}:</span>
+                  <span class="font-semibold text-green-600">-{{ calculateDiscountAmount(discount).toFixed(2) }} ₴</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Available Discounts Promotions -->
+          <div v-if="availableDiscounts.length > 0" class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div class="text-sm font-medium text-amber-900 mb-2">🎉 Доступні знижки:</div>
+            <div class="space-y-2">
+              <div v-for="promo in availableDiscounts" :key="promo.id" class="text-sm text-amber-800 bg-white p-2 rounded">
+                <div class="font-medium">{{ promo.title }}</div>
+                <div class="text-xs text-amber-700">{{ promo.description }}</div>
+              </div>
+            </div>
+          </div>
+
           <div class="space-y-2">
             <div class="flex justify-between">
               <span>{{ $t('cart.subtotal') }}:</span>
               <span>{{ subtotal.toFixed(2) }} ₴</span>
+            </div>
+            <div v-if="totalDiscount > 0" class="flex justify-between text-green-600 font-medium">
+              <span>Знижка:</span>
+              <span>-{{ totalDiscount.toFixed(2) }} ₴</span>
             </div>
             <div v-if="selectedMethodFee > 0" class="flex justify-between">
               <span>{{ $t('cart.deliveryFee') }}:</span>
@@ -247,17 +370,8 @@
             </div>
             <div class="border-t pt-2 flex justify-between font-bold text-lg">
               <span>{{ $t('cart.total') }}:</span>
-              <span>{{ (subtotal + selectedMethodFee).toFixed(2) }} ₴</span>
+              <span>{{ (subtotal - totalDiscount + selectedMethodFee).toFixed(2) }} ₴</span>
             </div>
-          </div>
-
-          <div class="mt-6">
-            <button
-              @click="clearCart"
-              class="w-full btn-outline"
-            >
-              {{ $t('cart.clearCart') }}
-            </button>
           </div>
         </div>
 
@@ -276,6 +390,7 @@ import { useLocationStore } from '@/stores/location'
 import { useBranchStore } from '@/stores/branch'
 import { useNotificationStore } from '@/stores/notification'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import { useDiscountStore } from '@/stores/discount'
 import { getBottleSelectionSummary, getDefaultBottleSelection, getBottleProduct } from '@/utils/bottleUtils'
 import { useProductStore } from '@/stores/product'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
@@ -291,6 +406,7 @@ const branchStore = useBranchStore()
 const notificationStore = useNotificationStore()
 const siteConfigStore = useSiteConfigStore()
 const productStore = useProductStore()
+const discountStore = useDiscountStore()
 
 const { items, totalItems, subtotal, deliveryFee, total, isEmpty } = storeToRefs(cartStore)
 
@@ -312,6 +428,80 @@ const selectedMethod = ref<{
 
 // Computed
 const selectedMethodFee = computed(() => selectedMethod.value?.fee || 0)
+const selectedMethodType = computed(() => selectedMethod.value?.method || null)
+
+// Discount computed properties
+const applicableDiscounts = computed(() => discountStore.applicableDiscounts)
+const totalDiscount = computed(() => {
+  let total = 0
+  for (const discount of applicableDiscounts.value) {
+    total += calculateDiscountAmount(discount)
+  }
+  return total
+})
+
+const freeDeliveryThreshold = computed(() => {
+  const freeDeliveryDiscount = applicableDiscounts.value.find(d => d.type === 'free_delivery')
+  return freeDeliveryDiscount?.min_order_amount || 1500
+})
+
+// Free delivery notification banner
+const freeDeliveryNotification = computed(() => {
+  // Check if free delivery discount is enabled
+  const freeDeliveryDiscount = discountStore.discounts.find(d => d.type === 'free_delivery' && d.enabled)
+  if (!freeDeliveryDiscount) return null
+
+  const threshold = freeDeliveryDiscount.min_order_amount || 1500
+
+  // If already applicable, don't show notification
+  if (subtotal.value >= threshold) return null
+
+  const remaining = threshold - subtotal.value
+  const percentage = (subtotal.value / threshold) * 100
+
+  return {
+    remaining: remaining.toFixed(2),
+    percentage: Math.min(percentage, 100)
+  }
+})
+
+// Available discounts that are not yet applicable (for promotional messages)
+const availableDiscounts = computed(() => {
+  const promos: any[] = []
+
+  // Check for first order discount
+  const firstOrderDiscount = discountStore.discounts.find(d => d.type === 'first_order' && d.enabled)
+  if (firstOrderDiscount && !applicableDiscounts.value.find(d => d.type === 'first_order')) {
+    promos.push({
+      id: 'first_order_promo',
+      title: '🎁 Знижка для нових клієнтів',
+      description: `Отримайте ${firstOrderDiscount.discount_value}% знижку на ваше перше замовлення!`
+    })
+  }
+
+  // Check for happy hours discount
+  const happyHoursDiscount = discountStore.discounts.find(d => d.type === 'happy_hours' && d.enabled)
+  if (happyHoursDiscount && !applicableDiscounts.value.find(d => d.type === 'happy_hours')) {
+    promos.push({
+      id: 'happy_hours_promo',
+      title: '⏰ Щасливі години',
+      description: `${happyHoursDiscount.discount_value}% знижка пн-чт з 10:00 до 17:00`
+    })
+  }
+
+  // Check for free delivery discount
+  const freeDeliveryDiscount = discountStore.discounts.find(d => d.type === 'free_delivery' && d.enabled)
+  if (freeDeliveryDiscount && !applicableDiscounts.value.find(d => d.type === 'free_delivery') && subtotal.value < freeDeliveryThreshold.value) {
+    const remaining = (freeDeliveryThreshold.value - subtotal.value).toFixed(2)
+    promos.push({
+      id: 'free_delivery_promo',
+      title: '🚚 Безплатна доставка',
+      description: `Додайте ще ${remaining} ₴ для безплатної доставки`
+    })
+  }
+
+  return promos
+})
 
 // Methods
 const handleMethodSelected = async (data: any) => {
@@ -605,6 +795,41 @@ const formatItemTotal = (item: any): string => {
   return (item.price * item.quantity).toFixed(2)
 }
 
+// Discount methods
+const calculateDiscountAmount = (discount: any): number => {
+  // For free delivery and fixed shipping, don't show as discount amount
+  // They affect the delivery fee instead
+  if (discount.type === 'free_delivery' || discount.type === 'fixed_shipping') {
+    return 0
+  }
+
+  if (discount.discount_type === 'percentage') {
+    return (subtotal.value * discount.discount_value) / 100
+  } else if (discount.discount_type === 'fixed_amount') {
+    return discount.discount_value
+  }
+  return 0
+}
+
+const loadApplicableDiscounts = async () => {
+  try {
+    // Load all discounts for promotional messages
+    if (discountStore.discounts.length === 0) {
+      await discountStore.getEnabledDiscounts()
+    }
+
+    // Load applicable discounts for current cart
+    await discountStore.getApplicableDiscounts(
+      null, // customerId
+      null, // userId
+      subtotal.value,
+      cartStore.items
+    )
+  } catch (error) {
+    console.error('Error loading discounts:', error)
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   // Force sync bottles on page load to ensure consistency
@@ -612,6 +837,9 @@ onMounted(async () => {
   nextTick(() => {
     forceBottleSync()
   })
+
+  // Load applicable discounts
+  await loadApplicableDiscounts()
 
   // Ensure branches are loaded for delivery method selector
   if (!branchStore.branches.length) {
@@ -639,7 +867,7 @@ onMounted(async () => {
   }
 })
 
-// Watch for changes in cart items to auto-sync bottles
+// Watch for changes in cart items to auto-sync bottles and reload discounts
 watch(() => cartStore.items, (newItems, oldItems) => {
   console.log('👁️ Cart watcher triggered. Items count:', newItems?.length || 0)
 
@@ -647,6 +875,9 @@ watch(() => cartStore.items, (newItems, oldItems) => {
     console.log('⚠️ Missing items data, skipping sync')
     return
   }
+
+  // Reload applicable discounts when cart changes
+  loadApplicableDiscounts()
 
   // Skip auto-sync on checkout page - checkout handles bottle recalculation manually
   if (route.name === 'checkout') {

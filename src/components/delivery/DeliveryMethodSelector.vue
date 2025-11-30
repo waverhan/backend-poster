@@ -312,7 +312,6 @@ const canProceed = computed(() => {
 
 const confirmButtonText = computed(() => {
   if (!selectedMethod.value) return t('checkout.selectMethod')
-  if (selectedMethod.value === 'delivery' && !userLocation.value) return 'Detect Location'
   if (selectedMethod.value === 'pickup' && !selectedPickupBranch.value) return 'Select Branch'
 
   // Different text based on context

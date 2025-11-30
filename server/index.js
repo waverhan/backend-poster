@@ -27,6 +27,8 @@ import likesRouter from './routes/likes.js'
 import aiReviewsRouter from './routes/aiReviews.js'
 import authRouter from './routes/auth.js'
 import userOrdersRouter from './routes/userOrders.js'
+import notFoundErrorsRouter from './routes/notFoundErrors.js'
+import discountsRouter from './routes/discounts.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -119,10 +121,19 @@ app.use((req, res, next) => {
         const transformed = {}
         for (const key in obj) {
           if (key === 'image_url' || key === 'display_image_url') {
-            if (typeof obj[key] === 'string' && obj[key].startsWith('minio://')) {
-              // Convert minio://products/filename to /api/upload/minio-image/filename
-              const filename = obj[key].replace('minio://', '').replace('products/', '')
-              transformed[key] = `/api/upload/minio-image/${filename}`
+            if (typeof obj[key] === 'string') {
+              if (obj[key].startsWith('minio://')) {
+                // Convert minio://products/filename to /api/upload/minio-image/filename
+                const filename = obj[key].replace('minio://', '').replace('products/', '')
+                transformed[key] = `/api/upload/minio-image/${filename}`
+              } else if (obj[key].startsWith('/images/products/')) {
+                // Convert local Railway paths to MinIO endpoint
+                // /images/products/product_57.png -> /api/upload/minio-image/product_57.png
+                const filename = obj[key].replace('/images/products/', '')
+                transformed[key] = `/api/upload/minio-image/${filename}`
+              } else {
+                transformed[key] = obj[key]
+              }
             } else {
               transformed[key] = obj[key]
             }
@@ -179,6 +190,8 @@ app.use('/api/likes', likesRouter)
 app.use('/api/ai-reviews', aiReviewsRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/user', userOrdersRouter)
+app.use('/api/404-errors', notFoundErrorsRouter)
+app.use('/api/discounts', discountsRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -207,6 +220,57 @@ app.get('/api/health', (req, res) => {
     service: 'PWA POS Backend API'
   });
 });
+
+// 404 tracking middleware for frontend routes
+app.use((req, res, next) => {
+  // Skip tracking for static files, API routes, and system files
+  if (req.path.startsWith('/api') ||
+      req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i) ||
+      req.path === '/robots.txt' ||
+      req.path === '/sitemap.xml' ||
+      req.path === '/favicon.ico' ||
+      req.path === '/.well-known' ||
+      req.path.startsWith('/.well-known/')) {
+    return next()
+  }
+
+  // Track 404 error asynchronously (don't wait for it)
+  const getClientIp = () => {
+    return req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+           req.headers['x-real-ip'] ||
+           req.connection.remoteAddress ||
+           req.socket.remoteAddress ||
+           req.ip
+  }
+
+  prisma.notFoundError.findFirst({
+    where: { requested_url: req.path }
+  }).then(existing => {
+    if (existing) {
+      prisma.notFoundError.update({
+        where: { id: existing.id },
+        data: {
+          count: existing.count + 1,
+          last_seen: new Date(),
+          referrer: req.headers.referer || existing.referrer,
+          user_agent: req.headers['user-agent'] || existing.user_agent,
+          ip_address: getClientIp() || existing.ip_address
+        }
+      }).catch(err => console.error('Error updating 404 error:', err))
+    } else {
+      prisma.notFoundError.create({
+        data: {
+          requested_url: req.path,
+          referrer: req.headers.referer,
+          user_agent: req.headers['user-agent'],
+          ip_address: getClientIp()
+        }
+      }).catch(err => console.error('Error creating 404 error:', err))
+    }
+  }).catch(err => console.error('Error tracking 404:', err))
+
+  next()
+})
 
 // 404 handler for API routes only
 app.use('/api/*', (req, res) => {

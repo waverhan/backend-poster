@@ -66,6 +66,7 @@ export interface Category {
   poster_category_id?: string
   name: string
   display_name: string
+  slug?: string // URL-friendly slug for category links
   description?: string
   image_url?: string
   sort_order?: number

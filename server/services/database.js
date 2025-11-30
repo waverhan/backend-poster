@@ -2,6 +2,48 @@ import { prisma } from '../index.js'
 
 export { prisma }
 
+// Helper function to transliterate Cyrillic to Latin characters
+function transliterateCyrillic(text) {
+  const cyrillic = {
+    // Ukrainian and Russian lowercase
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+    'я': 'ya',
+    // Ukrainian-specific lowercase
+    'ґ': 'g', 'є': 'ye', 'і': 'i', 'ї': 'yi',
+    // Ukrainian and Russian uppercase
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh',
+    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
+    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts',
+    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu',
+    'Я': 'Ya',
+    // Ukrainian-specific uppercase
+    'Ґ': 'G', 'Є': 'Ye', 'І': 'I', 'Ї': 'Yi'
+  }
+
+  return text
+    .split('')
+    .map(char => cyrillic[char] || char)
+    .join('')
+}
+
+// Helper function to generate URL-friendly slugs from text
+function generateSlug(text) {
+  if (!text) return ''
+  return transliterateCyrillic(text)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+
+// Export for use in other modules
+export { generateSlug, transliterateCyrillic }
+
 // Categories
 export async function getCategories(includeInactive = false) {
   const where = includeInactive ? {} : { is_active: true }
@@ -21,6 +63,7 @@ export async function getCategories(includeInactive = false) {
     id: cat.id,
     name: cat.name,
     display_name: cat.display_name,
+    slug: cat.slug || generateSlug(cat.display_name),
     description: cat.description || '',
     image_url: cat.image_url || '',
     sort_order: cat.sort_order,
@@ -195,6 +238,7 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       category_id: product.category_id,
       name: product.name,
       display_name: product.display_name,
+      slug: product.slug || generateSlug(product.display_name),
       subtitle: product.subtitle || '',
       description: product.description || '',
       price: displayPrice,

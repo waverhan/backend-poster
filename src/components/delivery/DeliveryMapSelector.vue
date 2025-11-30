@@ -64,16 +64,7 @@
         </div>
       </div>
 
-      <!-- Find on Map Button -->
-      <div class="mb-4">
-        <button
-          @click="findAddressOnMap"
-          :disabled="!streetName || !houseNumber"
-          class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
-        >
-          🔍 Знайти на карті: "{{ searchButtonText }}"
-        </button>
-      </div>
+
     </div>
 
     <!-- Map Container -->
@@ -182,13 +173,7 @@
         </div>
       </div>
 
-      <!-- Confirm Button -->
-      <button
-        @click="confirmDelivery"
-        class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
-      >
-        Підтвердити доставку за {{ deliveryFee }} UAH
-      </button>
+
     </div>
 
     <!-- Branch List (when no address selected) -->
@@ -900,6 +885,21 @@ watch(() => props.initialAddress, (newAddress) => {
     geocodeAddress(newAddress)
   }
 })
+
+// Auto-emit delivery selection when both location and branch are ready
+watch([() => userLocation.value, () => selectedBranch.value], ([location, branch]) => {
+  if (location && branch && deliveryAddress.value) {
+    // Automatically emit the delivery selection
+    const deliveryData = {
+      address: fullDeliveryAddress.value,
+      branch: branch,
+      distance: distance.value,
+      fee: deliveryFee.value,
+      location: location
+    }
+    emit('deliverySelected', deliveryData)
+  }
+}, { deep: true })
 
 // Lifecycle
 onMounted(async () => {

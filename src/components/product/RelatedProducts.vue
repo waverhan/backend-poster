@@ -52,7 +52,8 @@
 
               <!-- Cart Icon Button -->
               <button
-                @click.stop="addToCart(product)"
+                ref="addToCartButtons"
+                @click.stop="handleAddToCart(product, $event)"
                 :disabled="!isProductAvailable(product)"
                 class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
                 :title="isProductAvailable(product) ? 'Додати до кошика' : 'Немає в наявності'"
@@ -73,11 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
-import { useNotificationStore } from '@/stores/notification'
 import { backendApi } from '@/services/backendApi'
 import {
   isDraftBeverage,
@@ -97,10 +97,14 @@ const props = withDefaults(defineProps<Props>(), {
   maxProducts: 4
 })
 
+const emit = defineEmits<{
+  'cart-animation': [data: { startX: number; startY: number }]
+}>()
+
 const router = useRouter()
 const productStore = useProductStore()
 const cartStore = useCartStore()
-const notificationStore = useNotificationStore()
+const addToCartButtons = ref<HTMLButtonElement[]>([])
 
 // Get related products from the same category
 const relatedProducts = computed(() => {
@@ -197,7 +201,22 @@ const handleImageError = (event: Event) => {
 }
 
 const navigateToProduct = (product: Product) => {
-  router.push(`/product/${product.id}`)
+  router.push(`/product/${product.slug || product.id}`)
+}
+
+const handleAddToCart = (product: Product, event: Event) => {
+  if (!isProductAvailable(product)) return
+
+  const button = event.target as HTMLButtonElement
+  const rect = button.getBoundingClientRect()
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+
+  // Emit animation event
+  emit('cart-animation', { startX, startY })
+
+  // Add to cart
+  addToCart(product)
 }
 
 const addToCart = (product: Product) => {
@@ -210,9 +229,6 @@ const addToCart = (product: Product) => {
       const quantity = 1 // Default 1L
       const autoBottles = getDefaultBottleSelection(quantity)
       const bottleCost = calculateBottleCost(autoBottles)
-
-      // Try to get bottle products for cart
-      const bottleCartItems = getBottleCartItems(autoBottles)
 
       // Create cart item for the beverage
       const cartItem: any = {
@@ -232,13 +248,6 @@ const addToCart = (product: Product) => {
       cartItem.bottle_cost = bottleCost
 
       cartStore.addItem(cartItem)
-
-      notificationStore.add({
-        type: 'success',
-        title: 'Товар додано',
-        message: `${product.display_name || product.name} (${quantity}L) з пляшками додано до кошика`,
-        duration: 2000
-      })
     } else {
       // Regular product (non-draft) or bottled product
       cartStore.addItem({
@@ -251,22 +260,9 @@ const addToCart = (product: Product) => {
         unit: product.unit || 'шт',
         max_quantity: product.max_quantity
       })
-
-      notificationStore.add({
-        type: 'success',
-        title: 'Товар додано',
-        message: `${product.display_name || product.name} додано до кошика`,
-        duration: 2000
-      })
     }
   } catch (error) {
     console.error('Failed to add product to cart:', error)
-    notificationStore.add({
-      type: 'error',
-      title: 'Помилка',
-      message: 'Не вдалося додати товар до кошика',
-      duration: 3000
-    })
   }
 }
 </script>

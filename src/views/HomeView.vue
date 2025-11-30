@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Promotion Popup Slider -->
+    <PromotionPopupSlider />
+
     <!-- Banner Slider -->
     <BannerSlider />
 
@@ -180,6 +183,7 @@ import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useBannerStore } from '@/stores/banners'
 import { useAuthStore } from '@/stores/auth'
 import BannerSlider from '@/components/BannerSlider.vue'
+import PromotionPopupSlider from '@/components/PromotionPopupSlider.vue'
 import AdminLogin from '@/components/auth/AdminLogin.vue'
 
 const route = useRoute()

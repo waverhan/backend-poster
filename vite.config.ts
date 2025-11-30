@@ -6,6 +6,25 @@ import { fileURLToPath, URL } from 'node:url'
 export default defineConfig({
   plugins: [
     vue(),
+    {
+      name: 'defer-css',
+      apply: 'build',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        // Transform CSS links to defer loading
+        return html.replace(
+          /<link([^>]*?)rel="stylesheet"([^>]*?)>/g,
+          (match, before, after) => {
+            // Check if it's already deferred or preload
+            if (match.includes('media=') || match.includes('onload=')) {
+              return match
+            }
+            // Defer the CSS by using media="print" and onload to switch to "all"
+            return `<link${before}rel="stylesheet"${after} media="print" onload="this.media='all'"><noscript><link${before}rel="stylesheet"${after}></noscript>`
+          }
+        )
+      }
+    },
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -157,23 +176,39 @@ export default defineConfig({
     // Optimize chunk sizes
     rollupOptions: {
       output: {
-        // Split vendor code into separate chunk
-        manualChunks: {
-          'vendor': [
-            'vue',
-            'vue-router',
-            'pinia',
-            'axios'
-          ],
-          'ui-components': [
-            'leaflet',
-            'workbox-window'
-          ]
-        },
         // Optimize chunk naming for better caching
         chunkFileNames: 'assets/[name]-[hash].js',
         entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]'
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        // Manual chunk splitting for better code splitting
+        manualChunks(id) {
+          // Split vendor libraries into separate chunks
+          if (id.includes('node_modules')) {
+            if (id.includes('vue')) {
+              return 'vue'
+            }
+            if (id.includes('pinia')) {
+              return 'pinia'
+            }
+            if (id.includes('vue-router')) {
+              return 'vue-router'
+            }
+            if (id.includes('axios') || id.includes('fetch')) {
+              return 'http'
+            }
+            if (id.includes('leaflet') || id.includes('openstreetmap')) {
+              return 'maps'
+            }
+            if (id.includes('chart') || id.includes('echarts')) {
+              return 'charts'
+            }
+            // Group other vendors
+            return 'vendor'
+          }
+
+          // Keep everything else in shared chunks to avoid circular dependencies
+          // Views, stores, services, and components stay together
+        }
       }
     }
   }

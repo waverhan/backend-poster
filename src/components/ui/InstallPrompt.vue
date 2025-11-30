@@ -1,76 +1,132 @@
 <template>
   <Transition
     enter-active-class="transition-all duration-300 ease-out"
-    enter-from-class="transform translate-y-full opacity-0"
-    enter-to-class="transform translate-y-0 opacity-100"
+    enter-from-class="transform scale-95 opacity-0"
+    enter-to-class="transform scale-100 opacity-100"
     leave-active-class="transition-all duration-200 ease-in"
-    leave-from-class="transform translate-y-0 opacity-100"
-    leave-to-class="transform translate-y-full opacity-0"
+    leave-from-class="transform scale-100 opacity-100"
+    leave-to-class="transform scale-95 opacity-0"
   >
-    <div
-      v-if="showPrompt"
-      class="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-red-700 to-red-600 text-white shadow-2xl border-t-4 border-yellow-400"
-      style="margin-bottom: env(safe-area-inset-bottom, 0px);"
-    >
-      <div class="px-4 py-4 max-w-md mx-auto">
-        <div class="flex items-start space-x-3">
-          <!-- Opillia Logo -->
-          <div class="flex-shrink-0">
-            <img 
-              src="/opillia-192x192.png" 
-              alt="Опілля" 
-              class="w-12 h-12 rounded-lg shadow-md"
-            />
-          </div>
-          
-          <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <h3 class="text-lg font-bold text-white mb-1">
-              Додайте Опілля на головний екран!
-            </h3>
-            <p class="text-red-100 text-sm mb-3 leading-relaxed">
-              Швидкий доступ до найкращих напоїв та делікатесів прямо з вашого телефону
-            </p>
-            
-            <!-- Action Buttons -->
-            <div class="flex space-x-2">
-              <button
-                @click="installApp"
-                class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-red-900 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 text-sm"
-              >
-                📱 Додати на екран
-              </button>
-              <button
-                @click="dismissPrompt"
-                class="px-3 py-2 text-red-200 hover:text-white transition-colors duration-200"
-              >
-                ✕
-              </button>
-            </div>
+    <div v-if="showPrompt" class="fixed inset-0 z-50 flex items-center justify-center p-4 safe-area">
+      <!-- Backdrop -->
+      <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="dismissPrompt"></div>
 
-            <!-- Debug info (remove in production) -->
-            <div class="mt-2 text-xs text-red-200 opacity-75">
-              {{ isIOS ? 'iOS' : isAndroid ? 'Android' : 'Other' }} |
-              {{ deferredPrompt ? 'Native' : 'Manual' }} |
-              {{ isStandalone ? 'Standalone' : 'Browser' }}
+      <!-- Modal Card - Like FoodAppi -->
+      <div class="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden">
+        <!-- Header with gradient background -->
+        <div class="bg-gradient-to-br from-red-600 via-red-700 to-red-800 px-6 pt-6 pb-4">
+          <div class="flex items-start justify-between">
+            <div class="flex items-center gap-3">
+              <img
+                src="/opillia-192x192.png"
+                alt="Опілля"
+                class="w-14 h-14 rounded-2xl shadow-lg"
+              />
+              <div>
+                <h2 class="text-xl font-bold text-white">Опілля</h2>
+                <p class="text-red-100 text-xs">PWA Магазин</p>
+              </div>
             </div>
+            <button
+              @click="dismissPrompt"
+              class="text-red-200 hover:text-white transition-colors"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-        
-        <!-- iOS Instructions -->
-        <div v-if="isIOS && !isStandalone" class="mt-4 pt-3 border-t border-red-500">
-          <p class="text-red-100 text-xs mb-2">
-            📱 <strong>Для iPhone/iPad:</strong>
+
+        <!-- Content -->
+        <div class="px-6 py-6">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Додайте на головний екран?
+          </h3>
+          <p class="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
+            Швидкий доступ до найкращих напоїв та делікатесів прямо з вашого телефону. Працює без інтернету!
           </p>
-          <div class="flex items-center space-x-2 text-xs text-red-100">
-            <span>1. Натисніть</span>
-            <div class="bg-red-800 px-2 py-1 rounded">
-              <svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 6L9 7h2l-1-1zM6 10l1-1v2l-1-1zm8 0l-1 1V9l1 1zm-4 4l1-1H9l1 1z"/>
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
-              </svg>
+
+          <!-- Features -->
+          <div class="space-y-3 mb-6">
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <svg class="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <span class="text-sm text-gray-700 dark:text-gray-300">Швидкий доступ з екрана</span>
             </div>
-            <span>2. "Додати на головний екран"</span>
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <svg class="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <span class="text-sm text-gray-700 dark:text-gray-300">Працює без інтернету</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <svg class="w-3 h-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <span class="text-sm text-gray-700 dark:text-gray-300">Миттєве завантаження</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3">
+            <button
+              @click="dismissPrompt"
+              class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+            >
+              Скасувати
+            </button>
+            <button
+              @click="installApp"
+              class="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Встановити
+            </button>
+          </div>
+
+          <!-- iOS Instructions -->
+          <div v-if="isIOS && !isStandalone" class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">
+              📱 Для iPhone/iPad:
+            </p>
+            <ol class="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+              <li class="flex gap-2">
+                <span class="font-semibold flex-shrink-0">1.</span>
+                <span>Натисніть кнопку "Поділитися" (квадрат зі стрілкою)</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="font-semibold flex-shrink-0">2.</span>
+                <span>Прокрутіть вниз і виберіть "Додати на головний екран"</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="font-semibold flex-shrink-0">3.</span>
+                <span>Натисніть "Додати" у верхньому правому куті</span>
+              </li>
+            </ol>
+          </div>
+
+          <!-- macOS Instructions -->
+          <div v-if="isMacOS && !isStandalone" class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">
+              🖥️ Для macOS:
+            </p>
+            <ol class="space-y-2 text-xs text-gray-600 dark:text-gray-400">
+              <li class="flex gap-2">
+                <span class="font-semibold flex-shrink-0">1.</span>
+                <span>Натисніть меню браузера (⋮ або ⌘)</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="font-semibold flex-shrink-0">2.</span>
+                <span>Виберіть "Додати Опілля на Dock"</span>
+              </li>
+            </ol>
           </div>
         </div>
       </div>
@@ -90,36 +146,50 @@ const isIOS = computed(() => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent)
 })
 
+const isAndroid = computed(() => {
+  return /Android/.test(navigator.userAgent)
+})
+
+const isMacOS = computed(() => {
+  return /Macintosh|Mac OS X/.test(navigator.userAgent) && !isIOS.value
+})
+
 const isStandalone = computed(() => {
   return window.matchMedia('(display-mode: standalone)').matches ||
          (window.navigator as any).standalone === true
 })
 
-const isAndroid = computed(() => {
-  return /Android/.test(navigator.userAgent)
-})
-
 // Check if app should show install prompt
 const shouldShowPrompt = () => {
   // Don't show if already installed
-  if (isStandalone.value) return false
-  
-  // Don't show if user dismissed recently (within 1 day for testing)
+  if (isStandalone.value) {
+    console.log('✅ App already installed (standalone mode)')
+    return false
+  }
+
+  // Don't show if user dismissed recently (within 7 days)
   const dismissed = localStorage.getItem('installPromptDismissed')
   if (dismissed) {
     const dismissedDate = new Date(dismissed)
-    const dayAgo = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-    if (dismissedDate > dayAgo) return false
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    if (dismissedDate > weekAgo) {
+      console.log('⏳ User dismissed prompt recently')
+      return false
+    }
   }
 
-  // Don't show if user already installed (within 7 days for testing)
+  // Don't show if user already installed (within 30 days)
   const installed = localStorage.getItem('appInstalled')
   if (installed) {
     const installedDate = new Date(installed)
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    if (installedDate > weekAgo) return false
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    if (installedDate > monthAgo) {
+      console.log('✅ User already installed app recently')
+      return false
+    }
   }
-  
+
+  console.log('✅ Should show install prompt')
   return true
 }
 
@@ -165,18 +235,23 @@ const installApp = async () => {
 
 // Show manual installation instructions
 const showManualInstructions = () => {
-  alert(`📱 Додати на головний екран:
+  let instructions = `📱 Додати на головний екран:\n\n`
 
-🤖 Android (Chrome):
-1. Натисніть меню (⋮) у браузері
-2. Виберіть "Додати на головний екран"
+  if (isAndroid.value) {
+    instructions += `🤖 Android (Chrome):\n1. Натисніть меню (⋮) у браузері\n2. Виберіть "Додати на головний екран"\n\n`
+  }
 
-🍎 iPhone/iPad (Safari):
-1. Натисніть кнопку "Поділитися" (□↗)
-2. Виберіть "Додати на головний екран"
+  if (isIOS.value) {
+    instructions += `🍎 iPhone/iPad (Safari):\n1. Натисніть кнопку "Поділитися" (□↗)\n2. Виберіть "Додати на головний екран"\n\n`
+  }
 
-🌐 Інші браузери:
-Скористайтеся функцією "Додати закладку" або "Додати на головний екран" у меню браузера.`)
+  if (isMacOS.value) {
+    instructions += `🖥️ macOS:\n1. Натисніть меню браузера (⋮ або ⌘)\n2. Виберіть "Додати на Dock"\n\n`
+  }
+
+  instructions += `🌐 Інші браузери:\nСкористайтеся функцією "Додати закладку" або "Додати на головний екран" у меню браузера.`
+
+  alert(instructions)
 
   showPrompt.value = false
   localStorage.setItem('installPromptDismissed', new Date().toISOString())
@@ -219,6 +294,7 @@ onMounted(() => {
   console.log('📱 Device detection:', {
     isIOS: isIOS.value,
     isAndroid: isAndroid.value,
+    isMacOS: isMacOS.value,
     isStandalone: isStandalone.value,
     userAgent: navigator.userAgent
   })

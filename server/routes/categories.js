@@ -4,22 +4,133 @@ import { prisma } from '../index.js'
 
 const router = express.Router()
 
+// Helper function to transliterate Cyrillic to Latin characters
+function transliterateCyrillic(text) {
+  const cyrillic = {
+    // Ukrainian and Russian lowercase
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+    'я': 'ya',
+    // Ukrainian-specific lowercase
+    'ґ': 'g', 'є': 'ye', 'і': 'i', 'ї': 'yi',
+    // Ukrainian and Russian uppercase
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh',
+    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
+    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts',
+    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu',
+    'Я': 'Ya',
+    // Ukrainian-specific uppercase
+    'Ґ': 'G', 'Є': 'Ye', 'І': 'I', 'Ї': 'Yi'
+  }
+
+  return text
+    .split('')
+    .map(char => cyrillic[char] || char)
+    .join('')
+}
+
+// Helper function to generate slug
+function generateSlug(text) {
+  if (!text) return ''
+  return transliterateCyrillic(text)
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+
 // GET /api/categories
 router.get('/', async (req, res) => {
   try {
     const includeInactive = req.query.includeInactive === 'true'
+    console.log(`📥 GET /api/categories - includeInactive: ${includeInactive}`)
+
     const categories = await getCategories(includeInactive)
+
+    console.log(`✅ Fetched ${categories.length} categories from database`)
+    if (categories.length === 0) {
+      console.warn('⚠️ WARNING: No categories found in database!')
+      console.warn('⚠️ Check if categories are synced and marked as is_active: true')
+    }
+
     res.json(categories)
   } catch (error) {
-    console.error('Error fetching categories:', error)
+    console.error('❌ Error fetching categories:', error)
     res.status(500).json({ error: 'Failed to fetch categories' })
+  }
+})
+
+// GET /api/categories/debug/count - Debug endpoint to check category count
+router.get('/debug/count', async (req, res) => {
+  try {
+    const totalCount = await prisma.category.count()
+    const activeCount = await prisma.category.count({ where: { is_active: true } })
+    const inactiveCount = await prisma.category.count({ where: { is_active: false } })
+
+    const allCategories = await prisma.category.findMany({
+      select: { id: true, name: true, display_name: true, is_active: true, sort_order: true }
+    })
+
+    console.log(`📊 Category Debug Info:`)
+    console.log(`   Total: ${totalCount}`)
+    console.log(`   Active: ${activeCount}`)
+    console.log(`   Inactive: ${inactiveCount}`)
+    console.log(`   All categories:`, allCategories)
+
+    res.json({
+      total: totalCount,
+      active: activeCount,
+      inactive: inactiveCount,
+      categories: allCategories
+    })
+  } catch (error) {
+    console.error('❌ Debug error:', error)
+    res.status(500).json({ error: 'Debug failed', message: error.message })
+  }
+})
+
+// POST /api/categories/generate-slugs - Generate missing slugs
+router.post('/generate-slugs', async (req, res) => {
+  try {
+    console.log('🔄 Generating missing category slugs...')
+
+    // Get all categories
+    const categories = await prisma.category.findMany()
+
+    console.log(`📝 Found ${categories.length} total categories`)
+
+    let updated = 0
+    for (const category of categories) {
+      const slug = generateSlug(category.display_name)
+      if (slug && (!category.slug || category.slug === '')) {
+        await prisma.category.update({
+          where: { id: category.id },
+          data: { slug }
+        })
+        console.log(`✅ Generated slug for "${category.display_name}": ${slug}`)
+        updated++
+      }
+    }
+
+    res.json({
+      message: `Generated ${updated} slugs`,
+      updated,
+      total: categories.length
+    })
+  } catch (error) {
+    console.error('❌ Error generating slugs:', error)
+    res.status(500).json({ error: 'Failed to generate slugs' })
   }
 })
 
 // POST /api/categories
 router.post('/', async (req, res) => {
   try {
-    
+
 
     const { name, display_name, description, image_url, sort_order, is_active } = req.body
 
@@ -34,12 +145,14 @@ router.post('/', async (req, res) => {
       ? name.trim()
       : display_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
 
-    
+    // Generate slug from display_name
+    const slug = generateSlug(display_name)
 
     const category = await prisma.category.create({
       data: {
         name: categoryName,
         display_name: display_name.trim(),
+        slug: slug || null,
         description: description || null,
         image_url: image_url || null,
         sort_order: sort_order || 0,
@@ -118,7 +231,15 @@ router.put('/:id', async (req, res) => {
     // Prepare update data, filtering out undefined values and validating types
     const updateData = {}
     if (name !== undefined) updateData.name = name
-    if (display_name !== undefined) updateData.display_name = display_name
+    if (display_name !== undefined) {
+      updateData.display_name = display_name
+      // Generate new slug when display_name changes
+      const newSlug = generateSlug(display_name)
+      // Only update slug if it's different from current slug to avoid unique constraint issues
+      if (newSlug && newSlug !== existingCategory.slug) {
+        updateData.slug = newSlug
+      }
+    }
     if (description !== undefined) updateData.description = description
     if (image_url !== undefined) updateData.image_url = image_url
     if (sort_order !== undefined) {
@@ -136,6 +257,8 @@ router.put('/:id', async (req, res) => {
       updateData.sort_order = sortOrderNum
     }
     if (is_active !== undefined) updateData.is_active = is_active
+
+    console.log(`📝 Final update data:`, updateData)
 
     const category = await prisma.category.update({
       where: { id },
@@ -162,6 +285,7 @@ router.put('/:id', async (req, res) => {
     }
 
     
+    console.log(`✅ Category updated successfully: ${id}`)
     res.json(formattedCategory)
   } catch (error) {
     console.error('❌ Error updating category:', error)
@@ -176,6 +300,21 @@ router.put('/:id', async (req, res) => {
       body: req.body,
       headers: req.headers
     })
+
+    // Handle specific Prisma errors
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0] || 'field'
+      console.error(`❌ Unique constraint violation on field: ${field}`)
+      return res.status(400).json({
+        error: `A category with this ${field} already exists`,
+        field: field
+      })
+    }
+
+    if (error.code === 'P2000') {
+      return res.status(400).json({ error: 'Invalid data provided' })
+    }
+
     res.status(500).json({
       error: 'Failed to update category',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,

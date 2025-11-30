@@ -4,6 +4,13 @@
 **Version: 1.0**
 **Date: May 22, 2025**
 
+## ⚠️ DEPLOYMENT DIRECTIVE
+**IMPORTANT: Backend code is in the `/server` directory. When deploying to Railway, use:**
+```bash
+cd /server && railway up
+```
+**DO NOT deploy from the root directory. The `/server` folder contains the NestJS backend, Prisma migrations, and Railway configuration.**
+
 ## 1. Document Header
 
 (Included above)

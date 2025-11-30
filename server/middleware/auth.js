@@ -11,15 +11,29 @@ export const authenticateToken = async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1] // Bearer TOKEN
 
     if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Access token required' 
+      return res.status(401).json({
+        success: false,
+        error: 'Access token required'
       })
     }
 
-    // Verify the token
+    // Check if it's an admin token (starts with 'admin_token_')
+    if (token.startsWith('admin_token_')) {
+      // Admin token - create a mock admin user
+      req.user = {
+        id: 'admin',
+        phone: '+380973244668',
+        name: 'Administrator',
+        email: 'admin@opillia.com.ua',
+        role: 'admin',
+        poster_client_id: null
+      }
+      return next()
+    }
+
+    // Verify the JWT token
     const decoded = jwt.verify(token, JWT_SECRET)
-    
+
     // Get user from database to ensure they still exist
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -34,9 +48,9 @@ export const authenticateToken = async (req, res, next) => {
     })
 
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'User not found' 
+      return res.status(401).json({
+        success: false,
+        error: 'User not found'
       })
     }
 
@@ -46,24 +60,24 @@ export const authenticateToken = async (req, res, next) => {
 
   } catch (error) {
     console.error('❌ Token verification failed:', error)
-    
+
     if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Token expired' 
-      })
-    }
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Invalid token' 
+      return res.status(401).json({
+        success: false,
+        error: 'Token expired'
       })
     }
 
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Authentication failed' 
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid token'
+      })
+    }
+
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication failed'
     })
   }
 }
@@ -95,6 +109,20 @@ export const optionalAuth = async (req, res, next) => {
 
     if (!token) {
       req.user = null
+      return next()
+    }
+
+    // Check if it's an admin token (starts with 'admin_token_')
+    if (token.startsWith('admin_token_')) {
+      // Admin token - create a mock admin user
+      req.user = {
+        id: 'admin',
+        phone: '+380973244668',
+        name: 'Administrator',
+        email: 'admin@opillia.com.ua',
+        role: 'admin',
+        poster_client_id: null
+      }
       return next()
     }
 

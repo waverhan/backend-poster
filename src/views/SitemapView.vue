@@ -108,11 +108,11 @@
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div v-for="category in categories" :key="category.id" class="text-sm">
-            <router-link 
-              :to="`/shop?category=${category.id}`" 
+            <router-link
+              :to="`/shop?category=${category.slug || category.id}`"
               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              {{ category.name }}
+              {{ category.display_name }}
             </router-link>
           </div>
         </div>
@@ -125,14 +125,34 @@
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div v-for="product in popularProducts" :key="product.id" class="text-sm">
-            <router-link 
-              :to="`/product/${product.id}`" 
+            <router-link
+              :to="`/product/${product.slug || product.id}`"
               class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              {{ product.name }}
+              {{ product.display_name }}
             </router-link>
           </div>
         </div>
+      </div>
+
+      <!-- All Products -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8" v-if="allProducts.length > 0">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          📦 Всі товари ({{ allProducts.length }})
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+          <div v-for="product in allProducts" :key="product.id" class="text-sm">
+            <router-link
+              :to="`/product/${product.slug || product.id}`"
+              class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 truncate"
+            >
+              {{ product.display_name }}
+            </router-link>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+          Показано перші 100 товарів. Повний список доступний у XML Sitemap.
+        </p>
       </div>
 
       <!-- Technical Links -->
@@ -238,6 +258,7 @@ const { categories } = storeToRefs(productStore)
 
 // Local state
 const popularProducts = ref<Product[]>([])
+const allProducts = ref<Product[]>([])
 const isGenerating = ref(false)
 
 // Methods
@@ -283,10 +304,15 @@ const loadData = async () => {
   try {
     // Load categories
     await productStore.fetchCategories()
-    
-    // Load popular products (first 12 active products)
+
+    // Load all products
     await productStore.fetchProducts()
+
+    // Set popular products (first 12 active products)
     popularProducts.value = productStore.products.slice(0, 12)
+
+    // Set all products (first 100 for display, full list in XML sitemap)
+    allProducts.value = productStore.products.slice(0, 100)
   } catch (error) {
     console.error('Error loading sitemap data:', error)
   }

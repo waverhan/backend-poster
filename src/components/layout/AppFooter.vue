@@ -37,6 +37,11 @@
                 🔒 Політика приватності
               </router-link>
             </li>
+            <li>
+              <router-link to="/vacancies" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                💼 Вакансії
+              </router-link>
+            </li>
           </ul>
         </div>
 
@@ -85,6 +90,16 @@
             <li>
               <a :href="`tel:${siteConfig.company_phone}`" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
                 📞 {{ siteConfig.company_phone }}
+              </a>
+            </li>
+            <li>
+              <a href="viber://chat?number=%2B380973244668" class="text-sm text-gray-600 hover:text-purple-600 transition-colors">
+                💜 Viber
+              </a>
+            </li>
+            <li>
+              <a href="https://t.me/opillia_shop" target="_blank" rel="noopener noreferrer" class="text-sm text-gray-600 hover:text-blue-500 transition-colors">
+                📱 Telegram
               </a>
             </li>
             <li>

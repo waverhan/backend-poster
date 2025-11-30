@@ -3,6 +3,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import sharp from 'sharp'
 import { minioService } from '../services/minioService.js'
 
 const router = express.Router()
@@ -92,31 +93,64 @@ router.get('/minio-image/:filename', async (req, res) => {
     const { filename } = req.params
     const { w } = req.query // width parameter for responsive images
 
-    // Get presigned URL from MinIO
-    let url = await minioService.getImageUrl(`products/${filename}`)
+    // Set cache headers for long-term caching (images are immutable)
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET')
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
 
-    if (url) {
-      // If width parameter is provided, add it to the URL for image resizing
-      // MinIO can handle image resizing via query parameters if configured
-      if (w) {
-        // Add width parameter to presigned URL for responsive image serving
-        const separator = url.includes('?') ? '&' : '?'
-        url = `${url}${separator}w=${w}`
-      }
+    // Get presigned URL from MinIO (without any query parameters)
+    const url = await minioService.getImageUrl(`products/${filename}`)
 
-      // Add cache headers for long-term caching (images are immutable)
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
-      res.setHeader('Access-Control-Allow-Origin', '*')
-      res.setHeader('Access-Control-Allow-Methods', 'GET')
-      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
-
-      // Redirect to MinIO presigned URL
-      res.redirect(url)
-    } else {
-      res.status(404).json({ error: 'Image not found' })
+    if (!url) {
+      console.warn(`❌ Image not found in MinIO: ${filename}`)
+      return res.status(404).json({ error: 'Image not found' })
     }
+
+    // Fetch the image from MinIO
+    console.log(`📁 Fetching image from MinIO: ${filename}${w ? ` (width: ${w}px)` : ''}`)
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      console.warn(`❌ Failed to fetch image from MinIO: ${response.status}`)
+      return res.status(response.status).json({ error: 'Failed to fetch image' })
+    }
+
+    // Get image buffer
+    const buffer = await response.arrayBuffer()
+    let imageBuffer = Buffer.from(buffer)
+
+    // Resize image if width parameter is provided
+    if (w) {
+      const width = parseInt(w, 10)
+      if (width > 0 && width < 2000) { // Reasonable width range
+        try {
+          console.log(`🔄 Resizing image to ${width}px width`)
+          imageBuffer = await sharp(imageBuffer)
+            .resize(width, width, {
+              fit: 'cover',
+              withoutEnlargement: true
+            })
+            .webp({ quality: 80 }) // Convert to WebP for better compression
+            .toBuffer()
+
+          res.setHeader('Content-Type', 'image/webp')
+        } catch (resizeError) {
+          console.warn(`⚠️  Failed to resize image, serving original:`, resizeError.message)
+          const contentType = response.headers.get('content-type') || 'image/png'
+          res.setHeader('Content-Type', contentType)
+        }
+      }
+    } else {
+      // No resize, serve original
+      const contentType = response.headers.get('content-type') || 'image/png'
+      res.setHeader('Content-Type', contentType)
+    }
+
+    // Send the image
+    res.send(imageBuffer)
   } catch (error) {
-    console.error('Error serving MinIO image:', error)
+    console.error('Error serving image:', error)
     res.status(500).json({ error: 'Failed to serve image' })
   }
 })

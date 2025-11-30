@@ -221,6 +221,54 @@ router.get('/test-email', async (req, res) => {
   }
 })
 
+// Diagnostic endpoint for SMTP connection
+router.get('/debug/smtp-test', async (req, res) => {
+  try {
+    console.log('🔍 Testing SMTP connection...')
+
+    const smtpConfig = {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS ? '***' : 'NOT SET'
+    }
+
+    console.log('📧 SMTP Configuration:', smtpConfig)
+
+    // Try to verify the transporter
+    if (emailService.transporter) {
+      emailService.transporter.verify((error, success) => {
+        if (error) {
+          console.error('❌ SMTP verification failed:', error.message)
+          res.json({
+            success: false,
+            message: 'SMTP connection failed',
+            error: error.message,
+            code: error.code,
+            config: smtpConfig
+          })
+        } else {
+          console.log('✅ SMTP connection successful')
+          res.json({
+            success: true,
+            message: 'SMTP connection successful',
+            config: smtpConfig
+          })
+        }
+      })
+    } else {
+      res.json({
+        success: false,
+        message: 'Email service not initialized',
+        config: smtpConfig
+      })
+    }
+  } catch (error) {
+    console.error('❌ Error testing SMTP:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // GET /api/orders/:id - Get specific order
 router.get('/:id', async (req, res) => {
   try {

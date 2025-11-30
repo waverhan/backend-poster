@@ -13,20 +13,20 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
   const defaultConfig: Omit<SiteConfig, 'id' | 'created_at' | 'updated_at'> = {
     // Branding
     site_name: 'Опілля',
-    site_description: 'Найкращі напої та делікатеси з доставкою по Києву',
+    site_description: 'Найкращі напої з доставкою по Києву',
     logo_url: '/logo.png',
     favicon_url: '/favicon.ico',
 
     // SEO
-    seo_title: 'Опілля - Найкращі напої та делікатеси з доставкою по Києву',
-    seo_description: 'Замовляйте найкращі напої, сири, м\'ясо та делікатеси з доставкою по Києву. Швидка доставка, свіжі продукти, AI-помічник для вибору.',
-    seo_keywords: 'напої, сир, м\'ясо, делікатеси, доставка, Київ, пиво, вино, крафт, Опілля',
+    seo_title: 'Опілля - Найкращі напої з доставкою',
+    seo_description: 'Замовляйте найкращі напої з доставкою по Києву. Швидка доставка, свіжі продукти, AI-помічник для вибору.',
+    seo_keywords: 'напої, доставка, Київ, пиво, вино, крафт, Опілля',
     og_image_url: '/og-image.jpg',
 
     // Homepage
     homepage_type: 'landing' as const, // Default to landing page
-    hero_title: 'Найкращі напої та делікатеси',
-    hero_subtitle: 'Швидка доставка свіжих продуктів по Києву з AI-помічником для вибору',
+    hero_title: 'Найкращі напої з доставкою',
+    hero_subtitle: 'Швидка доставка свіжих напоїв по Києву з AI-помічником для вибору',
     hero_banner_url: '/hero-banner.jpg',
     hero_cta_text: 'Почати покупки',
 

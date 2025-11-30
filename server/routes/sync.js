@@ -1966,4 +1966,91 @@ router.post('/migrate-images-to-minio', async (req, res) => {
   }
 })
 
+// POST /api/sync/auto-sync-images - Automatically sync all product images to MinIO
+// This endpoint ensures all products have MinIO URLs in the database
+router.post('/auto-sync-images', async (req, res) => {
+  try {
+    console.log('🔄 Starting automatic image sync to MinIO...')
+
+    // Get all products with image URLs
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { display_image_url: { not: null } },
+          { image_url: { not: null } }
+        ]
+      },
+      select: {
+        id: true,
+        poster_product_id: true,
+        name: true,
+        display_image_url: true,
+        image_url: true
+      }
+    })
+
+    console.log(`📦 Found ${products.length} products to process`)
+
+    let updatedCount = 0
+    let skippedCount = 0
+    let errorCount = 0
+
+    for (const product of products) {
+      try {
+        const currentUrl = product.display_image_url || product.image_url
+
+        // Skip if already has MinIO URL
+        if (currentUrl && currentUrl.startsWith('minio://')) {
+          skippedCount++
+          continue
+        }
+
+        // Try to upload local image to MinIO
+        const minioUrl = await imageService.uploadLocalImageToMinIO(product.poster_product_id)
+
+        if (minioUrl) {
+          // Update product with MinIO URL
+          await prisma.product.update({
+            where: { id: product.id },
+            data: {
+              image_url: minioUrl,
+              display_image_url: minioUrl
+            }
+          })
+          updatedCount++
+          console.log(`✅ Updated ${product.name} to MinIO`)
+        } else {
+          // No local image found, keep current URL
+          skippedCount++
+        }
+      } catch (error) {
+        console.error(`❌ Error processing ${product.name}:`, error.message)
+        errorCount++
+      }
+    }
+
+    const result = {
+      success: true,
+      message: 'Automatic image sync completed',
+      stats: {
+        total_products: products.length,
+        updated: updatedCount,
+        skipped: skippedCount,
+        errors: errorCount
+      }
+    }
+
+    console.log('🎉 Automatic image sync completed:', result.stats)
+    res.json(result)
+
+  } catch (error) {
+    console.error('❌ Automatic image sync failed:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Automatic image sync failed',
+      message: error.message
+    })
+  }
+})
+
 export default router

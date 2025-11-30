@@ -1,56 +1,70 @@
 <template>
-  <div class="mobile-bottom-nav">
-    <!-- Main Navigation Bar -->
-    <nav class="mobile-nav-bar">
-      <!-- Menu Button -->
-      <button
-        @click="toggleMenu"
-        class="nav-item"
-        :class="{ active: showMenu }"
-      >
-        <div class="nav-icon">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </div>
-        <span class="nav-label">{{ $t('nav.menu') }}</span>
-      </button>
+  <div>
+    <!-- Mobile Bottom Navigation Bar -->
+    <div class="mobile-bottom-nav">
+      <!-- Main Navigation Bar -->
+      <nav class="mobile-nav-bar">
+        <!-- Menu Button -->
+        <button
+          @click="toggleMenu"
+          class="nav-item"
+          :class="{ active: showMenu }"
+        >
+          <div class="nav-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </div>
+          <span class="nav-label">{{ $t('nav.menu') }}</span>
+        </button>
 
-      <!-- Shop Button -->
-      <router-link to="/shop" class="nav-item">
-        <div class="nav-icon">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-        </div>
-        <span class="nav-label">{{ $t('nav.shop') }}</span>
-      </router-link>
+        <!-- Shop Button -->
+        <router-link to="/shop" class="nav-item">
+          <div class="nav-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+          <span class="nav-label">{{ $t('nav.shop') }}</span>
+        </router-link>
 
-      <!-- Search Button -->
-      <button @click="openSearch" class="nav-item">
-        <div class="nav-icon">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <span class="nav-label">{{ $t('nav.search', 'Пошук') }}</span>
-      </button>
+        <!-- Cart Button -->
+        <router-link to="/cart" class="nav-item">
+          <div class="nav-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+            </svg>
+            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
+          </div>
+          <span class="nav-label">{{ $t('nav.cart') }}</span>
+        </router-link>
 
-      <!-- Cart Button -->
-      <router-link to="/cart" class="nav-item">
-        <div class="nav-icon">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-          </svg>
-          <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
-        </div>
-        <span class="nav-label">{{ $t('nav.cart') }}</span>
-      </router-link>
+        <!-- Account Button -->
+        <button @click="toggleAccount" class="nav-item" :class="{ active: showAccount }">
+          <div class="nav-icon">
+            <div v-if="isAuthenticated" class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+              {{ userInitials }}
+            </div>
+            <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+          </div>
+          <span class="nav-label">{{ $t('nav.account', 'Аккаунт') }}</span>
+        </button>
 
+        <!-- Search Button -->
+        <button @click="openSearch" class="nav-item">
+          <div class="nav-icon">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <span class="nav-label">{{ $t('nav.search', 'Пошук') }}</span>
+        </button>
+      </nav>
+    </div>
 
-    </nav>
-
-    <!-- Search Modal -->
+    <!-- Search Modal - Positioned outside nav -->
     <transition name="slide-up">
       <div v-if="showSearch" class="mobile-menu-overlay" @click="closeSearch">
         <div class="mobile-search-modal" @click.stop>
@@ -63,7 +77,7 @@
             </button>
           </div>
 
-          <div class="search-content">
+          <div class="search-content p-4">
             <div class="relative mb-4">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +90,7 @@
                 @input="performSearch"
                 type="text"
                 placeholder="Введіть назву товару..."
-                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg"
+                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 autofocus
               />
               <button
@@ -108,9 +122,10 @@
                   class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                   <img
-                    :src="product.image_url || '/images/placeholder.jpg'"
+                    :src="getProductImageUrl(product)"
                     :alt="product.name"
                     class="w-12 h-12 object-cover rounded-lg"
+                    @error="(e) => { e.target.src = '/images/placeholder.jpg' }"
                   />
                   <div class="flex-1 min-w-0">
                     <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
@@ -142,7 +157,70 @@
       </div>
     </transition>
 
-    <!-- Expandable Menu -->
+    <!-- Account Menu - Positioned outside nav -->
+    <transition name="slide-up">
+      <div v-if="showAccount" class="mobile-menu-overlay" @click="closeAccount">
+        <div class="mobile-menu" @click.stop>
+          <div class="menu-header">
+            <h3>{{ $t('nav.account', 'Аккаунт') }}</h3>
+            <button @click="closeAccount" class="close-btn">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto">
+            <div v-if="isAuthenticated" class="space-y-2 p-4">
+              <!-- User Info -->
+              <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
+                <p class="font-medium text-gray-900 dark:text-gray-100">{{ userName }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ userPhone }}</p>
+              </div>
+
+              <!-- Profile Link -->
+              <router-link to="/profile" @click="closeAccount" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  <span>{{ $t('menu.profile', 'Особистий кабінет') }}</span>
+                </div>
+              </router-link>
+
+              <!-- Orders Link -->
+              <router-link to="/orders" @click="closeAccount" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>{{ $t('menu.myOrders', 'Мої замовлення') }}</span>
+                </div>
+              </router-link>
+
+              <!-- Logout Button -->
+              <button @click="handleLogout" class="w-full px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-left">
+                <div class="flex items-center space-x-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                  </svg>
+                  <span>{{ $t('auth.logout', 'Вихід') }}</span>
+                </div>
+              </button>
+            </div>
+
+            <div v-else class="space-y-2 p-4">
+              <!-- Login Button -->
+              <button @click="handleLogin" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                {{ $t('auth.login', 'Вхід') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Expandable Menu - Positioned outside nav -->
     <transition name="slide-up">
       <div v-if="showMenu" class="mobile-menu-overlay" @click="closeMenu">
         <div class="mobile-menu" @click.stop>
@@ -154,53 +232,53 @@
               </svg>
             </button>
           </div>
-          
-          <div class="menu-grid">
-            <router-link to="/shop" @click="closeMenu" class="menu-item">
-              <div class="menu-icon">🛍️</div>
-              <span>{{ $t('menu.browseProducts') }}</span>
-            </router-link>
 
-            <router-link to="/branches" @click="closeMenu" class="menu-item">
-              <div class="menu-icon">🏪</div>
-              <span>{{ $t('menu.storeLocations') }}</span>
-            </router-link>
+          <div class="flex-1 overflow-y-auto p-4">
+            <div class="menu-grid">
+              <router-link to="/shop" @click="closeMenu" class="menu-item">
+                <div class="menu-icon">🛍️</div>
+                <span>{{ $t('menu.browseProducts') }}</span>
+              </router-link>
 
-            <router-link to="/orders" @click="closeMenu" class="menu-item">
-              <div class="menu-icon">📦</div>
-              <span>{{ $t('menu.myOrders') }}</span>
-            </router-link>
+              <router-link to="/branches" @click="closeMenu" class="menu-item">
+                <div class="menu-icon">🏪</div>
+                <span>{{ $t('menu.storeLocations') }}</span>
+              </router-link>
 
-            <router-link to="/categories" @click="closeMenu" class="menu-item">
-              <div class="menu-icon">📂</div>
-              <span>{{ $t('menu.categories') }}</span>
-            </router-link>
+              <router-link to="/orders" @click="closeMenu" class="menu-item">
+                <div class="menu-icon">📦</div>
+                <span>{{ $t('menu.myOrders') }}</span>
+              </router-link>
 
-            <router-link to="/contact" @click="closeMenu" class="menu-item">
-              <div class="menu-icon">📞</div>
-              <span>{{ $t('menu.contactUs') }}</span>
-            </router-link>
+              <router-link to="/categories" @click="closeMenu" class="menu-item">
+                <div class="menu-icon">📂</div>
+                <span>{{ $t('menu.categories') }}</span>
+              </router-link>
 
-            <button @click="openAIChat" class="menu-item">
-              <div class="menu-icon">🤖</div>
-              <span>{{ $t('menu.aiAssistant') }}</span>
-            </button>
-          </div>
+              <router-link to="/contact" @click="closeMenu" class="menu-item">
+                <div class="menu-icon">📞</div>
+                <span>{{ $t('menu.contactUs') }}</span>
+              </router-link>
 
-          <!-- Contact Info -->
-          <div class="menu-contact">
-            <a href="tel:+380973244668" class="contact-link">
-              📞 +38 (097) 324 46 68
-            </a>
-            <a href="mailto:info@opillia.com.ua" class="contact-link">
-              ✉️ info@opillia.com.ua
-            </a>
+              <button @click="openAIChat" class="menu-item">
+                <div class="menu-icon">🤖</div>
+                <span>{{ $t('menu.aiAssistant') }}</span>
+              </button>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="menu-contact">
+              <a href="tel:+380973244668" class="contact-link">
+                📞 +38 (097) 324 46 68
+              </a>
+              <a href="mailto:info@opillia.com.ua" class="contact-link">
+                ✉️ info@opillia.com.ua
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </transition>
-
-
   </div>
 </template>
 
@@ -209,21 +287,28 @@ import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useProductStore } from '@/stores/product'
+import { useAuthStore } from '@/stores/auth'
 import type { Product } from '@/types'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const productStore = useProductStore()
+const authStore = useAuthStore()
 
 // State
 const showMenu = ref(false)
 const showSearch = ref(false)
+const showAccount = ref(false)
 const searchQuery = ref('')
 const searchResults = ref<Product[]>([])
 const searchInput = ref<HTMLInputElement>()
 
 // Computed
 const cartCount = computed(() => cartStore.totalItems)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const userName = computed(() => authStore.user?.name || '')
+const userPhone = computed(() => authStore.formatPhoneNumber(authStore.user?.phone || ''))
+const userInitials = computed(() => authStore.userInitials)
 
 const popularCategories = computed(() => {
   return productStore.categories.slice(0, 6) // Show first 6 categories
@@ -236,6 +321,25 @@ const toggleMenu = () => {
 
 const closeMenu = () => {
   showMenu.value = false
+}
+
+const toggleAccount = () => {
+  showAccount.value = !showAccount.value
+}
+
+const closeAccount = () => {
+  showAccount.value = false
+}
+
+const handleLogin = () => {
+  closeAccount()
+  // Emit event or navigate to login
+  router.push('/login')
+}
+
+const handleLogout = async () => {
+  closeAccount()
+  await authStore.logout()
 }
 
 // Search methods
@@ -290,10 +394,34 @@ const searchCategory = (categoryName: string) => {
 
 const goToProduct = (product: Product) => {
   closeSearch()
-  router.push(`/product/${product.id}`)
+  router.push(`/product/${product.slug || product.id}`)
 }
 
+// Get product image URL with fallback handling
+const getProductImageUrl = (product: Product): string => {
+  if (!product.image_url) {
+    return '/images/placeholder.jpg'
+  }
 
+  // Handle MinIO URLs
+  if (product.image_url.startsWith('minio://')) {
+    const fileName = product.image_url.replace('minio://', '')
+    return `/api/images/${fileName}`
+  }
+
+  // Handle backend API URLs
+  if (product.image_url.startsWith('/api/')) {
+    return product.image_url
+  }
+
+  // Handle Poster API URLs
+  if (product.image_url.startsWith('http')) {
+    return product.image_url
+  }
+
+  // Default fallback
+  return '/images/placeholder.jpg'
+}
 
 const openAIChat = () => {
   closeMenu()
@@ -412,26 +540,129 @@ router.afterEach(handleRouteChange)
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   z-index: 60;
-}
-
-.mobile-menu {
-  background: white;
-  border-radius: 1rem 1rem 0 0;
-  padding: 1.5rem;
-  width: 100%;
-  max-height: 70vh;
-  overflow-y: auto;
+  /* Ensure it's positioned relative to viewport, not parent */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .mobile-search-modal {
   background: white;
-  border-radius: 1rem 1rem 0 0;
-  padding: 1.5rem;
+  border-radius: 0;
+  padding: 0;
   width: 100%;
-  max-height: 80vh;
+  height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+}
+
+.dark .mobile-search-modal {
+  background: #1f2937;
+}
+
+.search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.dark .search-header {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+.search-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #1f2937;
+}
+
+.dark .close-btn {
+  color: #9ca3af;
+}
+
+.dark .close-btn:hover {
+  color: #f3f4f6;
+}
+
+.search-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.search-results {
+  margin-top: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.popular-searches {
+  margin-top: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.popular-searches h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.75rem 0;
+}
+
+.dark .popular-searches h4 {
+  color: #f3f4f6;
+}
+
+.mobile-menu {
+  background: white;
+  border-radius: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-search-modal {
+  background: white;
+  border-radius: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .dark .mobile-search-modal {
@@ -464,10 +695,16 @@ router.afterEach(handleRouteChange)
 
 .search-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .search-results {
   margin-top: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .popular-searches h4 {
@@ -485,18 +722,31 @@ router.afterEach(handleRouteChange)
 
 .menu-header {
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.dark .menu-header {
+  background: #1f2937;
+  border-bottom-color: #374151;
 }
 
 .menu-header h3 {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: #111827;
   margin: 0;
+}
+
+.dark .menu-header h3 {
+  color: #f9fafb;
 }
 
 .close-btn {
@@ -626,6 +876,7 @@ body {
 
 /* Ensure proper stacking context */
 .mobile-bottom-nav {
-  isolation: isolate;
+  /* Don't use isolation here as it creates a new stacking context
+     that can interfere with fixed positioned modals */
 }
 </style>

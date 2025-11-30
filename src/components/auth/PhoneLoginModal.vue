@@ -68,10 +68,10 @@
           </label>
           <input
             id="phone"
-            v-model="phoneNumber"
+            :value="formatPhoneDisplay(phoneNumber)"
             type="tel"
             placeholder="0XX XXX XX XX"
-            maxlength="10"
+            maxlength="14"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             :class="{ 'border-red-500': phoneError }"
             @input="onPhoneInput"
@@ -276,6 +276,23 @@ const formatPhoneNumber = (phone: string) => {
   return authStore.formatPhoneNumber(phone)
 }
 
+// Format phone number for display
+const formatPhoneDisplay = (phone: string): string => {
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, '')
+
+  // Format as 0XX XXX XX XX
+  if (digits.length <= 3) {
+    return digits
+  } else if (digits.length <= 6) {
+    return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  } else if (digits.length <= 8) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  } else {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`
+  }
+}
+
 const onPhoneInput = async (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/[^\d]/g, '')
@@ -291,6 +308,9 @@ const onPhoneInput = async (event: Event) => {
   phoneNumber.value = value
   phoneError.value = ''
   authStore.clearError()
+
+  // Update the input display with formatted value
+  target.value = formatPhoneDisplay(value)
 
   // Check if user has password when phone number is complete
   if (value.length === 10) {

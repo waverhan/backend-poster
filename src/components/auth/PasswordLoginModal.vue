@@ -22,10 +22,10 @@
             Номер телефону
           </label>
           <input
-            v-model="phone"
+            :value="formatPhoneDisplay(phone)"
             type="tel"
             placeholder="0XX XXX XX XX"
-            maxlength="10"
+            maxlength="14"
             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             :class="{ 'border-red-500': !isPhoneValid && phone }"
             @input="onPhoneInput"
@@ -123,11 +123,28 @@ const isFormValid = computed(() => {
   return isPhoneValid.value && password.value.length > 0
 })
 
+// Format phone number for display
+const formatPhoneDisplay = (phoneNum: string): string => {
+  // Remove all non-digits
+  const digits = phoneNum.replace(/\D/g, '')
+
+  // Format as 0XX XXX XX XX
+  if (digits.length <= 3) {
+    return digits
+  } else if (digits.length <= 6) {
+    return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  } else if (digits.length <= 8) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  } else {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`
+  }
+}
+
 // Methods
 const onPhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/[^\d]/g, '')
-  
+
   // Ensure it starts with 0 and is max 10 digits
   if (value.length > 0 && !value.startsWith('0')) {
     value = '0' + value.slice(0, 9)
@@ -135,9 +152,12 @@ const onPhoneInput = (event: Event) => {
   if (value.length > 10) {
     value = value.slice(0, 10)
   }
-  
+
   phone.value = value
   errorMessage.value = ''
+
+  // Update the input display with formatted value
+  target.value = formatPhoneDisplay(value)
 }
 
 const handleSubmit = async () => {

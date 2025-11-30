@@ -140,68 +140,24 @@
             </button>
           </div>
 
-          <!-- Image Sync -->
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">Image Sync</h3>
-            <p class="text-sm text-gray-600 mb-4">Download fresh product images from Poster API and store locally</p>
+          <!-- Auto Sync Images -->
+          <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
+            <h3 class="font-medium text-gray-900 mb-2 flex items-center">
+              <span class="text-purple-600 mr-2">🖼️</span>
+              Auto Sync Images
+            </h3>
+            <p class="text-sm text-gray-600 mb-3">Automatically sync all product images to MinIO cloud storage</p>
+            <div class="bg-purple-100 border border-purple-200 rounded-lg p-2 mb-3">
+              <p class="text-xs text-purple-800">
+                ✅ <strong>Fully automated</strong> - Downloads, optimizes, and uploads images automatically
+              </p>
+            </div>
             <button
-              @click="handleImageSync"
+              @click="handleAutoSyncImages"
               :disabled="isLoading"
               class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {{ isLoading ? 'Downloading...' : 'Download Images' }}
-            </button>
-          </div>
-
-          <!-- Fix Image URLs -->
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">Fix Image URLs</h3>
-            <p class="text-sm text-gray-600 mb-4">Update database URLs to local images</p>
-            <button
-              @click="handleFixImageUrls"
-              :disabled="isLoading"
-              class="w-full bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ isLoading ? 'Fixing...' : 'Fix URLs' }}
-            </button>
-          </div>
-
-          <!-- Upload Images to MinIO -->
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">MinIO Upload</h3>
-            <p class="text-sm text-gray-600 mb-4">Upload all product images to MinIO cloud storage</p>
-            <button
-              @click="handleUploadImagesToMinIO"
-              :disabled="isLoading"
-              class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ isLoading ? 'Uploading...' : 'Upload to MinIO' }}
-            </button>
-          </div>
-
-          <!-- Optimize Images -->
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">Image Optimization</h3>
-            <p class="text-sm text-gray-600 mb-4">Optimize images to WebP format for faster loading</p>
-            <button
-              @click="handleOptimizeImages"
-              :disabled="isLoading"
-              class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ isLoading ? 'Optimizing...' : 'Optimize Images' }}
-            </button>
-          </div>
-
-          <!-- Migrate Images to MinIO -->
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h3 class="font-medium text-gray-900 mb-2">Migrate Images to MinIO</h3>
-            <p class="text-sm text-gray-600 mb-4">Update database to use MinIO URLs instead of local paths (fixes images after deployment)</p>
-            <button
-              @click="handleMigrateImagesToMinIO"
-              :disabled="isLoading"
-              class="w-full bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {{ isLoading ? 'Migrating...' : 'Migrate to MinIO' }}
+              {{ isLoading ? 'Syncing...' : 'Auto Sync Images' }}
             </button>
           </div>
 
@@ -938,6 +894,11 @@
         </div>
       </div>
 
+      <!-- Discounts Tab Content -->
+      <div v-if="activeTab === 'discounts'">
+        <DiscountManager />
+      </div>
+
       <!-- Banners Tab Content -->
       <div v-if="activeTab === 'banners'">
         <BannerManagement />
@@ -956,6 +917,11 @@
       <!-- Untappd Tab Content -->
       <div v-if="activeTab === 'untappd'">
         <UntappdManager />
+      </div>
+
+      <!-- 404 Errors Tab Content -->
+      <div v-if="activeTab === '404-errors'">
+        <NotFoundErrorsReport />
       </div>
     </div>
 
@@ -1018,9 +984,11 @@ import ProductEditModal from '@/components/admin/ProductEditModal.vue'
 import SiteConfigModal from '@/components/admin/SiteConfigModal.vue'
 import BulkEditModal from '@/components/admin/BulkEditModal.vue'
 import BannerManagement from '@/components/admin/BannerManagement.vue'
+import DiscountManager from '@/components/admin/DiscountManager.vue'
 import InventoryStatus from '@/components/inventory/InventoryStatus.vue'
 import RecommendationAnalytics from '@/components/admin/RecommendationAnalytics.vue'
 import UntappdManager from '@/components/admin/UntappdManager.vue'
+import NotFoundErrorsReport from '@/components/admin/NotFoundErrorsReport.vue'
 import LicenseStatus from '@/components/license/LicenseStatus.vue'
 import AdminLogin from '@/components/auth/AdminLogin.vue'
 import type { Category, Product, Branch, SiteConfig } from '@/types'
@@ -1047,10 +1015,12 @@ const tabs = [
   { id: 'categories', name: 'Categories', icon: '📂' },
   { id: 'branches', name: 'Branches', icon: '🏪' },
   { id: 'price-sync', name: 'Price Sync', icon: '💰' },
+  { id: 'discounts', name: 'Discounts', icon: '🎁' },
   { id: 'banners', name: 'Banners', icon: '🎨' },
   { id: 'inventory', name: 'Inventory Status', icon: '📋' },
   { id: 'analytics', name: 'AI Analytics', icon: '🤖' },
-  { id: 'untappd', name: 'Untappd', icon: '🍺' }
+  { id: 'untappd', name: 'Untappd', icon: '🍺' },
+  { id: '404-errors', name: '404 Errors', icon: '⚠️' }
 ]
 
 // Enhanced filtering and sorting
@@ -1382,82 +1352,13 @@ const handleQuickSync = async () => {
   }
 }
 
-const handleImageSync = async () => {
+// Auto sync images - automatically syncs all product images to MinIO
+const handleAutoSyncImages = async () => {
   isLoading.value = true
   syncStatus.value = null
 
   try {
-    // Use the download-images endpoint to fetch fresh images from Poster API
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/download-images`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
-
-    // Refresh products to get updated image URLs
-    await productStore.fetchProducts(undefined, true)
-
-    syncStatus.value = {
-      type: 'success',
-      message: `Image sync completed! Downloaded ${result.stats?.downloaded_images || 0} images for ${result.stats?.total_products || 0} products.`
-    }
-  } catch (error) {
-    syncStatus.value = { type: 'error', message: 'Image sync failed. Please try again.' }
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleFixImageUrls = async () => {
-  isLoading.value = true
-  syncStatus.value = null
-
-  try {
-    
-
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/fix-image-urls`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
-    
-
-    // Refresh products to show updated image URLs
-    await productStore.fetchProducts(undefined, true)
-
-    syncStatus.value = {
-      type: 'success',
-      message: `Image URL fix completed! Updated ${result.updated || 0} products out of ${result.total_products || 0} total.`
-    }
-  } catch (error) {
-    console.error('❌ Image URL fix failed:', error)
-    syncStatus.value = { type: 'error', message: 'Image URL fix failed. Please try again.' }
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Upload images to MinIO
-const handleUploadImagesToMinIO = async () => {
-  isLoading.value = true
-  syncStatus.value = null
-
-  try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/upload-images-to-minio`, {
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/auto-sync-images`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1475,77 +1376,17 @@ const handleUploadImagesToMinIO = async () => {
 
     syncStatus.value = {
       type: 'success',
-      message: `MinIO upload completed! Uploaded ${result.stats?.uploaded || 0} images, skipped ${result.stats?.skipped || 0}, errors: ${result.stats?.errors || 0}.`
+      message: `✅ Auto image sync completed! Updated ${result.stats?.updated || 0} products to MinIO. Skipped: ${result.stats?.skipped || 0}, Errors: ${result.stats?.errors || 0}.`
     }
   } catch (error) {
-    console.error('❌ MinIO upload failed:', error)
-    syncStatus.value = { type: 'error', message: 'MinIO upload failed. Please try again.' }
+    console.error('❌ Auto image sync failed:', error)
+    syncStatus.value = { type: 'error', message: 'Auto image sync failed. Please try again.' }
   } finally {
     isLoading.value = false
   }
 }
 
-// Optimize images to WebP format
-const handleOptimizeImages = async () => {
-  isLoading.value = true
-  syncStatus.value = null
 
-  try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/optimize-images`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
-
-    syncStatus.value = {
-      type: 'success',
-      message: `Image optimization completed! Optimized ${result.stats?.optimized || 0} images to WebP format. Saved ${result.stats?.total_savings_kb || 0} KB.`
-    }
-  } catch (error) {
-    console.error('❌ Image optimization failed:', error)
-    syncStatus.value = { type: 'error', message: 'Image optimization failed. Please try again.' }
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Migrate images to MinIO
-const handleMigrateImagesToMinIO = async () => {
-  isLoading.value = true
-  syncStatus.value = null
-
-  try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api/sync/migrate-images-to-minio`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const result = await response.json()
-
-    syncStatus.value = {
-      type: 'success',
-      message: `Image migration completed! Migrated ${result.stats?.migrated || 0} products to MinIO. Skipped: ${result.stats?.skipped || 0}, Errors: ${result.stats?.errors || 0}.`
-    }
-  } catch (error) {
-    console.error('❌ Image migration failed:', error)
-    syncStatus.value = { type: 'error', message: 'Image migration failed. Please try again.' }
-  } finally {
-    isLoading.value = false
-  }
-}
 
 // Manual price update from Poster POS
 const handleManualPriceUpdate = async () => {

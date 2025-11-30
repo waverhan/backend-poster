@@ -1,5 +1,5 @@
 import express from 'express'
-import { getProducts, createProduct, prisma } from '../services/database.js'
+import { getProducts, createProduct, prisma, generateSlug, transliterateCyrillic } from '../services/database.js'
 
 const router = express.Router()
 
@@ -24,6 +24,41 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Error creating product:', error)
     res.status(500).json({ error: 'Failed to create product' })
+  }
+})
+
+// POST /api/products/generate-slugs - Generate missing product slugs
+// MUST be before /:id route to avoid route matching issues
+router.post('/generate-slugs', async (req, res) => {
+  try {
+    console.log('🔄 Generating missing product slugs...')
+
+    // Get all products
+    const products = await prisma.product.findMany()
+
+    console.log(`📝 Found ${products.length} total products`)
+
+    let updated = 0
+    for (const product of products) {
+      const slug = generateSlug(product.display_name)
+      if (slug && (!product.slug || product.slug === '')) {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { slug }
+        })
+        console.log(`✅ Generated slug for "${product.display_name}": ${slug}`)
+        updated++
+      }
+    }
+
+    res.json({
+      message: `Generated ${updated} slugs`,
+      updated,
+      total: products.length
+    })
+  } catch (error) {
+    console.error('❌ Error generating product slugs:', error)
+    res.status(500).json({ error: 'Failed to generate product slugs' })
   }
 })
 
@@ -62,6 +97,9 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Display name is required' })
     }
 
+    // Generate slug from display_name
+    const slug = generateSlug(display_name)
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -69,6 +107,7 @@ router.put('/:id', async (req, res) => {
         category_id,
         name,
         display_name,
+        slug: slug || null,
         subtitle,
         description,
         price,

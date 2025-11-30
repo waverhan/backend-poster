@@ -118,7 +118,8 @@
         </div>
         <div class="flex-shrink-0 ml-3">
           <button
-            @click="$emit('add-to-cart', product)"
+            ref="addToCartButton"
+            @click="handleAddToCart"
             :disabled="!product.available"
             class="bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
           >
@@ -151,10 +152,12 @@ interface Props {
 
 interface Emits {
   (e: 'add-to-cart', product: Product): void
+  (e: 'cart-animation', data: { startX: number; startY: number }): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const addToCartButton = ref<HTMLButtonElement>()
 
 const imageError = ref(false)
 
@@ -241,6 +244,30 @@ const handleSaleExpired = (product: Product) => {
   console.log(`🔥 Sale expired for product: ${product.name}`)
   // The sale service will handle the price reversion
   // We could emit an event to parent components if needed
+}
+
+const handleAddToCart = () => {
+  console.log('🛒 handleAddToCart called for product:', props.product.display_name)
+
+  if (!addToCartButton.value) {
+    console.error('❌ addToCartButton ref not found')
+    return
+  }
+
+  // Get button position for animation
+  const rect = addToCartButton.value.getBoundingClientRect()
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+
+  console.log('📍 Button position:', { startX, startY })
+
+  // Emit animation event
+  console.log('📤 Emitting cart-animation event')
+  emit('cart-animation', { startX, startY })
+
+  // Emit add-to-cart event
+  console.log('📤 Emitting add-to-cart event')
+  emit('add-to-cart', props.product)
 }
 </script>
 

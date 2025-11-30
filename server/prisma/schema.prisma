@@ -12,6 +12,7 @@ model Category {
   poster_category_id String?   @unique
   name               String
   display_name       String
+  slug               String?   @unique // URL-friendly slug for category links
   description        String?
   image_url          String?
   sort_order         Int       @default(0)
@@ -30,6 +31,7 @@ model Product {
   category_id       String
   name              String
   display_name      String
+  slug              String?            @unique // URL-friendly slug for product links
   subtitle          String?            // Short subtitle/tagline for the product
   description       String?
   price             Float
@@ -179,6 +181,7 @@ model Order {
   updated_at              DateTime    @updatedAt
   items                   OrderItem[]
   reviews                 Review[]
+  discounts               OrderDiscount[]
   branch                  Branch      @relation(fields: [branch_id], references: [id])
   customer                Customer?   @relation(fields: [customer_id], references: [id])
   user                    User?       @relation(fields: [user_id], references: [id])
@@ -402,4 +405,59 @@ model ProductLike {
   @@unique([product_id, user_id])
   @@unique([product_id, session_id])
   @@map("product_likes")
+}
+
+model NotFoundError {
+  id              String   @id @default(cuid())
+  requested_url   String   // The URL that was requested
+  referrer        String?  // Where the user came from
+  user_agent      String?  // Browser/device info
+  ip_address      String?  // User's IP address
+  timestamp       DateTime @default(now())
+  count           Int      @default(1) // Number of times this URL was requested
+  last_seen       DateTime @default(now()) @updatedAt
+
+  @@index([requested_url])
+  @@index([timestamp])
+  @@map("not_found_errors")
+}
+
+model Discount {
+  id                String   @id @default(cuid())
+  name              String   // e.g., "First Order Discount", "Happy Hours"
+  type              String   // first_order, happy_hours, free_delivery, fixed_shipping, beer_promo
+  description       String?  // Description for admin panel
+  discount_value    Float    // Percentage (10) or fixed amount (99) or quantity (0.5)
+  discount_type     String   @default("percentage") // percentage, fixed_amount, quantity
+  min_order_amount  Float?   // Minimum order amount to apply discount
+  max_order_amount  Float?   // Maximum order amount to apply discount
+
+  // Happy hours specific
+  day_of_week       String?  // "monday", "tuesday", etc. or "1,2,3,4" for Mon-Thu
+  start_time        String?  // "10:00" format
+  end_time          String?  // "17:00" format
+
+  // Beer promo specific
+  product_category  String?  // Category slug for beer promo (e.g., "pivo-rozlyv")
+  promo_type        String?  // "buy_1_5_get_0_5", "buy_2_get_1"
+
+  enabled           Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  @@map("discounts")
+}
+
+model OrderDiscount {
+  id              String   @id @default(cuid())
+  order_id        String
+  discount_id     String
+  discount_name   String   // Store discount name at time of order
+  discount_type   String   // Type of discount
+  discount_amount Float    // Amount discounted
+  created_at      DateTime @default(now())
+
+  order           Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("order_discounts")
 }

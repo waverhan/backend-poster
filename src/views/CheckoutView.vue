@@ -115,10 +115,10 @@
                     {{ $t('checkout.phone') }} *
                   </label>
                   <input
-                    v-model="customerForm.customer_phone"
+                    :value="formatPhoneDisplay(customerForm.customer_phone)"
                     type="tel"
                     placeholder="0XX XXX XX XX"
-                    maxlength="10"
+                    maxlength="14"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     :class="{ 'border-red-500': !isPhoneValid && customerForm.customer_phone }"
                     @input="onPhoneInput"
@@ -1434,7 +1434,23 @@ const onLoginSuccess = (user: any) => {
   }
 }
 
-// Phone input handler
+// Phone input handler with formatting
+const formatPhoneDisplay = (phone: string): string => {
+  // Remove all non-digits
+  const digits = phone.replace(/\D/g, '')
+
+  // Format as 0XX XXX XX XX
+  if (digits.length <= 3) {
+    return digits
+  } else if (digits.length <= 6) {
+    return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  } else if (digits.length <= 8) {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  } else {
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`
+  }
+}
+
 const onPhoneInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   let value = target.value.replace(/[^\d]/g, '')
@@ -1447,7 +1463,11 @@ const onPhoneInput = (event: Event) => {
     value = value.slice(0, 10)
   }
 
+  // Store the unformatted value (without spaces)
   customerForm.value.customer_phone = value
+
+  // Update the input display with formatted value
+  target.value = formatPhoneDisplay(value)
 }
 
 // Watch for cart changes and re-validate inventory

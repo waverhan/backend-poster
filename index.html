@@ -45,6 +45,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 
+    <!-- Prefetch critical route chunks for faster navigation -->
+    <!-- These will be downloaded during idle time after initial page load -->
+    <link rel="prefetch" href="/assets/ShopView-cbbd20f8.js" as="script">
+    <link rel="prefetch" href="/assets/CheckoutView-01dc9849.js" as="script">
+    <link rel="prefetch" href="/assets/ProductDetailView-51b2bd8f.js" as="script">
+    <link rel="prefetch" href="/assets/CartView-f4a30aaf.js" as="script">
+
+    <!-- Prefetch vendor chunks that are commonly used -->
+    <link rel="prefetch" href="/assets/vue-68a7bf9a.js" as="script">
+    <link rel="prefetch" href="/assets/vendor-352e0cca.js" as="script">
+
     <!-- Structured Data - Organization -->
     <script type="application/ld+json">
     {
@@ -102,33 +113,40 @@
     }
     </script>
 
-    <!-- Google Analytics with Enhanced E-commerce - Deferred for better performance -->
+    <!-- Google Analytics with Enhanced E-commerce - Optimized to reduce forced reflows -->
     <script>
       // Initialize dataLayer before gtag script loads
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
 
-      // Defer gtag initialization until after page load to reduce forced reflows
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-          gtag('js', new Date());
-          gtag('config', 'G-Y3NZ5WWN9G', {
-            send_page_view: true,
-            allow_enhanced_conversions: true,
-            currency: 'UAH'
-          });
-        });
-      } else {
+      // Mark gtag as ready to prevent multiple initializations
+      window.gtagReady = false;
+
+      // Initialize gtag only once using requestIdleCallback to avoid forced reflows
+      function initializeGtag() {
+        if (window.gtagReady) return;
+        window.gtagReady = true;
+
         gtag('js', new Date());
         gtag('config', 'G-Y3NZ5WWN9G', {
           send_page_view: true,
           allow_enhanced_conversions: true,
-          currency: 'UAH'
+          currency: 'UAH',
+          // Disable automatic page view to prevent duplicate tracking
+          send_page_view: false
         });
       }
+
+      // Use requestIdleCallback to initialize after critical rendering is done
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(initializeGtag, { timeout: 2000 });
+      } else {
+        // Fallback for browsers that don't support requestIdleCallback
+        setTimeout(initializeGtag, 2000);
+      }
     </script>
-    <!-- Load gtag script with defer attribute to avoid blocking render -->
-    <script defer src="https://www.googletagmanager.com/gtag/js?id=G-Y3NZ5WWN9G"></script>
+    <!-- Load gtag script with async attribute for non-blocking load -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y3NZ5WWN9G"></script>
 
     <title>Опілля - Найкращі напої та делікатеси з доставкою по Києву</title>
   </head>

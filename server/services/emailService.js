@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import sgTransport from 'nodemailer-sendgrid-transport'
 import dotenv from 'dotenv'
 
 // Load environment variables
@@ -13,43 +14,139 @@ class EmailService {
 
   initializeTransporter() {
     try {
-      // Configure email transporter based on environment variables
-      const emailConfig = {
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-        requireTLS: true, // Force TLS for port 587
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        },
-        tls: {
-          rejectUnauthorized: false // Allow self-signed certificates
-        }
-      }
+      console.log('📧 Email Service Initialization:')
 
-      // Only create transporter if credentials are provided
-      if (emailConfig.auth.user && emailConfig.auth.pass) {
+      // Check if SendGrid API key is available (preferred method for cloud)
+      if (process.env.SENDGRID_API_KEY) {
+        console.log('📧 Using SendGrid API (recommended for cloud infrastructure)')
+        this.transporter = nodemailer.createTransport(sgTransport({
+          auth: {
+            api_key: process.env.SENDGRID_API_KEY
+          }
+        }))
+        this.isConfigured = true
+        console.log('✅ Email service configured with SendGrid')
+
+        // Test the connection
+        setTimeout(() => {
+          this.transporter.verify((error, success) => {
+            if (error) {
+              console.error('❌ SendGrid verification failed:', error.message)
+            } else {
+              console.log('✅ SendGrid connection verified successfully')
+            }
+          })
+        }, 1000)
+      } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        // Fallback to SMTP if SendGrid is not configured
+        console.log('📧 Using SMTP (SendGrid not configured)')
+
+        // Try port 465 (SSL) first as it's more reliable for cloud infrastructure
+        const emailConfig = {
+          host: process.env.SMTP_HOST || 'smtp.gmail.com',
+          port: 465,
+          secure: true, // Use SSL for port 465
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+          },
+          tls: {
+            rejectUnauthorized: false,
+            minVersion: 'TLSv1.2'
+          },
+          connectionTimeout: 15000,
+          socketTimeout: 15000,
+          pool: {
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 5
+          }
+        }
+
+        console.log('📧 SMTP Host:', emailConfig.host)
+        console.log('📧 SMTP Port:', emailConfig.port)
+        console.log('📧 SMTP User:', emailConfig.auth.user ? '✓ Set' : '✗ Not set')
+        console.log('📧 SMTP Pass:', emailConfig.auth.pass ? '✓ Set' : '✗ Not set')
+
         this.transporter = nodemailer.createTransport(emailConfig)
         this.isConfigured = true
-        console.log('✅ Email service configured successfully')
+        console.log('✅ Email service configured with SMTP (Port 465 - SSL)')
+
+        // Test the connection asynchronously
+        setTimeout(() => {
+          this.transporter.verify((error, success) => {
+            if (error) {
+              console.error('❌ SMTP connection verification failed on port 465:', error.message)
+              console.error('❌ Error code:', error.code)
+              console.log('📧 Attempting fallback to port 587 (STARTTLS)...')
+
+              // Try fallback configuration
+              this.tryFallbackConfig(587)
+            } else {
+              console.log('✅ SMTP connection verified successfully on port 465')
+            }
+          })
+        }, 1000)
       } else {
-        console.log('❌ Email credentials not provided')
+        console.error('❌ Email service not configured - neither SendGrid API key nor SMTP credentials provided')
+        console.error('❌ Set SENDGRID_API_KEY or SMTP_USER/SMTP_PASS environment variables')
       }
     } catch (error) {
       console.error('❌ Failed to configure email service:', error)
     }
   }
 
+  tryFallbackConfig(port) {
+    try {
+      const fallbackConfig = {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: port,
+        secure: false, // Use STARTTLS for port 587
+        requireTLS: true,
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        },
+        tls: {
+          rejectUnauthorized: false,
+          minVersion: 'TLSv1.2'
+        },
+        connectionTimeout: 15000,
+        socketTimeout: 15000
+      }
+
+      console.log(`📧 Trying fallback configuration on port ${port}...`)
+      this.transporter = nodemailer.createTransport(fallbackConfig)
+
+      this.transporter.verify((error, success) => {
+        if (error) {
+          console.error(`❌ Fallback SMTP connection failed on port ${port}:`, error.message)
+        } else {
+          console.log(`✅ Fallback SMTP connection verified successfully on port ${port}`)
+        }
+      })
+    } catch (error) {
+      console.error('❌ Failed to configure fallback email service:', error)
+    }
+  }
+
   async sendOrderConfirmationEmail(order) {
     if (!this.isConfigured) {
-
+      console.error('❌ Email service not configured - SMTP credentials missing')
       return { success: false, error: 'Email service not configured' }
     }
 
     try {
+      console.log('📧 Preparing order confirmation email...')
+      console.log('📧 Order ID:', order.id)
+      console.log('📧 Customer email:', order.customer?.email)
+      console.log('📧 Customer name:', order.customer?.name)
 
-
+      if (!order.customer?.email) {
+        console.warn('⚠️ No customer email found in order')
+        return { success: false, error: 'No customer email provided' }
+      }
 
       const emailContent = this.generateOrderConfirmationEmail(order)
 
@@ -62,21 +159,31 @@ class EmailService {
         html: emailContent.html
       }
 
-
+      console.log('📧 Sending email to:', customerMailOptions.to)
+      console.log('📧 From:', customerMailOptions.from)
+      console.log('📧 Subject:', customerMailOptions.subject)
+      console.log('📧 Email body length:', customerMailOptions.html?.length || 0, 'characters')
+      console.log('📧 Transporter ready:', this.transporter ? 'Yes' : 'No')
 
       const customerResult = await this.transporter.sendMail(customerMailOptions)
-
+      console.log('✅ Customer email sent successfully')
+      console.log('📧 Message ID:', customerResult.messageId)
+      console.log('📧 Response:', customerResult.response)
 
       // Also send notification to company email
       await this.sendOrderNotificationToCompany(order)
 
       return { success: true, messageId: customerResult.messageId }
     } catch (error) {
-      console.error('❌ Failed to send order confirmation email:', error)
+      console.error('❌ Failed to send order confirmation email:', error.message)
+      console.error('❌ Error code:', error.code)
+      console.error('❌ Error command:', error.command)
       console.error('❌ Error details:', {
         message: error.message,
         code: error.code,
-        command: error.command
+        command: error.command,
+        errno: error.errno,
+        syscall: error.syscall
       })
       return { success: false, error: error.message }
     }
@@ -382,6 +489,7 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
 
   async sendOrderNotificationToCompany(order) {
     if (!this.isConfigured) {
+      console.error('❌ Email service not configured for company notification')
       return { success: false, error: 'Email service not configured' }
     }
 
@@ -396,6 +504,9 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
         return { success: false, error: 'No email addresses configured' }
       }
 
+      console.log('📧 Preparing company order notification...')
+      console.log('📧 Sending to:', emailAddresses)
+
       const emailContent = this.generateCompanyOrderNotification(order)
 
       const mailOptions = {
@@ -406,12 +517,19 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
         html: emailContent.html
       }
 
+      console.log('📧 Sending company notification...')
       const result = await this.transporter.sendMail(mailOptions)
-      console.log(`✅ Company notification sent to: ${emailAddresses.join(', ')}`)
+      console.log(`✅ Company notification sent successfully to: ${emailAddresses.join(', ')}`)
+      console.log('📧 Message ID:', result.messageId)
 
       return { success: true, messageId: result.messageId }
     } catch (error) {
       console.error('❌ Failed to send company notification:', error)
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      })
       return { success: false, error: error.message }
     }
   }

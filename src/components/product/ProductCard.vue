@@ -7,7 +7,7 @@
     <div class="card-main-content">
       <!-- Product Image -->
       <div class="relative">
-        <router-link :to="`/product/${product.id}`" class="block">
+        <router-link :to="`/product/${product.slug || product.id}`" class="block">
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
             <img
               v-if="imageUrl"
@@ -157,7 +157,8 @@
           <!-- Add to Cart Button (shown when product is NOT in cart) -->
           <button
             v-else
-            @click="handleAddToCartDirectly"
+            ref="addToCartButton"
+            @click="handleAddToCartWithAnimation"
             :disabled="!isAvailableInBranch"
             class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -290,6 +291,7 @@ interface Props {
 interface Emits {
   (e: 'add-to-cart', product: Product, quantity?: number, bottles?: BottleSelection, bottleCost?: number): void
   (e: 'add-bottle-to-cart', bottleItem: any): void
+  (e: 'cart-animation', data: { startX: number; startY: number }): void
 }
 
 const props = defineProps<Props>()
@@ -322,6 +324,9 @@ const ratingLoading = ref(false)
 
 // State for hover
 const isHovered = ref(false)
+
+// Ref for add to cart button (for animation)
+const addToCartButton = ref<HTMLButtonElement>()
 
 // Computed properties
 const isDraft = computed(() => {
@@ -461,19 +466,14 @@ const parsedAttributes = computed(() => {
   }
 })
 
-// Direct Railway image serving - fastest and most reliable
+// Get image URL - simple and direct, just like ProductDetailView
 const imageUrl = computed(() => {
   const primaryImage = props.product.display_image_url || props.product.image_url
   if (!primaryImage) {
     return ''
   }
-
-  // Direct URL construction for Railway images (fastest)
-  if (primaryImage.startsWith('/images/')) {
-    return `https://backend-api-production-b3a0.up.railway.app${primaryImage}`
-  }
-
   // Use the backend API to get the full image URL
+  // API returns /api/upload/minio-image/... which gets prepended with backend URL
   return backendApi.getImageUrl(primaryImage)
 })
 
@@ -604,6 +604,22 @@ const handleAddToCart = () => {
   }
 }
 
+// Handle add to cart with animation
+const handleAddToCartWithAnimation = () => {
+  if (!addToCartButton.value) return
+
+  // Get button position for animation
+  const rect = addToCartButton.value.getBoundingClientRect()
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+
+  // Emit animation event
+  emit('cart-animation', { startX, startY })
+
+  // Call the actual add to cart function
+  handleAddToCartDirectly()
+}
+
 // Direct add to cart method for all products
 const handleAddToCartDirectly = () => {
   if (!isAvailableInBranch.value) return
@@ -613,73 +629,17 @@ const handleAddToCartDirectly = () => {
     const defaultQuantity = 1
     const autoBottles = getDefaultBottleSelection(defaultQuantity)
 
-    // Create cart item for draft beverage
-    const cartItem = {
-      cart_item_id: `${props.product.id}_${Date.now()}`,
-      product_id: props.product.id,
-      poster_product_id: props.product.poster_product_id,
-      name: props.product.display_name || props.product.name,
-      price: props.product.price,
-      quantity: defaultQuantity,
-      subtotal: props.product.price * defaultQuantity,
-      image_url: props.product.display_image_url || props.product.image_url,
-      unit: displayUnit.value,
-      custom_quantity: props.product.custom_quantity,
-      custom_unit: props.product.custom_unit,
-      max_quantity: props.product.max_quantity,
-      is_draft_beverage: true,
-      is_bottle_product: false,
-      bottle_selection: autoBottles
-    }
+    // Emit event to parent (ShopView) to show notification
+    emit('add-to-cart', props.product, defaultQuantity, autoBottles)
 
-    // Add draft beverage to cart
-    cartStore.addItem(cartItem)
-
-    // Add bottles to cart if auto selection is enabled
-    if (autoBottles && autoBottles.bottles && autoBottles.bottles.length > 0) {
-      autoBottles.bottles.forEach(bottle => {
-        if (bottle.quantity > 0) {
-          const bottleCartItem = {
-            cart_item_id: `bottle_${bottle.id}_${Date.now()}`,
-            product_id: bottle.id,
-            poster_product_id: bottle.poster_product_id,
-            name: bottle.name,
-            price: bottle.price,
-            quantity: bottle.quantity,
-            subtotal: bottle.price * bottle.quantity,
-            image_url: bottle.image_url,
-            unit: bottle.unit,
-            max_quantity: bottle.max_quantity,
-            is_draft_beverage: false,
-            is_bottle_product: true
-          }
-          cartStore.addItem(bottleCartItem)
-        }
-      })
+    // Add bottles separately if needed
+    const bottleCartItems = getBottleCartItems(autoBottles)
+    for (const bottleItem of bottleCartItems) {
+      emit('add-bottle-to-cart', bottleItem)
     }
   } else {
-    // Handle regular products
-    const cartItem = {
-      cart_item_id: `${props.product.id}_${Date.now()}`,
-      product_id: props.product.id,
-      poster_product_id: props.product.poster_product_id,
-      name: props.product.display_name || props.product.name,
-      price: props.product.price,
-      quantity: 1,
-      subtotal: props.product.custom_quantity && props.product.custom_unit
-        ? props.product.price * props.product.custom_quantity
-        : props.product.price,
-      image_url: props.product.display_image_url || props.product.image_url,
-      unit: props.product.unit,
-      custom_quantity: props.product.custom_quantity,
-      custom_unit: props.product.custom_unit,
-      max_quantity: props.product.max_quantity,
-      is_draft_beverage: false,
-      is_bottle_product: false
-    }
-
-    // Add directly to cart store
-    cartStore.addItem(cartItem)
+    // Handle regular products - emit event to parent (ShopView) to show notification
+    emit('add-to-cart', props.product)
   }
 }
 
@@ -714,14 +674,7 @@ const handleAddDraftToCartDirectly = () => {
 
 const onImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
-
-  // If Railway image fails, try Poster fallback as last resort
-  if (img.src.includes('backend-api-production-b3a0.up.railway.app') && props.product.poster_product_id) {
-    img.src = backendApi.getPosterImageUrl(props.product.poster_product_id)
-    return
-  }
-
-  // If everything fails, hide the image
+  // If image fails to load, hide it
   img.style.display = 'none'
 }
 
@@ -765,7 +718,7 @@ const getStockStatus = (product: Product): string => {
   }
 }
 
-// Load branch-specific inventory
+// Load branch-specific inventory (lazy - only when needed)
 const loadBranchInventory = async () => {
   if (!branchStore.selectedBranch?.id) return
 
@@ -778,6 +731,15 @@ const loadBranchInventory = async () => {
   } catch (error) {
     console.error('Failed to load branch inventory:', error)
   }
+}
+
+// Load inventory in background after a delay (non-blocking)
+const scheduleInventoryLoad = () => {
+  // Schedule inventory load for 2 seconds after component mount
+  // This allows the page to render first without blocking
+  setTimeout(() => {
+    loadBranchInventory()
+  }, 2000)
 }
 
 // Initialize quantity based on product settings
@@ -851,7 +813,8 @@ const loadCombinedRating = async () => {
 
 // Lifecycle
 onMounted(() => {
-  loadBranchInventory()
+  // Don't load inventory immediately - schedule it for later to avoid blocking page render
+  scheduleInventoryLoad()
   initializeQuantity()
   loadCombinedRating()
 })

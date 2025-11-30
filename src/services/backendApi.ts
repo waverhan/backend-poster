@@ -7,14 +7,30 @@ const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3
 class BackendApiService {
   public baseUrl = API_BASE_URL
 
+  private getAuthToken(): string | null {
+    // Try to get token from localStorage
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('auth_token')
+    }
+    return null
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
+    const token = this.getAuthToken()
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    }
+
+    // Add authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
 
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     })
 
@@ -29,9 +45,23 @@ class BackendApiService {
   // Categories
   async getCategories(includeInactive = false): Promise<Category[]> {
     const params = includeInactive ? '?includeInactive=true' : ''
-    const categories = await this.request<Category[]>(`/categories${params}`)
+    console.log(`🔗 Fetching categories from: ${API_BASE_URL}/categories${params}`)
 
-    return categories
+    try {
+      const categories = await this.request<Category[]>(`/categories${params}`)
+      console.log(`✅ Backend API returned ${Array.isArray(categories) ? categories.length : 'non-array'} categories`)
+      console.log('📋 Response type:', typeof categories, 'Is array:', Array.isArray(categories))
+
+      if (!Array.isArray(categories)) {
+        console.error('❌ Categories response is not an array:', categories)
+        return []
+      }
+
+      return categories
+    } catch (error) {
+      console.error('❌ Backend API error fetching categories:', error)
+      throw error
+    }
   }
 
   async createCategory(category: Omit<Category, 'id' | 'created_at' | 'updated_at' | 'product_count'>): Promise<Category> {
@@ -393,6 +423,35 @@ class BackendApiService {
     }
 
     return urls
+  }
+
+  // Generic HTTP methods for use by stores
+  async get<T>(endpoint: string): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint)
+    return { data }
+  }
+
+  async post<T>(endpoint: string, body: any): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return { data }
+  }
+
+  async put<T>(endpoint: string, body: any): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+    return { data }
+  }
+
+  async delete<T>(endpoint: string): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      method: 'DELETE',
+    })
+    return { data }
   }
 }
 

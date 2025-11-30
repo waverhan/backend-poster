@@ -4,6 +4,13 @@
 **Version: 1.0**
 **Date: May 22, 2025**
 
+## ⚠️ DEPLOYMENT DIRECTIVE
+**Backend code is located in `/server` directory. When deploying to Railway:**
+```bash
+cd /server && railway up
+```
+**DO NOT deploy from root directory. The `/server` folder contains the Express backend, Prisma ORM, and Railway configuration.**
+
 ## Technology Summary
 
 This recommendation outlines a practical technology stack for building a Progressive Web Application (PWA) e-commerce website fully integrated with an existing POS system. The architecture focuses on a clear separation of concerns with a modern frontend, a robust backend acting as an integration layer and business logic engine, and a reliable database. The stack is chosen for its maintainability, scalability potential, developer experience, and alignment with current web development best practices, while specifically addressing the requirements for multi-branch operations, location-based ordering, flexible delivery pricing, and user notifications.

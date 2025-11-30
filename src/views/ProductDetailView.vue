@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
+    <!-- Cart Animation Overlay -->
+    <CartAnimationOverlay ref="cartAnimationOverlay" />
+
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Back Button -->
       <div class="mb-6">
@@ -109,7 +112,8 @@
               </div>
               <div class="flex-shrink-0 ml-6">
                 <button
-                  @click="addToCart"
+                  ref="addToCartButton"
+                  @click="handleAddToCart"
                   :disabled="!product.available"
                   class="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-lg"
                 >
@@ -197,6 +201,7 @@
         <RelatedProducts
           :current-product="product"
           :max-products="4"
+          @cart-animation="handleCartAnimation"
         />
       </div>
     </div>
@@ -224,6 +229,7 @@ import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
 import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import LikeButton from '@/components/product/LikeButton.vue'
+import CartAnimationOverlay from '@/components/CartAnimationOverlay.vue'
 import type { Product } from '@/types'
 
 const route = useRoute()
@@ -242,6 +248,8 @@ const product = ref<Product | null>(null)
 const showReviewForm = ref(false)
 const combinedRating = ref<CombinedRating | null>(null)
 const showFullDescription = ref(false)
+const addToCartButton = ref<HTMLButtonElement>()
+const cartAnimationOverlay = ref<InstanceType<typeof CartAnimationOverlay>>()
 
 // Computed properties
 const isBeerProduct = computed(() => {
@@ -663,6 +671,43 @@ const scrollToReviews = () => {
   }
 }
 
+const handleCartAnimation = (data: { startX: number; startY: number }) => {
+  if (!cartAnimationOverlay.value) return
+
+  // Determine if mobile or desktop
+  const isMobile = window.innerWidth < 768 // md breakpoint
+
+  let endX: number
+  let endY: number
+
+  if (isMobile) {
+    // Mobile: target the cart icon in mobile bottom nav (center bottom)
+    endX = window.innerWidth / 2
+    endY = window.innerHeight - 30 // Bottom nav height
+  } else {
+    // Desktop: target the cart icon in top right area
+    endX = window.innerWidth - 60
+    endY = 80
+  }
+
+  cartAnimationOverlay.value.addAnimation(data.startX, data.startY, endX, endY)
+}
+
+const handleAddToCart = () => {
+  if (!addToCartButton.value) return
+
+  // Get button position for animation
+  const rect = addToCartButton.value.getBoundingClientRect()
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+
+  // Emit animation
+  handleCartAnimation({ startX, startY })
+
+  // Call the actual add to cart function
+  addToCart()
+}
+
 const addToCart = () => {
   if (!product.value) return
 
@@ -710,13 +755,6 @@ const addToCart = () => {
         }
       })
     }
-
-    notificationStore.add({
-      type: 'success',
-      title: t('cart.addedToCart'),
-      message: `${product.value.display_name} (${quantity}L) з пляшками додано до кошика`,
-      duration: 3000
-    })
   } else {
     // Regular product (non-draft)
     const cartItem: any = {
@@ -738,13 +776,6 @@ const addToCart = () => {
     }
 
     cartStore.addItem(cartItem)
-
-    notificationStore.add({
-      type: 'success',
-      title: t('cart.addedToCart'),
-      message: `${product.value.display_name} ${t('cart.addedToCart')}`,
-      duration: 3000
-    })
   }
 }
 
@@ -786,10 +817,10 @@ watch(product, (newProduct) => {
 
 onMounted(async () => {
   try {
-    const productId = route.params.id as string
+    const productIdOrSlug = route.params.id as string
 
-    // Try to find product in store first
-    const existingProduct = productStore.productById(productId)
+    // Try to find product in store first (by slug or ID)
+    const existingProduct = productStore.productBySlugOrId(productIdOrSlug)
     if (existingProduct) {
       product.value = existingProduct
       loading.value = false
@@ -802,7 +833,7 @@ onMounted(async () => {
     }
 
     // If not found in store, fetch from API
-    const fetchedProduct = await productStore.fetchProduct(productId)
+    const fetchedProduct = await productStore.fetchProduct(productIdOrSlug)
     if (fetchedProduct) {
       product.value = fetchedProduct
       // Load combined rating and add structured data after product is loaded

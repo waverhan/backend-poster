@@ -3,6 +3,44 @@ import { prisma } from '../services/database.js'
 
 const router = express.Router()
 
+// Transliterate Cyrillic to Latin characters
+const transliterateCyrillic = (text) => {
+  const cyrillic = {
+    // Ukrainian and Russian lowercase
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+    'я': 'ya',
+    // Ukrainian-specific lowercase
+    'ґ': 'g', 'є': 'ye', 'і': 'i', 'ї': 'yi',
+    // Ukrainian and Russian uppercase
+    'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh',
+    'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N', 'О': 'O',
+    'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts',
+    'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu',
+    'Я': 'Ya',
+    // Ukrainian-specific uppercase
+    'Ґ': 'G', 'Є': 'Ye', 'І': 'I', 'Ї': 'Yi'
+  }
+
+  return text
+    .split('')
+    .map(char => cyrillic[char] || char)
+    .join('')
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+
+// Generate SEO-friendly slug from text
+const generateSlug = (text) => {
+  if (!text) return ''
+  return transliterateCyrillic(text)
+}
+
 // XML Sitemap
 router.get('/sitemap.xml', async (req, res) => {
   try {
@@ -16,17 +54,21 @@ router.get('/sitemap.xml', async (req, res) => {
       },
       select: {
         id: true,
+        display_name: true,
+        slug: true,
         updated_at: true
       }
     })
 
-    // Get categories
+    // Get categories with slug
     const categories = await prisma.category.findMany({
       where: {
         is_active: true
       },
       select: {
         id: true,
+        slug: true,
+        display_name: true,
         updated_at: true
       }
     })
@@ -59,11 +101,31 @@ router.get('/sitemap.xml', async (req, res) => {
 `
     }
 
+    // Add category pages
+    for (const category of categories) {
+      const lastmod = category.updated_at ? category.updated_at.toISOString().split('T')[0] : currentDate
+      // Use slug if available, otherwise generate from display_name with Latin characters only
+      const categorySlug = category.slug && category.slug.trim()
+        ? category.slug
+        : generateSlug(category.display_name)
+      xml += `  <url>
+    <loc>${baseUrl}/shop?category=${categorySlug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+`
+    }
+
     // Add product pages
     for (const product of products) {
       const lastmod = product.updated_at ? product.updated_at.toISOString().split('T')[0] : currentDate
+      // Use slug if available, otherwise use product ID as fallback
+      const productIdentifier = product.slug && product.slug.trim()
+        ? product.slug
+        : product.id
       xml += `  <url>
-    <loc>${baseUrl}/product/${product.id}</loc>
+    <loc>${baseUrl}/product/${productIdentifier}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

@@ -7,6 +7,32 @@
 
 ---
 
+## ⚠️ DEPLOYMENT DIRECTIVES
+
+### Frontend Deployment (Netlify)
+```bash
+cd /Users/erhan/Documents/augment-projects/pwa-pos
+npm run build
+netlify deploy --prod --dir=dist
+```
+
+### Backend Deployment (Railway) - **IMPORTANT**
+```bash
+cd /Users/erhan/Documents/augment-projects/pwa-pos/server
+railway up
+```
+**⚠️ CRITICAL: Always deploy from `/server` directory, NOT from root. Backend code is in `/server` folder.**
+
+### Database Migrations
+```bash
+cd /Users/erhan/Documents/augment-projects/pwa-pos/server
+npx prisma migrate deploy
+```
+
+---
+
+---
+
 ## 📊 Project Summary
 
 **Project Goal:**

@@ -7,20 +7,20 @@ const router = express.Router()
 const defaultConfig = {
   // Branding
   site_name: 'Опілля',
-  site_description: 'Найкращі напої та делікатеси з доставкою по Києву',
+  site_description: 'Найкращі напої з доставкою по Києву',
   logo_url: '/logo.png',
   favicon_url: '/favicon.ico',
 
   // SEO
-  seo_title: 'Опілля - Найкращі напої та делікатеси з доставкою по Києву',
-  seo_description: 'Замовляйте найкращі напої, сири, м\'ясо та делікатеси з доставкою по Києву. Швидка доставка, свіжі продукти, AI-помічник для вибору.',
-  seo_keywords: 'напої, сир, м\'ясо, делікатеси, доставка, Київ, пиво, вино, крафт, Опілля',
+  seo_title: 'Опілля - Найкращі напої з доставкою',
+  seo_description: 'Замовляйте найкращі напої з доставкою по Києву. Швидка доставка, свіжі продукти, AI-помічник для вибору.',
+  seo_keywords: 'напої, доставка, Київ, пиво, вино, крафт, Опілля',
   og_image_url: '/og-image.jpg',
 
   // Homepage
   homepage_type: 'landing', // 'landing' or 'shop'
-  hero_title: 'Найкращі напої та делікатеси',
-  hero_subtitle: 'Швидка доставка свіжих продуктів по Києву з AI-помічником для вибору',
+  hero_title: 'Найкращі напої з доставкою',
+  hero_subtitle: 'Швидка доставка свіжих напоїв по Києву з AI-помічником для вибору',
   hero_banner_url: '/hero-banner.jpg',
   hero_cta_text: 'Почати покупки',
 
@@ -74,26 +74,30 @@ const defaultConfig = {
 // GET /api/site-config
 router.get('/', async (req, res) => {
   try {
-    
+    console.log('📖 Fetching site config')
 
     // Try to get existing config from database
     let config = null
 
     try {
       config = await prisma.siteConfig.findFirst()
+      if (config) {
+        console.log('✅ Site config found in database')
+      }
     } catch (dbError) {
-      
+      console.error('❌ Database error fetching site config:', dbError.message)
     }
 
     if (!config) {
-      
+      console.log('📝 No config found, creating default')
       try {
         // Create default config if none exists
         config = await prisma.siteConfig.create({
           data: defaultConfig
         })
+        console.log('✅ Default config created')
       } catch (createError) {
-        
+        console.error('❌ Error creating default config:', createError.message)
         // Fallback to static config with enable_dark_mode
         config = { ...defaultConfig, id: 'default', enable_dark_mode: true }
       }
@@ -104,7 +108,14 @@ router.get('/', async (req, res) => {
       config.enable_dark_mode = true
     }
 
-    
+    // Convert DateTime objects to ISO strings for JSON serialization
+    if (config.created_at && typeof config.created_at === 'object' && config.created_at.toISOString) {
+      config.created_at = config.created_at.toISOString()
+    }
+    if (config.updated_at && typeof config.updated_at === 'object' && config.updated_at.toISOString) {
+      config.updated_at = config.updated_at.toISOString()
+    }
+
     res.json(config)
   } catch (error) {
     console.error('❌ Error fetching site config:', error)
@@ -117,7 +128,7 @@ router.get('/', async (req, res) => {
 // PUT /api/site-config
 router.put('/', async (req, res) => {
   try {
-    
+    console.log('📝 Updating site config:', Object.keys(req.body))
 
     let updatedConfig = null
 
@@ -126,37 +137,49 @@ router.put('/', async (req, res) => {
       let existingConfig = await prisma.siteConfig.findFirst()
 
       if (!existingConfig) {
-        
+        console.log('📝 Creating new site config')
         existingConfig = await prisma.siteConfig.create({
           data: defaultConfig
         })
       }
 
+      // Filter out invalid fields (id, created_at, updated_at should not be updated)
+      const updateData = {}
+      const validFields = Object.keys(defaultConfig)
+
+      for (const key of Object.keys(req.body)) {
+        if (validFields.includes(key) && key !== 'id' && key !== 'created_at' && key !== 'updated_at') {
+          updateData[key] = req.body[key]
+        }
+      }
+
+      console.log('📝 Filtered update data:', Object.keys(updateData))
+
       // Update the configuration
+      console.log('📝 Updating config with ID:', existingConfig.id)
       updatedConfig = await prisma.siteConfig.update({
         where: { id: existingConfig.id },
-        data: {
-          ...req.body,
-          updated_at: new Date()
-        }
+        data: updateData
       })
+      console.log('✅ Site config updated successfully')
     } catch (dbError) {
-      
-      // Fallback: return the updated config without saving to database
-      updatedConfig = {
-        ...defaultConfig,
-        ...req.body,
-        id: 'default',
-        enable_dark_mode: req.body.enable_dark_mode !== undefined ? req.body.enable_dark_mode : true,
-        updated_at: new Date().toISOString()
-      }
+      console.error('❌ Database error updating site config:', dbError.message)
+      console.error('❌ Error details:', dbError)
+      throw dbError
     }
 
-    
+    // Convert DateTime objects to ISO strings for JSON serialization
+    if (updatedConfig.created_at) {
+      updatedConfig.created_at = updatedConfig.created_at.toISOString()
+    }
+    if (updatedConfig.updated_at) {
+      updatedConfig.updated_at = updatedConfig.updated_at.toISOString()
+    }
+
     res.json(updatedConfig)
   } catch (error) {
     console.error('❌ Error updating site config:', error)
-    res.status(500).json({ error: 'Failed to update site configuration' })
+    res.status(500).json({ error: 'Failed to update site configuration', details: error.message })
   }
 })
 
