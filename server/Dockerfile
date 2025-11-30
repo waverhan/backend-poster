@@ -4,8 +4,16 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache openssl
+# Install system dependencies including build tools for native modules
+RUN apk add --no-cache \
+    openssl \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev
 
 # Copy package files
 COPY package*.json ./

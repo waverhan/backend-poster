@@ -120,9 +120,23 @@ router.get('/check/:productId/:branchId', async (req, res) => {
     const { productId, branchId } = req.params
     const requiredQuantity = parseFloat(req.query.quantity) || 1
 
-    
+    console.log(`📦 Checking inventory for product: ${productId}, branch: ${branchId}, quantity: ${requiredQuantity}`)
 
-    const inventory = await prisma.productInventory.findUnique({
+    // Validate inputs
+    if (!productId || !branchId) {
+      return res.status(400).json({
+        available: false,
+        stock_level: 0,
+        error: 'Missing productId or branchId'
+      })
+    }
+
+    // Use a timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Inventory check timeout')), 5000)
+    )
+
+    const inventoryPromise = prisma.productInventory.findUnique({
       where: {
         product_id_branch_id: {
           product_id: productId,
@@ -131,8 +145,12 @@ router.get('/check/:productId/:branchId', async (req, res) => {
       }
     })
 
+    const inventory = await Promise.race([inventoryPromise, timeoutPromise])
+
     const stockLevel = inventory?.quantity || 0
     const available = stockLevel >= requiredQuantity
+
+    console.log(`✅ Inventory check result: available=${available}, stock=${stockLevel}`)
 
     res.json({
       available,
@@ -145,6 +163,8 @@ router.get('/check/:productId/:branchId', async (req, res) => {
   } catch (error) {
     console.error('❌ Error checking product availability:', error)
     res.status(500).json({
+      available: false,
+      stock_level: 0,
       error: 'Failed to check product availability',
       message: error.message
     })
