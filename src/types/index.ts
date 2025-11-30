@@ -440,6 +440,7 @@ export interface SiteConfig {
   enable_recommendations: boolean
   enable_notifications: boolean
   enable_dark_mode: boolean
+  show_fallback_banner: boolean // Show fallback hero banner when no banners are set
 
   // Payment Settings
   enable_online_payment: boolean

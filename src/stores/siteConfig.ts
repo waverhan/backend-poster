@@ -63,6 +63,7 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
     enable_recommendations: true,
     enable_notifications: true,
     enable_dark_mode: true,
+    show_fallback_banner: false, // Don't show fallback banner by default
 
     // Payment Settings
     enable_online_payment: false,

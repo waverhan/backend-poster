@@ -524,8 +524,19 @@
                 />
                 <span class="text-sm font-medium text-gray-700">Enable Dark Mode Toggle</span>
               </label>
+              <label class="flex items-center space-x-3">
+                <input
+                  v-model="formData.show_fallback_banner"
+                  type="checkbox"
+                  class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span class="text-sm font-medium text-gray-700">Show Fallback Hero Banner</span>
+              </label>
               <div class="text-xs text-gray-500 mt-1">
                 Allow users to switch between light and dark themes
+              </div>
+              <div class="text-xs text-gray-500 mt-1">
+                Display welcome banner when no custom banners are set
               </div>
             </div>
           </div>

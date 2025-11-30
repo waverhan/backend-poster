@@ -9,8 +9,8 @@
     <!-- Banner Slider -->
     <BannerSlider />
 
-    <!-- Fallback Hero Banner Section (shown when no banners) -->
-    <section v-if="!hasBanners" class="bg-gradient-to-br from-primary-600 via-primary-700 to-purple-700 text-white">
+    <!-- Fallback Hero Banner Section (shown when no banners and setting is enabled) -->
+    <section v-if="!hasBanners && showFallbackBanner" class="bg-gradient-to-br from-primary-600 via-primary-700 to-purple-700 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
           <!-- Welcome Banner -->
@@ -523,6 +523,8 @@ const cartCount = computed(() => cartStore.totalItems)
 const totalProductsCount = computed(() => products.value.length)
 
 const hasBanners = computed(() => bannerStore.banners.length > 0)
+
+const showFallbackBanner = computed(() => siteConfigStore.currentConfig.show_fallback_banner === true)
 
 const getCategoryProductCount = (categoryId: string) => {
   return products.value.filter(product => product.category_id === categoryId).length
