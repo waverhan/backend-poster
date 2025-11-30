@@ -116,8 +116,16 @@ class ImageService {
 
       return outputPath
     } catch (error) {
-      console.error(`❌ Failed to optimize image ${inputPath}:`, error.message)
-      throw error
+      console.error(`⚠️  Failed to optimize image ${inputPath}, copying original:`, error.message)
+      // Fallback: just copy the original file to avoid segmentation faults
+      try {
+        fs.copyFileSync(inputPath, outputPath)
+        console.log(`✅ Copied original image: ${path.basename(outputPath)}`)
+        return outputPath
+      } catch (copyError) {
+        console.error(`❌ Failed to copy image:`, copyError.message)
+        throw copyError
+      }
     }
   }
 

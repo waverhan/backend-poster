@@ -118,36 +118,17 @@ router.get('/minio-image/:filename', async (req, res) => {
 
     // Get image buffer
     const buffer = await response.arrayBuffer()
-    let imageBuffer = Buffer.from(buffer)
+    const imageBuffer = Buffer.from(buffer)
 
-    // Resize image if width parameter is provided
-    if (w) {
-      const width = parseInt(w, 10)
-      if (width > 0 && width < 2000) { // Reasonable width range
-        try {
-          console.log(`🔄 Resizing image to ${width}px width`)
-          imageBuffer = await sharp(imageBuffer)
-            .resize(width, width, {
-              fit: 'cover',
-              withoutEnlargement: true
-            })
-            .webp({ quality: 80 }) // Convert to WebP for better compression
-            .toBuffer()
+    // Set content type from MinIO response
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    res.setHeader('Content-Type', contentType)
 
-          res.setHeader('Content-Type', 'image/webp')
-        } catch (resizeError) {
-          console.warn(`⚠️  Failed to resize image, serving original:`, resizeError.message)
-          const contentType = response.headers.get('content-type') || 'image/png'
-          res.setHeader('Content-Type', contentType)
-        }
-      }
-    } else {
-      // No resize, serve original
-      const contentType = response.headers.get('content-type') || 'image/png'
-      res.setHeader('Content-Type', contentType)
-    }
+    // Add cache headers for better performance
+    res.setHeader('Cache-Control', 'public, max-age=86400') // 24 hours
 
-    // Send the image
+    // Send the image directly without processing to avoid segmentation faults
+    // Image resizing is handled on the frontend or during upload optimization
     res.send(imageBuffer)
   } catch (error) {
     console.error('Error serving image:', error)

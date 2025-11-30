@@ -15,5 +15,6 @@ node migrations/add-untappd-mappings.js || echo "⚠️ Untappd mappings migrati
 echo "🚀 Starting the application..."
 # Enable garbage collection and set memory limits to prevent crashes
 # --expose-gc: Enable manual garbage collection
-# --max-old-space-size=512: Limit heap to 512MB to prevent OOM
-node --expose-gc --max-old-space-size=512 index.js
+# --max-old-space-size=1024: Limit heap to 1GB to prevent OOM (increased from 512MB)
+# --abort-on-uncaught-exception: Catch uncaught exceptions
+node --expose-gc --max-old-space-size=1024 --abort-on-uncaught-exception index.js
