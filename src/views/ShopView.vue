@@ -14,11 +14,27 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
           <h1 class="text-4xl md:text-5xl font-bold mb-4">
-            🍺 Опілля
+            Ласкаво просимо до Опілля!
           </h1>
           <p class="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Найкращі напої та делікатеси з доставкою по Києву
+            Найкращі напої та делікатеси з доставкою додому або самовивозом
           </p>
+
+          <!-- Features Section -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+              <div class="text-4xl mb-3">✅</div>
+              <p class="text-lg font-semibold">Актуальні залишки</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+              <div class="text-4xl mb-3">⚡</div>
+              <p class="text-lg font-semibold">Швидка доставка</p>
+            </div>
+            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+              <div class="text-4xl mb-3">💰</div>
+              <p class="text-lg font-semibold">Найкращі ціни</p>
+            </div>
+          </div>
 
           <!-- Welcome Banner -->
           <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 max-w-2xl mx-auto">
