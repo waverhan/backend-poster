@@ -1,19 +1,23 @@
-# Use Node.js 20 Alpine image
-FROM node:20-alpine
+# Use Node.js 20 Debian slim image (glibc-based for better native module compatibility)
+# Alpine (musl libc) causes segmentation faults with sharp and other native modules
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including build tools for native modules
-RUN apk add --no-cache \
+# Install system dependencies for native modules and Prisma
+RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
+    ca-certificates \
     python3 \
     make \
     g++ \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev
+    libcairo2-dev \
+    libjpeg-dev \
+    libpango1.0-dev \
+    libgif-dev \
+    libvips-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
