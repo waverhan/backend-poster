@@ -4,9 +4,25 @@ import { prisma } from '../services/database.js'
 const router = express.Router()
 
 // POST /api/fix-bundle - Fix the gift box bundle product
+// Body: { bundle_items: [{ product_id: "xxx", quantity: 1 }, ...] }
 router.post('/', async (req, res) => {
   try {
     console.log('🔧 Fixing gift box bundle product...')
+
+    const { bundle_items } = req.body
+
+    if (!bundle_items || !Array.isArray(bundle_items) || bundle_items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'bundle_items array is required in request body',
+        example: {
+          bundle_items: [
+            { product_id: 'xxx', quantity: 1 },
+            { product_id: 'yyy', quantity: 1 }
+          ]
+        }
+      })
+    }
 
     // Find the gift box product
     const giftBox = await prisma.product.findFirst({
@@ -26,22 +42,14 @@ router.post('/', async (req, res) => {
     }
 
     console.log(`📦 Found gift box: ${giftBox.display_name} (ID: ${giftBox.id})`)
-
-    // Define the bundle items (5 products)
-    const bundleItems = [
-      { product_id: 'cm3rvqxqy0001rvqy0001rvqy', quantity: 1 }, // Example product 1
-      { product_id: 'cm3rvqxqy0002rvqy0002rvqy', quantity: 1 }, // Example product 2
-      { product_id: 'cm3rvqxqy0003rvqy0003rvqy', quantity: 1 }, // Example product 3
-      { product_id: 'cm3rvqxqy0004rvqy0004rvqy', quantity: 1 }, // Example product 4
-      { product_id: 'cm3rvqxqy0005rvqy0005rvqy', quantity: 1 }  // Example product 5
-    ]
+    console.log(`📝 Setting ${bundle_items.length} bundle items`)
 
     // Update the gift box to be a bundle
     const updated = await prisma.product.update({
       where: { id: giftBox.id },
       data: {
         is_bundle: true,
-        bundle_items: JSON.stringify(bundleItems),
+        bundle_items: JSON.stringify(bundle_items),
         poster_product_id: '' // Ensure it has empty poster_product_id so sync won't overwrite it
       }
     })
