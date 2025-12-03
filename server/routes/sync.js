@@ -288,6 +288,12 @@ router.post('/full', async (req, res) => {
 
         // Update inventory for each product
         for (const product of allProducts) {
+          // Skip bundle products - they don't have inventory in Poster POS
+          if (product.is_bundle) {
+            console.log(`⏭️  Skipping bundle product: ${product.name}`)
+            continue
+          }
+
           // Use ingredient_id to match with inventory data
           const inventory = inventoryMap.get(product.ingredient_id)
 
@@ -403,6 +409,12 @@ router.post('/inventory', async (req, res) => {
           // Update inventory for each product in this batch
           for (const product of products) {
             try {
+              // Skip bundle products - they don't have inventory in Poster POS
+              if (product.is_bundle) {
+                console.log(`⏭️  Skipping bundle product: ${product.name}`)
+                continue
+              }
+
               const inventory = inventoryMap.get(String(product.ingredient_id))
 
               if (inventory) {
