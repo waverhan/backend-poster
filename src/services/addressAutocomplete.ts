@@ -51,20 +51,20 @@ class AddressAutocompleteService {
     try {
       // Auto mode: try multiple providers
       if (options.provider === 'auto') {
-        // Try Google first if API key available
-        if (this.googleApiKey) {
-          const googleResults = await this.searchGooglePlaces(query, options.limit || 3)
-          results.push(...googleResults)
-        }
-
-        // Add OpenStreetMap results
-        const osmResults = await this.searchOpenStreetMap(query, (options.limit || 5) - results.length)
+        // Try OpenStreetMap first (faster and free)
+        const osmResults = await this.searchOpenStreetMap(query, options.limit || 5)
         results.push(...osmResults)
 
-        // Add local database results if still need more
+        // If OSM didn't return enough results, try local database
         if (results.length < (options.limit || 5)) {
           const localResults = await this.searchLocalDatabase(query, (options.limit || 5) - results.length)
           results.push(...localResults)
+        }
+
+        // Only try Google if we still don't have enough results and API key is available
+        if (results.length < (options.limit || 5) && this.googleApiKey) {
+          const googleResults = await this.searchGooglePlaces(query, (options.limit || 5) - results.length)
+          results.push(...googleResults)
         }
       } else {
         // Use specific provider
@@ -143,44 +143,32 @@ class AddressAutocompleteService {
         .replace(/^пл\.?\s*/i, '')
         .replace(/^площа\s*/i, '')
 
-      // Try multiple search strategies for better results
-      const searchQueries = [
-        `${normalizedQuery}, Київ, Україна`,
-        `вулиця ${normalizedQuery}, Київ`,
-        normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv') ? normalizedQuery : `${normalizedQuery}, Kyiv`
-      ]
+      // Use single optimized query instead of multiple queries for better performance
+      const searchQuery = normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv')
+        ? normalizedQuery
+        : `${normalizedQuery}, Київ, Україна`
 
-      const allResults: any[] = []
+      const url = new URL('https://nominatim.openstreetmap.org/search')
+      url.searchParams.set('q', searchQuery)
+      url.searchParams.set('format', 'json')
+      url.searchParams.set('addressdetails', '1')
+      url.searchParams.set('limit', String(limit * 2)) // Get more results for better filtering
+      url.searchParams.set('countrycodes', 'ua')
+      url.searchParams.set('bounded', '1')
+      url.searchParams.set('viewbox', `${this.kyivBounds.west},${this.kyivBounds.south},${this.kyivBounds.east},${this.kyivBounds.north}`)
+      url.searchParams.set('accept-language', 'uk,ru,en')
+      url.searchParams.set('extratags', '1')
 
-      for (const searchQuery of searchQueries) {
-        if (allResults.length >= limit * 2) break
-
-        const url = new URL('https://nominatim.openstreetmap.org/search')
-        url.searchParams.set('q', searchQuery)
-        url.searchParams.set('format', 'json')
-        url.searchParams.set('addressdetails', '1')
-        url.searchParams.set('limit', '10')
-        url.searchParams.set('countrycodes', 'ua')
-        url.searchParams.set('bounded', '1')
-        url.searchParams.set('viewbox', `${this.kyivBounds.west},${this.kyivBounds.south},${this.kyivBounds.east},${this.kyivBounds.north}`)
-        url.searchParams.set('accept-language', 'uk,ru,en')
-        url.searchParams.set('extratags', '1')
-
-        try {
-          const response = await fetch(url.toString(), {
-            headers: {
-              'User-Agent': 'PWA-POS-Shop/1.0',
-              'Accept-Language': 'uk,ru,en'
-            }
-          })
-          const data = await response.json()
-
-          if (Array.isArray(data)) {
-            allResults.push(...data)
-          }
-        } catch (e) {
-          console.warn('OSM search failed for query:', searchQuery)
+      const response = await fetch(url.toString(), {
+        headers: {
+          'User-Agent': 'PWA-POS-Shop/1.0',
+          'Accept-Language': 'uk,ru,en'
         }
+      })
+      const allResults = await response.json()
+
+      if (!Array.isArray(allResults)) {
+        return []
       }
 
       // Deduplicate by osm_id

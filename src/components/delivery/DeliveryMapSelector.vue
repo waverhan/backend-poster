@@ -188,6 +188,7 @@ const userLocation = ref<LocationData | null>(null)
 const selectedBranch = ref<Branch | null>(null)
 const distance = ref(0)
 const error = ref('')
+const geocodeTimeout = ref<number | null>(null)
 
 // Computed
 const availableBranches = computed(() =>
@@ -225,7 +226,14 @@ const handleManualStreet = async (street: string) => {
 }
 
 const handleHouseNumberChange = () => {
-  updateCombinedAddress()
+  // Debounce geocoding to avoid too many API calls
+  if (geocodeTimeout.value) {
+    clearTimeout(geocodeTimeout.value)
+  }
+
+  geocodeTimeout.value = window.setTimeout(() => {
+    updateCombinedAddress()
+  }, 500) // Wait 500ms after user stops typing
 }
 
 const handleEntranceChange = () => {
@@ -242,8 +250,10 @@ const updateCombinedAddress = async () => {
     await geocodeAddress(fullAddress)
   } else if (streetName.value) {
     deliveryAddress.value = `${streetName.value}, Київ, Україна`
+    // Don't geocode without house number - it's too vague
   } else {
     deliveryAddress.value = ''
+    error.value = ''
   }
 }
 
@@ -269,14 +279,26 @@ const handleManualAddress = async (address: string) => {
 
 const geocodeAddress = async (address: string) => {
   try {
-    
+    // Clear previous error
+    error.value = ''
 
-    // Try multiple search strategies
+    // Normalize the address for better matching
+    let normalizedAddress = address.trim()
+      .replace(/^вулиця\s+/i, 'вул. ')
+      .replace(/^вул\s+/i, 'вул. ')
+      .replace(/^просп\s+/i, 'просп. ')
+      .replace(/^проспект\s+/i, 'просп. ')
+      .replace(/^бул\s+/i, 'бул. ')
+      .replace(/^бульвар\s+/i, 'бул. ')
+
+    // Try multiple search strategies with better formatting
     const searchQueries = [
-      address, // Original address
-      `${address}, Київ, Україна`, // With city and country
-      `${address}, Kyiv, Ukraine`, // English version
-      address.replace('вулиця', 'вул.').replace('вул.', 'вул.'), // Normalize street prefix
+      normalizedAddress, // Normalized address
+      `${normalizedAddress}, Київ, Україна`, // With city and country
+      `${normalizedAddress}, Kyiv, Ukraine`, // English version
+      normalizedAddress.replace(', Київ, Україна', ''), // Without city (if already included)
+      // Try with street and house number separated
+      normalizedAddress.replace(/,\s*(\d+[а-яёa-z]?)/i, ' $1'),
     ]
 
     for (const query of searchQueries) {
@@ -285,12 +307,13 @@ const geocodeAddress = async (address: string) => {
           `https://nominatim.openstreetmap.org/search?` + new URLSearchParams({
             q: query,
             format: 'json',
-            limit: '5',
+            limit: '10', // Increased limit for better matching
             countrycodes: 'ua',
             bounded: '1',
             viewbox: `${30.239258},${50.213273},${30.825272},${50.590798}`, // Kyiv bounds
             'accept-language': 'uk,ru,en',
-            addressdetails: '1'
+            addressdetails: '1',
+            dedupe: '0' // Don't deduplicate to get more options
           }),
           {
             headers: {
@@ -301,14 +324,14 @@ const geocodeAddress = async (address: string) => {
         )
 
         const data = await response.json()
-        
+
 
         if (data.length > 0) {
           // Find the best match (prefer exact house number matches)
           let bestResult = data[0]
 
           // If we have a house number in the query, try to find exact match
-          const houseMatch = address.match(/\d+[а-яё]?/i)
+          const houseMatch = address.match(/\d+[а-яёa-z]?/i)
           if (houseMatch) {
             const queryHouse = houseMatch[0].toLowerCase()
             const exactMatch = data.find(result =>
@@ -316,7 +339,15 @@ const geocodeAddress = async (address: string) => {
             )
             if (exactMatch) {
               bestResult = exactMatch
-              
+
+            } else {
+              // Try to find partial match (e.g., "12" matches "12а")
+              const partialMatch = data.find(result =>
+                result.address?.house_number?.toLowerCase().startsWith(queryHouse)
+              )
+              if (partialMatch) {
+                bestResult = partialMatch
+              }
             }
           }
 
@@ -351,7 +382,7 @@ const geocodeAddress = async (address: string) => {
               address: formattedAddress
             })
 
-            
+
             return // Success, exit function
           }
         }
