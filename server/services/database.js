@@ -272,6 +272,9 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       is_new: product.is_new || false,
       new_until: product.new_until ? product.new_until.toISOString() : null,
       sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
+      // Bundle/Gift Set features
+      is_bundle: product.is_bundle || false,
+      bundle_items: product.bundle_items ? JSON.parse(product.bundle_items) : null,
       // Category information for recommendations
       category_name: product.category.display_name,
       category: product.category ? {
