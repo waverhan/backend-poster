@@ -720,7 +720,7 @@ const pageSubheading = computed(() => {
   }
   if (selectedBranch.value) {
     const branchLabel = selectedBranch.value.display_name || selectedBranch.value.name
-    return `Показуємо товари, доступні у філії "${branchLabel}"`
+    return ``
   }
   return 'Оберіть спосіб отримання, щоб бачити актуальні залишки та ціни'
 })

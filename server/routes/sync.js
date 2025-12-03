@@ -214,6 +214,12 @@ router.post('/full', async (req, res) => {
 
       }
 
+      // Get existing product to preserve bundle fields
+      const existingBundleProduct = await prisma.product.findUnique({
+        where: { poster_product_id: productData.poster_product_id },
+        select: { is_bundle: true, bundle_items: true }
+      })
+
       // Upsert product
       const product = await prisma.product.upsert({
         where: { poster_product_id: productData.poster_product_id },
@@ -227,7 +233,10 @@ router.post('/full', async (req, res) => {
           original_price: productData.original_price,
           image_url: productData.image_url,
           display_image_url: productData.display_image_url,
-          is_active: productData.is_active
+          is_active: productData.is_active,
+          // Preserve bundle fields - don't overwrite bundle products
+          is_bundle: existingBundleProduct?.is_bundle ?? false,
+          bundle_items: existingBundleProduct?.bundle_items ?? null
         },
         create: {
           poster_product_id: productData.poster_product_id,
@@ -1031,7 +1040,10 @@ router.post('/products-only', async (req, res) => {
           // Preserve existing custom quantity fields if they exist, otherwise use defaults
           custom_quantity: existingProduct?.custom_quantity ?? productData.custom_quantity,
           custom_unit: existingProduct?.custom_unit ?? productData.custom_unit,
-          quantity_step: existingProduct?.quantity_step ?? productData.quantity_step
+          quantity_step: existingProduct?.quantity_step ?? productData.quantity_step,
+          // Preserve bundle fields - don't overwrite bundle products
+          is_bundle: existingProduct?.is_bundle ?? false,
+          bundle_items: existingProduct?.bundle_items ?? null
         },
         create: {
           ...productData,
