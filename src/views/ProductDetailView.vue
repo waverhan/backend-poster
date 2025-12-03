@@ -34,7 +34,7 @@
       <div v-else class="bg-white rounded-lg shadow-lg overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
           <!-- Product Image -->
-          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
             <img
               v-if="product.display_image_url"
               :src="getImageUrl(product.display_image_url)"
@@ -46,6 +46,21 @@
               <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
+            </div>
+
+            <!-- Badges Container - Stack vertically -->
+            <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+              <!-- Sale Badge -->
+              <div v-if="product.original_price && product.original_price > product.price">
+                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-500 text-white shadow-lg">
+                  SALE
+                </span>
+              </div>
+
+              <!-- New Product Badge -->
+              <div v-if="isNewProduct" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                ✨ Новинка
+              </div>
             </div>
           </div>
 
@@ -261,6 +276,28 @@ const isBeerProduct = computed(() => {
          categoryName.includes('beer') ||
          productName.includes('пиво') ||
          productName.includes('beer')
+})
+
+// Check if product is new
+const isNewProduct = computed(() => {
+  if (!product.value || !product.value.is_new) return false
+
+  // Check if new_until date has passed
+  if (product.value.new_until) {
+    const newUntilDate = new Date(product.value.new_until)
+    const now = new Date()
+    return now <= newUntilDate
+  }
+
+  // Fallback: show as new for 14 days from creation
+  if (product.value.created_at) {
+    const createdDate = new Date(product.value.created_at)
+    const now = new Date()
+    const daysDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    return daysDiff <= 14
+  }
+
+  return false
 })
 
 // Parse product attributes from JSON string or array

@@ -16,18 +16,21 @@ echo "📦 Adding inventory for gift set product..."
 
 for BRANCH_ID in "${BRANCHES[@]}"; do
   echo "Adding inventory for branch: $BRANCH_ID"
-  
+
   curl -X POST "${BACKEND_URL}/api/inventory" \
     -H "Content-Type: application/json" \
     -d "{
       \"product_id\": \"${PRODUCT_ID}\",
       \"branch_id\": \"${BRANCH_ID}\",
-      \"quantity\": 10,
+      \"quantity\": 50,
       \"unit\": \"pcs\"
-    }" -s | jq -c '{id, product_id, branch_id, quantity, unit}'
-  
+    }" -s | jq '.'
+
   echo ""
 done
 
 echo "✅ Inventory added for all branches!"
+echo ""
+echo "Verifying inventory..."
+curl -s "${BACKEND_URL}/api/products" | jq '.[] | select(.id == "cmiqephft0001btecg5kjduk2") | {id, display_name, quantity, available}'
 

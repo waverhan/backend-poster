@@ -380,8 +380,19 @@ class BackendApiService {
     if (!imagePath) return ''
     if (imagePath.startsWith('http')) return imagePath
 
-    // For local images, we'll let the browser handle 404s and fallback in the component
-    return `${BACKEND_BASE_URL}${imagePath}`
+    // Handle different path formats
+    let normalizedPath = imagePath
+
+    // If path starts with 'products/', add '/images/' prefix
+    if (imagePath.startsWith('products/')) {
+      normalizedPath = `/images/${imagePath}`
+    }
+    // If path doesn't start with '/', add it
+    else if (!imagePath.startsWith('/')) {
+      normalizedPath = `/${imagePath}`
+    }
+
+    return `${BACKEND_BASE_URL}${normalizedPath}`
   }
 
   // Generate an optimized image URL that leverages the backend transformer when available

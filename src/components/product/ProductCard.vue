@@ -26,15 +26,19 @@
             />
             <span v-else class="text-4xl">🍽️</span>
 
-            <!-- New Product Badge -->
-            <NewProductBadge :product="product" />
+            <!-- Badges Container - Stack vertically -->
+            <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
+              <!-- Sale Badge -->
+              <div v-if="product.original_price && product.original_price > product.price">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
+                  SALE
+                </span>
+              </div>
 
-            <!-- Sale Badge on Image -->
-            <div v-if="product.original_price && product.original_price > product.price"
-                 class="absolute top-2 left-2 z-10">
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500 text-white shadow-sm">
-                SALE
-              </span>
+              <!-- New Product Badge -->
+              <div v-if="isNewProduct" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg animate-pulse">
+                ✨ Новинка
+              </div>
             </div>
 
             <!-- Product Attributes Overlay -->
@@ -284,7 +288,6 @@ import ratingService from '@/services/ratingService'
 import type { CombinedRating } from '@/services/ratingService'
 import BottleSelector from './BottleSelector.vue'
 import SaleCountdown from '../SaleCountdown.vue'
-import NewProductBadge from '../NewProductBadge.vue'
 import LikeButton from './LikeButton.vue'
 import OptimizedImage from '@/components/ui/OptimizedImage.vue'
 
@@ -407,6 +410,28 @@ const truncatedDescription = computed(() => {
 // Product subtitle from database field
 const productSubtitle = computed(() => {
   return props.product.subtitle || ''
+})
+
+// Check if product is new
+const isNewProduct = computed(() => {
+  if (!props.product.is_new) return false
+
+  // Check if new_until date has passed
+  if (props.product.new_until) {
+    const newUntilDate = new Date(props.product.new_until)
+    const now = new Date()
+    return now <= newUntilDate
+  }
+
+  // Fallback: show as new for 14 days from creation
+  if (props.product.created_at) {
+    const createdDate = new Date(props.product.created_at)
+    const now = new Date()
+    const daysDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
+    return daysDiff <= 14
+  }
+
+  return false
 })
 
 // Price display logic for weight-based products
