@@ -41,10 +41,12 @@ const generateSlug = (text) => {
   return transliterateCyrillic(text)
 }
 
+const PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || 'https://opillia.com.ua'
+
 // XML Sitemap
 router.get('/sitemap.xml', async (req, res) => {
   try {
-    const baseUrl = 'https://opillia.com.ua'
+    const baseUrl = PUBLIC_SITE_URL
     const currentDate = new Date().toISOString().split('T')[0]
 
     // Get active products for product pages
@@ -146,7 +148,7 @@ router.get('/sitemap.xml', async (req, res) => {
 // Sitemap index (if we need multiple sitemaps in the future)
 router.get('/sitemap-index.xml', async (req, res) => {
   try {
-    const baseUrl = 'https://opillia.com.ua'
+    const baseUrl = PUBLIC_SITE_URL
     const currentDate = new Date().toISOString().split('T')[0]
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -167,7 +169,7 @@ router.get('/sitemap-index.xml', async (req, res) => {
 
 // Robots.txt
 router.get('/robots.txt', (req, res) => {
-  const baseUrl = 'https://opillia.com.ua'
+  const baseUrl = PUBLIC_SITE_URL
   
   const robotsTxt = `User-agent: *
 Allow: /

@@ -65,6 +65,9 @@ export async function getCategories(includeInactive = false) {
     display_name: cat.display_name,
     slug: cat.slug || generateSlug(cat.display_name),
     description: cat.description || '',
+    seo_title: cat.seo_title || '',
+    seo_meta_description: cat.seo_meta_description || '',
+    seo_content: cat.seo_content || '',
     image_url: cat.image_url || '',
     sort_order: cat.sort_order,
     is_active: cat.is_active,
@@ -79,7 +82,11 @@ export async function createCategory(data) {
     data: {
       name: data.name,
       display_name: data.display_name,
+       slug: data.slug || generateSlug(data.display_name),
       description: data.description,
+       seo_title: data.seo_title,
+       seo_meta_description: data.seo_meta_description,
+       seo_content: data.seo_content,
       image_url: data.image_url,
       sort_order: data.sort_order || 0,
       is_active: data.is_active !== undefined ? data.is_active : true
@@ -96,7 +103,11 @@ export async function createCategory(data) {
     id: category.id,
     name: category.name,
     display_name: category.display_name,
+    slug: category.slug || generateSlug(category.display_name),
     description: category.description || '',
+    seo_title: category.seo_title || '',
+    seo_meta_description: category.seo_meta_description || '',
+    seo_content: category.seo_content || '',
     image_url: category.image_url || '',
     sort_order: category.sort_order,
     is_active: category.is_active,
@@ -266,7 +277,8 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       category: product.category ? {
         id: product.category.id,
         name: product.category.name,
-        display_name: product.category.display_name
+        display_name: product.category.display_name,
+        slug: product.category.slug
       } : null,
       created_at: product.created_at.toISOString(),
       updated_at: product.updated_at.toISOString()
@@ -294,6 +306,8 @@ export async function createProduct(data) {
       custom_unit: data.custom_unit || null,
       quantity_step: data.quantity_step || null,
       min_quantity: data.min_quantity || null,
+      is_bundle: data.is_bundle || false,
+      bundle_items: data.bundle_items ? JSON.stringify(data.bundle_items) : null,
       max_quantity: data.max_quantity || null,
       is_new: data.is_new || false,
       new_until: data.new_until ? new Date(data.new_until) : null,

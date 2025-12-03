@@ -7,17 +7,20 @@
     <div class="card-main-content">
       <!-- Product Image -->
       <div class="relative">
-        <router-link :to="`/product/${product.slug || product.id}`" class="block">
+        <router-link
+          :to="`/product/${product.slug || product.id}`"
+          class="block"
+          :aria-label="`Переглянути ${product.display_name || product.name}`"
+        >
           <div class="aspect-square bg-gray-100 flex items-center justify-center relative cursor-pointer hover:opacity-90 transition-opacity">
-            <img
-              v-if="imageUrl"
-              :src="imageUrl"
-              :srcset="imageSrcset"
-              :sizes="imageSizes"
-              :alt="product.display_name"
-              class="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
+            <OptimizedImage
+              v-if="productImagePath"
+              :src="productImagePath"
+              :alt="product.display_name || product.name || 'Товар Опілля'"
+              :widths="productImageWidths"
+              :sizes="productImageSizes"
+              wrapper-class="w-full h-full"
+              img-class="w-full h-full object-cover"
               @error="onImageError"
               @load="onImageLoad"
             />
@@ -283,6 +286,7 @@ import BottleSelector from './BottleSelector.vue'
 import SaleCountdown from '../SaleCountdown.vue'
 import NewProductBadge from '../NewProductBadge.vue'
 import LikeButton from './LikeButton.vue'
+import OptimizedImage from '@/components/ui/OptimizedImage.vue'
 
 interface Props {
   product: Product
@@ -327,6 +331,8 @@ const isHovered = ref(false)
 
 // Ref for add to cart button (for animation)
 const addToCartButton = ref<HTMLButtonElement>()
+const productImageWidths = [300, 490, 640, 800]
+const productImageSizes = '(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 22vw'
 
 // Computed properties
 const isDraft = computed(() => {
@@ -467,35 +473,12 @@ const parsedAttributes = computed(() => {
 })
 
 // Get image URL - simple and direct, just like ProductDetailView
-const imageUrl = computed(() => {
+const productImagePath = computed(() => {
   const primaryImage = props.product.display_image_url || props.product.image_url
   if (!primaryImage) {
     return ''
   }
-  // Use the backend API to get the full image URL
-  // API returns /api/upload/minio-image/... which gets prepended with backend URL
-  return backendApi.getImageUrl(primaryImage)
-})
-
-// Generate responsive image srcset for different screen sizes
-const imageSrcset = computed(() => {
-  if (!imageUrl.value) return ''
-
-  // Generate srcset with different sizes for responsive loading
-  // 300w: mobile phones (small)
-  // 490w: mobile phones (standard) - our display size
-  // 600w: tablets and high-DPI phones
-  // 800w: larger tablets
-  return `${imageUrl.value}?w=300 300w, ${imageUrl.value}?w=490 490w, ${imageUrl.value}?w=600 600w, ${imageUrl.value}?w=800 800w`
-})
-
-// Define sizes for responsive images
-// This tells the browser which image size to use based on viewport width
-const imageSizes = computed(() => {
-  // On mobile (< 640px): use 90vw (90% of viewport width)
-  // On tablet (640px - 1024px): use 45vw (45% of viewport width, 2 columns)
-  // On desktop (> 1024px): use 22vw (22% of viewport width, 4 columns)
-  return '(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 22vw'
+  return primaryImage
 })
 
 // Methods for quantity control

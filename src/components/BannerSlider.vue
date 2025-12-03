@@ -13,13 +13,19 @@
         <!-- Banner Content -->
         <div class="relative h-64 sm:h-80 md:h-96 lg:h-[500px]">
           <!-- Background Image -->
-          <div
-            v-if="banner.image_url"
-            class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            :style="{ backgroundImage: `url(${getImageUrl(banner.image_url)})` }"
-          >
+          <div v-if="banner.image_url" class="absolute inset-0">
+            <OptimizedImage
+              :src="banner.image_url"
+              :alt="banner.title"
+              :widths="bannerImageWidths"
+              sizes="100vw"
+              aspect-ratio="16 / 9"
+              wrapper-class="h-full w-full"
+              img-class="h-full w-full brightness-90"
+              :priority="index === currentSlide"
+            />
             <!-- Overlay for better text readability -->
-            <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+            <div class="absolute inset-0 bg-black bg-opacity-30 pointer-events-none"></div>
           </div>
           
           <!-- Fallback gradient background -->
@@ -106,9 +112,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useBannerStore } from '@/stores/banners'
+import OptimizedImage from '@/components/ui/OptimizedImage.vue'
 
 const bannerStore = useBannerStore()
 const banners = computed(() => bannerStore.banners)
+const bannerImageWidths = [640, 960, 1366, 1920]
 
 const currentSlide = ref(0)
 let autoSlideInterval: NodeJS.Timeout | null = null
@@ -148,19 +156,14 @@ const resetAutoSlide = () => {
   startAutoSlide()
 }
 
-const getImageUrl = (imageUrl: string) => {
-  if (imageUrl.startsWith('http')) {
-    return imageUrl
-  }
-  return `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}${imageUrl}`
-}
-
 const isExternalLink = (url: string) => {
   return url.startsWith('http://') || url.startsWith('https://')
 }
 
 onMounted(async () => {
-  await bannerStore.fetchBanners()
+  if (!banners.value.length && !bannerStore.loading) {
+    await bannerStore.fetchBanners()
+  }
   startAutoSlide()
 })
 

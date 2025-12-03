@@ -231,6 +231,7 @@ import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import LikeButton from '@/components/product/LikeButton.vue'
 import CartAnimationOverlay from '@/components/CartAnimationOverlay.vue'
 import type { Product } from '@/types'
+import { updateSeoMeta, appendStructuredData, buildBreadcrumbSchema, absoluteUrl, removeStructuredData } from '@/utils/seoUtils'
 
 const route = useRoute()
 const router = useRouter()
@@ -378,54 +379,52 @@ const displayAttributes = computed(() => {
 const addStructuredData = () => {
   if (!product.value) return
 
-  // Remove existing structured data
-  const existingProductScript = document.querySelector('script[type="application/ld+json"][data-product-schema]')
-  if (existingProductScript) {
-    existingProductScript.remove()
-  }
+  const imageUrl = product.value.display_image_url ? backendApi.getImageUrl(product.value.display_image_url) : undefined
 
-  const existingBreadcrumbScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb-schema]')
-  if (existingBreadcrumbScript) {
-    existingBreadcrumbScript.remove()
-  }
+  const productSlugOrId = product.value.slug || product.value.id
+  const productUrl = absoluteUrl(`/product/${productSlugOrId}`)
 
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": product.value.display_name,
-    "description": product.value.description || '',
-    "image": product.value.display_image_url ? backendApi.getImageUrl(product.value.display_image_url) : undefined,
-    "brand": {
-      "@type": "Brand",
-      "name": "Опілля"
+  const structuredData: Record<string, any> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.value.display_name,
+    description: product.value.description || '',
+    image: imageUrl,
+    sku: product.value.poster_product_id || product.value.id,
+    mpn: product.value.id,
+    url: productUrl,
+    brand: {
+      '@type': 'Brand',
+      '@id': 'https://opillia.com.ua/#organization',
+      name: 'Опілля'
     },
-    "offers": {
-      "@type": "Offer",
-      "price": product.value.price.toString(),
-      "priceCurrency": "UAH",
-      "availability": product.value.available ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "seller": {
-        "@type": "Organization",
-        "name": "Опілля"
+    offers: {
+      '@type': 'Offer',
+      price: product.value.price.toString(),
+      priceCurrency: 'UAH',
+      url: productUrl,
+      itemCondition: 'https://schema.org/NewCondition',
+      availability: product.value.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: {
+        '@type': 'Organization',
+        '@id': 'https://opillia.com.ua/#organization',
+        name: 'Опілля'
       }
     }
   }
 
-  // Add combined rating if available
   if (combinedRating.value && combinedRating.value.totalReviews > 0) {
     structuredData.aggregateRating = {
-      "@type": "AggregateRating",
-      "ratingValue": combinedRating.value.averageRating.toString(),
-      "ratingCount": combinedRating.value.totalReviews.toString(),
-      "bestRating": "5",
-      "worstRating": "1"
+      '@type': 'AggregateRating',
+      ratingValue: combinedRating.value.averageRating.toString(),
+      ratingCount: combinedRating.value.totalReviews.toString(),
+      bestRating: '5',
+      worstRating: '1'
     }
 
-    // Add review information if available
     if (combinedRating.value.hasLocalReviews || combinedRating.value.hasUntappdRating) {
       structuredData.review = []
 
-      // Add a summary review indicating the source of ratings
       let reviewText = `Середня оцінка ${combinedRating.value.averageRating.toFixed(1)} з 5 зірок`
       if (combinedRating.value.hasLocalReviews && combinedRating.value.hasUntappdRating) {
         reviewText += ` на основі ${combinedRating.value.localReviewCount} місцевих відгуків та ${combinedRating.value.untappdReviewCount} відгуків з Untappd`
@@ -436,158 +435,132 @@ const addStructuredData = () => {
       }
 
       structuredData.review.push({
-        "@type": "Review",
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": combinedRating.value.averageRating.toString(),
-          "bestRating": "5",
-          "worstRating": "1"
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: combinedRating.value.averageRating.toString(),
+          bestRating: '5',
+          worstRating: '1'
         },
-        "author": {
-          "@type": "Organization",
-          "name": "Opillia"
+        author: {
+          '@type': 'Organization',
+          name: 'Opillia'
         },
-        "reviewBody": reviewText
+        reviewBody: reviewText
       })
     }
   }
 
-  // Add additional properties for beer products
   if (isBeerProduct.value) {
     const attrs = parsedAttributes.value
-    structuredData.category = "Alcoholic Beverage"
+    structuredData.category = 'Alcoholic Beverage'
     structuredData.additionalProperty = []
 
     if (attrs.abv) {
       structuredData.additionalProperty.push({
-        "@type": "PropertyValue",
-        "name": "Alcohol by Volume",
-        "value": `${attrs.abv}%`
+        '@type': 'PropertyValue',
+        name: 'Alcohol by Volume',
+        value: `${attrs.abv}%`
       })
     }
 
     if (attrs.ibu) {
       structuredData.additionalProperty.push({
-        "@type": "PropertyValue",
-        "name": "International Bitterness Units",
-        "value": attrs.ibu.toString()
+        '@type': 'PropertyValue',
+        name: 'International Bitterness Units',
+        value: attrs.ibu.toString()
       })
     }
 
     if (attrs.og) {
       structuredData.additionalProperty.push({
-        "@type": "PropertyValue",
-        "name": "Original Gravity",
-        "value": `${attrs.og}%`
+        '@type': 'PropertyValue',
+        name: 'Original Gravity',
+        value: `${attrs.og}%`
       })
     }
 
     if (attrs.style) {
       structuredData.additionalProperty.push({
-        "@type": "PropertyValue",
-        "name": "Beer Style",
-        "value": attrs.style
+        '@type': 'PropertyValue',
+        name: 'Beer Style',
+        value: attrs.style
       })
     }
   }
 
-  // Update page title and meta tags
   const productTitle = `Купити "${product.value.display_name}" в Києві | OpilliaSHOP`
-  const productDescription = `ᐉ Замовити "${product.value.display_name}" онлайн – купуйте з доставкою додому в Києві ☎ 097 324 46 68 ⚡ Доступні ціни ⚡ Акції і знижки ⭐ краща якість`
+  const productDescription = `ᐉ Замовити "${product.value.display_name}" онлайн – купуйте з доставкою по Києву ☎ ${siteConfigStore.currentConfig.company_phone || '097 324 46 68'} ⚡ Доступні ціни ⚡ Акції і знижки ⭐ краща якість`
+  const canonicalPath = `/product/${productSlugOrId}`
 
-  // Update page title
-  document.title = productTitle
-
-  // Update or create meta description
-  let metaDescription = document.querySelector('meta[name="description"]')
-  if (!metaDescription) {
-    metaDescription = document.createElement('meta')
-    metaDescription.setAttribute('name', 'description')
-    document.head.appendChild(metaDescription)
-  }
-  metaDescription.setAttribute('content', productDescription)
-
-  // Update or create Open Graph meta tags
-  const ogTags = [
-    { property: 'og:title', content: `Купити "${product.value.display_name}" в Києві | OpilliaSHOP` },
-    { property: 'og:description', content: productDescription },
-    { property: 'og:type', content: 'product' },
-    { property: 'og:url', content: window.location.href },
-    { property: 'og:site_name', content: 'OpilliaShop' },
-    { property: 'product:price:amount', content: product.value.price.toString() },
-    { property: 'product:price:currency', content: 'UAH' }
-  ]
-
-  if (product.value.display_image_url) {
-    ogTags.push({
-      property: 'og:image',
-      content: backendApi.getImageUrl(product.value.display_image_url)
-    })
-  }
-
-  ogTags.forEach(tag => {
-    let metaTag = document.querySelector(`meta[property="${tag.property}"]`)
-    if (!metaTag) {
-      metaTag = document.createElement('meta')
-      metaTag.setAttribute('property', tag.property)
-      document.head.appendChild(metaTag)
-    }
-    metaTag.setAttribute('content', tag.content)
+  updateSeoMeta({
+    title: productTitle,
+    description: productDescription,
+    canonical: canonicalPath,
+    ogType: 'product',
+    ogImage: imageUrl
   })
 
-  // Create breadcrumb structured data
   const breadcrumbItems = [
-    {
-      "@type": "ListItem",
-      "position": 1,
-      "name": "Головна",
-      "item": "https://opillia.com.ua/"
-    },
-    {
-      "@type": "ListItem",
-      "position": 2,
-      "name": "Магазин",
-      "item": "https://opillia.com.ua/shop"
-    }
+    { name: 'Головна', url: absoluteUrl('/') },
+    { name: 'Магазин', url: absoluteUrl('/shop') }
   ]
 
-  // Add category if available
   if (product.value.category_name) {
     breadcrumbItems.push({
-      "@type": "ListItem",
-      "position": 3,
-      "name": product.value.category_name,
-      "item": `https://opillia.com.ua/shop?category=${product.value.category_id}`
+      name: product.value.category_name,
+      url: absoluteUrl(`/shop?category=${product.value.category?.slug || product.value.category_id}`)
     })
   }
 
-  // Add product as final item
   breadcrumbItems.push({
-    "@type": "ListItem",
-    "position": breadcrumbItems.length + 1,
-    "name": product.value.display_name,
-    "item": window.location.href
+    name: product.value.display_name,
+    url: absoluteUrl(canonicalPath)
   })
 
-  const breadcrumbData = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": breadcrumbItems
+  const cfg = siteConfigStore.currentConfig
+  const deliveryFee = cfg.delivery_base_fee || cfg.delivery_fee || 0
+  const freeDelivery = cfg.free_delivery_threshold || 0
+  const phone = cfg.company_phone || '+38-097-324-46-68'
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Які терміни доставки для ${product.value.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Доставляємо по Києву протягом 60–120 хвилин. Базова доставка коштує від ${deliveryFee} ₴, а при замовленні від ${freeDelivery} ₴ вона безкоштовна.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: 'Які способи оплати доступні?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: cfg.enable_online_payment
+            ? 'Оплачуйте онлайн карткою, Apple/Google Pay або готівкою курʼєру при отриманні.'
+            : 'Оплата відбувається під час отримання — готівкою або карткою курʼєру.'
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `Як отримати консультацію щодо ${product.value.display_name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Зателефонуйте нам за номером ${phone} або напишіть у чат — менеджер підкаже по смаку, поєднаннях і наявності.`
+        }
+      }
+    ]
   }
 
-  // Create and append product structured data script tag
-  const productScript = document.createElement('script')
-  productScript.type = 'application/ld+json'
-  productScript.setAttribute('data-product-schema', 'true')
-  productScript.textContent = JSON.stringify(structuredData, null, 2)
-  document.head.appendChild(productScript)
-
-  // Create and append breadcrumb structured data script tag
-  const breadcrumbScript = document.createElement('script')
-  breadcrumbScript.type = 'application/ld+json'
-  breadcrumbScript.setAttribute('data-breadcrumb-schema', 'true')
-  breadcrumbScript.textContent = JSON.stringify(breadcrumbData, null, 2)
-  document.head.appendChild(breadcrumbScript)
+  appendStructuredData([
+    { id: 'product', data: structuredData },
+    { id: 'product-breadcrumb', data: buildBreadcrumbSchema(breadcrumbItems) },
+    { id: 'product-faq', data: faqSchema }
+  ])
 }
 
 const getImageUrl = (imagePath: string): string => {
@@ -857,19 +830,6 @@ onMounted(async () => {
 
 // Cleanup meta tags when component is unmounted
 onUnmounted(() => {
-  // Remove product-specific structured data
-  const existingProductScript = document.querySelector('script[type="application/ld+json"][data-product-schema]')
-  if (existingProductScript) {
-    existingProductScript.remove()
-  }
-
-  // Remove breadcrumb structured data
-  const existingBreadcrumbScript = document.querySelector('script[type="application/ld+json"][data-breadcrumb-schema]')
-  if (existingBreadcrumbScript) {
-    existingBreadcrumbScript.remove()
-  }
-
-  // Reset page title to default
-  document.title = 'OpilliaShop - Найкращі напої та делікатеси'
+  removeStructuredData(['product', 'product-breadcrumb', 'product-faq'])
 })
 </script>

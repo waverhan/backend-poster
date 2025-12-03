@@ -30,9 +30,9 @@ export const useDiscountStore = defineStore('discount', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await backendApi.get('/discounts')
-      discounts.value = response.data
-      return response.data
+      const { data } = await backendApi.get<Discount[]>('/discounts')
+      discounts.value = data
+      return data
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching discounts:', err)
@@ -45,10 +45,10 @@ export const useDiscountStore = defineStore('discount', () => {
   // Get enabled discounts
   const getEnabledDiscounts = async () => {
     try {
-      const response = await backendApi.get('/discounts/enabled')
-      console.log('✅ Enabled discounts loaded:', response.data)
-      discounts.value = response.data
-      return response.data
+      const { data } = await backendApi.get<Discount[]>('/discounts/enabled')
+      console.log('✅ Enabled discounts loaded:', data)
+      discounts.value = data
+      return data
     } catch (err: any) {
       console.error('Error fetching enabled discounts:', err)
       return []
@@ -59,15 +59,15 @@ export const useDiscountStore = defineStore('discount', () => {
   const getApplicableDiscounts = async (customerId: string | null, userId: string | null, subtotal: number, items: any[]) => {
     try {
       console.log('📊 Requesting applicable discounts:', { customerId, userId, subtotal, itemsCount: items.length })
-      const response = await backendApi.post('/discounts/applicable', {
+      const { data } = await backendApi.post<Discount[]>('/discounts/applicable', {
         customerId,
         userId,
         subtotal,
         items
       })
-      console.log('✅ Applicable discounts received:', response.data)
-      applicableDiscounts.value = response.data
-      return response.data
+      console.log('✅ Applicable discounts received:', data)
+      applicableDiscounts.value = data
+      return data
     } catch (err: any) {
       console.error('Error getting applicable discounts:', err)
       return []
@@ -77,9 +77,9 @@ export const useDiscountStore = defineStore('discount', () => {
   // Create discount (admin)
   const createDiscount = async (data: Partial<Discount>) => {
     try {
-      const response = await backendApi.post('/discounts', data)
-      discounts.value.push(response.data)
-      return response.data
+      const { data: created } = await backendApi.post<Discount>('/discounts', data)
+      discounts.value.push(created)
+      return created
     } catch (err: any) {
       error.value = err.message
       throw err
@@ -89,12 +89,12 @@ export const useDiscountStore = defineStore('discount', () => {
   // Update discount (admin)
   const updateDiscount = async (id: string, data: Partial<Discount>) => {
     try {
-      const response = await backendApi.put(`/discounts/${id}`, data)
+      const { data: updated } = await backendApi.put<Discount>(`/discounts/${id}`, data)
       const index = discounts.value.findIndex(d => d.id === id)
       if (index !== -1) {
-        discounts.value[index] = response.data
+        discounts.value[index] = updated
       }
-      return response.data
+      return updated
     } catch (err: any) {
       error.value = err.message
       throw err
@@ -139,4 +139,3 @@ export const useDiscountStore = defineStore('discount', () => {
     calculateTotalDiscount
   }
 })
-

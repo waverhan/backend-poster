@@ -1,13 +1,20 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Promotion Popup Slider -->
-    <PromotionPopupSlider />
+    <div ref="promotionObserverRef">
+      <PromotionPopupSlider v-if="showPromotionSlider" />
+    </div>
 
     <!-- Cart Animation Overlay -->
-    <CartAnimationOverlay ref="cartAnimationOverlay" />
+    <CartAnimationOverlay
+      v-if="showCartOverlay"
+      ref="cartAnimationOverlay"
+    />
 
     <!-- Banner Slider -->
-    <BannerSlider />
+    <div v-if="hasBanners" ref="bannerObserverRef">
+      <BannerSlider v-if="showBannerSlider" />
+    </div>
 
     <!-- Fallback Hero Banner Section (shown when no banners and setting is enabled) -->
     <section v-if="!hasBanners && showFallbackBanner" class="bg-gradient-to-br from-primary-600 via-primary-700 to-purple-700 text-white">
@@ -43,6 +50,14 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
+          {{ pageHeading }}
+        </h1>
+        <p v-if="pageSubheading" class="mt-2 text-base text-gray-600 dark:text-gray-300">
+          {{ pageSubheading }}
+        </p>
+      </header>
 
       <!-- Address Input for Delivery -->
       <section v-if="deliveryMethod === 'delivery' && !selectedBranch" class="mb-8">
@@ -91,7 +106,7 @@
 
           <div v-if="!branchesLoaded" class="text-center py-8">
             <button
-              @click="loadBranches"
+              @click="loadBranches()"
               :disabled="loading.branches"
               class="btn-primary"
             >
@@ -193,7 +208,7 @@
                 <p class="text-xs text-gray-500 mt-1">Перевірте з'єднання з інтернетом</p>
               </div>
               <button
-                @click="loadCategories"
+                @click="loadCategories()"
                 class="ml-2 text-blue-600 hover:text-blue-800 underline font-medium"
               >
                 Спробувати ще раз
@@ -208,7 +223,9 @@
               <!-- Mobile: Daily Deals Tab -->
               <button
                 v-if="productsOnSale.length > 0"
+                type="button"
                 @click="selectDealsCategory()"
+                :aria-pressed="selectedCategory?.id === 'deals'"
                 :class="[
                   'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-1',
                   selectedCategory?.id === 'deals'
@@ -222,7 +239,9 @@
               <button
                 v-for="category in categoriesWithProducts"
                 :key="category.id"
+                type="button"
                 @click="selectCategory(category)"
+                :aria-pressed="selectedCategory?.id === category.id"
                 :class="[
                   'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
                   selectedCategory?.id === category.id
@@ -239,7 +258,9 @@
               <!-- Desktop: Daily Deals Tab -->
               <button
                 v-if="productsOnSale.length > 0"
+                type="button"
                 @click="selectDealsCategory()"
+                :aria-pressed="selectedCategory?.id === 'deals'"
                 :class="[
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap flex-shrink-0',
                   selectedCategory?.id === 'deals'
@@ -254,7 +275,9 @@
               <button
                 v-for="category in categoriesWithProducts"
                 :key="category.id"
+                type="button"
                 @click="selectCategory(category)"
+                :aria-pressed="selectedCategory?.id === category.id"
                 :class="[
                   'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0',
                   selectedCategory?.id === category.id
@@ -325,9 +348,13 @@
               @add-bottle-to-cart="addBottleToCart"
               @cart-animation="handleCartAnimation"
             />
-          </div>
+        </div>
         </div>
 
+        <CategorySeoDescription
+          v-if="categorySeoContent"
+          :content="categorySeoContent"
+        />
 
       </section>
 
@@ -388,7 +415,7 @@
         <div class="flex-1 overflow-y-auto p-6">
           <div v-if="!branchesLoaded" class="text-center py-8">
             <button
-              @click="loadBranches"
+              @click="loadBranches()"
               :disabled="loading.branches"
               class="btn-primary"
             >
@@ -432,10 +459,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
+import { useIntersectionObserver } from '@vueuse/core'
 
 // Stores
 import { useCartStore } from '@/stores/cart'
@@ -451,22 +479,30 @@ import { useDiscountStore } from '@/stores/discount'
 // Services
 import { capacitorService } from '@/services/capacitor'
 import googleAnalytics from '@/services/googleAnalytics'
+import { backendApi } from '@/services/backendApi'
 
 // Utils
 import { testPosterApi } from '@/utils/testApi'
 import { isDraftBeverage } from '@/utils/bottleUtils'
+import { updateSeoMeta, appendStructuredData, removeStructuredData, absoluteUrl } from '@/utils/seoUtils'
 
 // Components
 import ProductCard from '@/components/product/ProductCard.vue'
 import AddressAutocomplete from '@/components/AddressAutocomplete.vue'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import BannerSlider from '@/components/BannerSlider.vue'
-import PromotionPopupSlider from '@/components/PromotionPopupSlider.vue'
-import CartAnimationOverlay from '@/components/CartAnimationOverlay.vue'
+import CategorySeoDescription from '@/components/shop/CategorySeoDescription.vue'
 
 // Types
 import type { Branch, Category, Product, FulfillmentType, LocationData } from '@/types'
 import type { AddressSuggestion } from '@/services/addressAutocomplete'
+
+const BannerSlider = defineAsyncComponent(() => import('@/components/BannerSlider.vue'))
+const PromotionPopupSlider = defineAsyncComponent(() => import('@/components/PromotionPopupSlider.vue'))
+const CartAnimationOverlay = defineAsyncComponent(() => import('@/components/CartAnimationOverlay.vue'))
+
+interface CartAnimationOverlayExposed {
+  addAnimation: (startX: number, startY: number, endX: number, endY: number) => void
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -510,12 +546,93 @@ const showDeliveryModal = ref(false)
 const showPickupModal = ref(false)
 
 // Cart animation overlay ref
-const cartAnimationOverlay = ref<InstanceType<typeof CartAnimationOverlay>>()
+const cartAnimationOverlay = ref<CartAnimationOverlayExposed | null>(null)
 
 // Search state
 const searchQuery = ref('')
 const showSearchResults = ref(false)
 const searchResults = ref<Product[]>([])
+
+// Deferred UI state
+const showPromotionSlider = ref(false)
+const showBannerSlider = ref(false)
+const showCartOverlay = ref(false)
+const promotionObserverRef = ref<HTMLElement | null>(null)
+const bannerObserverRef = ref<HTMLElement | null>(null)
+
+if (typeof window !== 'undefined') {
+  if ('IntersectionObserver' in window) {
+    const { stop: stopPromotionObserver } = useIntersectionObserver(
+      promotionObserverRef,
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          showPromotionSlider.value = true
+          stopPromotionObserver()
+        }
+      },
+      {
+        rootMargin: '160px 0px 0px 0px'
+      }
+    )
+
+    const { stop: stopBannerObserver } = useIntersectionObserver(
+      bannerObserverRef,
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          showBannerSlider.value = true
+          stopBannerObserver()
+        }
+      },
+      {
+        rootMargin: '160px 0px 0px 0px'
+      }
+    )
+  } else {
+    showPromotionSlider.value = true
+    showBannerSlider.value = true
+  }
+
+  const scheduleCartOverlayMount = () => {
+    if (showCartOverlay.value) return
+    const idle = (window as any).requestIdleCallback
+    if (typeof idle === 'function') {
+      idle(() => {
+        showCartOverlay.value = true
+      }, { timeout: 2000 })
+    } else {
+      window.setTimeout(() => {
+        showCartOverlay.value = true
+      }, 1200)
+    }
+  }
+
+  scheduleCartOverlayMount()
+} else {
+  showPromotionSlider.value = true
+  showBannerSlider.value = true
+  showCartOverlay.value = true
+}
+
+const waitForCartOverlay = () => {
+  if (cartAnimationOverlay.value) {
+    return Promise.resolve()
+  }
+
+  showCartOverlay.value = true
+
+  return new Promise<void>((resolve) => {
+    const stop = watch(
+      cartAnimationOverlay,
+      (instance) => {
+        if (instance) {
+          stop()
+          resolve()
+        }
+      },
+      { immediate: true }
+    )
+  })
+}
 
 // Computed
 const cartCount = computed(() => cartStore.totalItems)
@@ -530,6 +647,19 @@ const getCategoryProductCount = (categoryId: string) => {
   return products.value.filter(product => product.category_id === categoryId).length
 }
 
+const slugify = (value: string) => {
+  if (!value) return ''
+  return value
+    .toString()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u0400-\u04FF\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
 // Computed property for displayed products (either by category, deals, or search)
 const displayedProducts = computed(() => {
   if (showSearchResults.value && searchQuery.value.trim()) {
@@ -539,6 +669,70 @@ const displayedProducts = computed(() => {
     return productsOnSale.value
   }
   return productsByCategory.value
+})
+
+const topDisplayedProduct = computed(() => displayedProducts.value[0])
+const lcpProductImagePath = computed(() => {
+  const topProduct = topDisplayedProduct.value
+  if (!topProduct) return ''
+  return topProduct.display_image_url || topProduct.image_url || ''
+})
+
+const hasActiveSearch = computed(() => showSearchResults.value && !!searchQuery.value.trim())
+
+const normalizedCategorySlug = computed(() => {
+  if (!selectedCategory.value || selectedCategory.value.id === 'deals') return null
+  return selectedCategory.value.slug || slugify(selectedCategory.value.display_name)
+})
+
+const shopCanonicalPath = computed(() => {
+  if (hasActiveSearch.value) {
+    return '/shop'
+  }
+  if (!selectedCategory.value) {
+    return '/shop'
+  }
+  if (selectedCategory.value.id === 'deals') {
+    return '/shop?category=deals'
+  }
+  if (normalizedCategorySlug.value) {
+    return `/shop?category=${normalizedCategorySlug.value}`
+  }
+  return '/shop'
+})
+
+const pageHeading = computed(() => {
+  if (hasActiveSearch.value) {
+    return `Пошук: "${searchQuery.value.trim()}"`
+  }
+  if (selectedCategory.value?.id === 'deals') {
+    return 'Акції та знижки'
+  }
+  if (selectedCategory.value) {
+    return selectedCategory.value.display_name
+  }
+  return 'Магазин Опілля'
+})
+
+const pageSubheading = computed(() => {
+  if (hasActiveSearch.value) {
+    return `Знайдено ${displayedProducts.value.length} товарів у каталозі`
+  }
+  if (selectedBranch.value) {
+    const branchLabel = selectedBranch.value.display_name || selectedBranch.value.name
+    return `Показуємо товари, доступні у філії "${branchLabel}"`
+  }
+  return 'Оберіть спосіб отримання, щоб бачити актуальні залишки та ціни'
+})
+
+const activeCategoryForSeo = computed(() => {
+  if (!selectedCategory.value || selectedCategory.value.id === 'deals') return null
+  return selectedCategory.value
+})
+
+const categorySeoContent = computed(() => {
+  if (hasActiveSearch.value) return ''
+  return activeCategoryForSeo.value?.seo_content || ''
 })
 
 // Discount banners for homepage
@@ -641,6 +835,131 @@ const clearSearch = () => {
   searchQuery.value = ''
   searchResults.value = []
   showSearchResults.value = false
+}
+
+const SHOP_ITEM_LIST_ID = 'shop-item-list'
+const SHOP_LCP_PRELOAD_ATTR = 'data-shop-lcp-preload'
+
+const buildItemListSchema = () => {
+  const items = displayedProducts.value.slice(0, 12).map((product, index) => {
+    const productSlugOrId = product.slug || product.id
+    const imagePath = product.display_image_url || product.image_url
+    const imageUrl = imagePath ? backendApi.getImageUrl(imagePath) : undefined
+    const productUrl = absoluteUrl(`/product/${productSlugOrId}`)
+
+    return {
+      '@type': 'ListItem',
+      position: index + 1,
+      name: product.display_name || product.name,
+      url: productUrl,
+      item: {
+        '@type': 'Product',
+        name: product.display_name || product.name,
+        image: imageUrl,
+        sku: product.poster_product_id || product.id,
+        offers: {
+          '@type': 'Offer',
+          price: product.price?.toString() || '0',
+          priceCurrency: 'UAH',
+          availability: product.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+          url: productUrl
+        }
+      }
+    }
+  })
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${selectedCategory.value?.name || 'Каталог'} | ${siteConfigStore.currentConfig.site_name}`,
+    itemListOrder: 'https://schema.org/ItemListOrderAscending',
+    numberOfItems: displayedProducts.value.length,
+    itemListElement: items
+  }
+}
+
+const updateShopSeoMetadata = () => {
+  const cfg = siteConfigStore.currentConfig
+  const categoryLabel = hasActiveSearch.value
+    ? `Результати пошуку "${searchQuery.value.trim()}"`
+    : selectedCategory.value?.display_name || 'Каталог'
+  const branchLabel = selectedBranch.value?.display_name || selectedBranch.value?.name
+
+  const descriptionSegments: string[] = []
+
+  if (hasActiveSearch.value) {
+    descriptionSegments.push(`Пошук "${searchQuery.value.trim()}" у каталозі ${cfg.site_name}.`)
+    descriptionSegments.push(`Знайдено ${displayedProducts.value.length} товарів, доступних для доставки чи самовивозу у Києві.`)
+  } else if (activeCategoryForSeo.value) {
+    if (activeCategoryForSeo.value.seo_meta_description) {
+      descriptionSegments.push(activeCategoryForSeo.value.seo_meta_description)
+      descriptionSegments.push(`Доступно ${displayedProducts.value.length} товарів у наявності.`)
+    } else {
+      descriptionSegments.push(`${categoryLabel} в ${cfg.site_name}: ${displayedProducts.value.length} товарів у наявності.`)
+      if (activeCategoryForSeo.value.description) {
+        descriptionSegments.push(activeCategoryForSeo.value.description)
+      }
+    }
+  } else {
+    descriptionSegments.push(`Онлайн-магазин ${cfg.site_name}: свіже пиво, сидри та делікатеси з доставкою по Києву.`)
+    descriptionSegments.push(`Зараз доступно ${displayedProducts.value.length} товарів.`)
+  }
+
+  if (branchLabel) {
+    descriptionSegments.push(`Поточна філія: ${branchLabel}.`)
+  } else {
+    descriptionSegments.push('Оберіть філію, щоб бачити актуальні залишки.')
+  }
+
+  const resolvedTitle = hasActiveSearch.value
+    ? `${categoryLabel} – ${cfg.site_name}`
+    : activeCategoryForSeo.value?.seo_title || `${categoryLabel} – ${cfg.site_name}`
+
+  updateSeoMeta({
+    title: resolvedTitle,
+    description: descriptionSegments.join(' '),
+    canonical: shopCanonicalPath.value || '/shop',
+    ogType: 'website'
+  })
+
+  if (!displayedProducts.value.length) {
+    removeStructuredData(SHOP_ITEM_LIST_ID)
+    return
+  }
+
+  appendStructuredData([
+    {
+      id: SHOP_ITEM_LIST_ID,
+      data: buildItemListSchema()
+    }
+  ])
+}
+
+const updateLcpPreloadLink = () => {
+  if (typeof document === 'undefined') return
+  const imagePath = lcpProductImagePath.value
+  const existingLink = document.head.querySelector(`link[${SHOP_LCP_PRELOAD_ATTR}]`) as HTMLLinkElement | null
+
+  if (!imagePath) {
+    existingLink?.remove()
+    return
+  }
+
+  const optimizedHref =
+    backendApi.getOptimizedImageUrl(imagePath, { width: 640, format: 'webp', quality: 80 }) ||
+    backendApi.getImageUrl(imagePath)
+
+  let linkEl = existingLink
+  if (!linkEl) {
+    linkEl = document.createElement('link')
+    linkEl.rel = 'preload'
+    linkEl.as = 'image'
+    linkEl.fetchpriority = 'high'
+    linkEl.setAttribute(SHOP_LCP_PRELOAD_ATTR, 'true')
+    document.head.appendChild(linkEl)
+  }
+
+  linkEl.href = optimizedHref
 }
 
 // Methods
@@ -997,7 +1316,7 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
       duration: 5000,
       action: {
         label: 'Retry',
-        callback: () => {
+        handler: () => {
           showCategoryError.value = false
           loadCategories(0, maxRetries)
         }
@@ -1037,6 +1356,10 @@ const selectDealsCategory = () => {
     name: 'deals',
     display_name: t('deals.title'),
     description: 'Products on sale',
+    slug: 'deals',
+    seo_title: '',
+    seo_meta_description: '',
+    seo_content: '',
     image_url: null,
     sort_order: -1,
     is_active: true,
@@ -1044,6 +1367,7 @@ const selectDealsCategory = () => {
     updated_at: new Date().toISOString()
   }
   productStore.selectCategory(dealsCategory)
+  router.push({ query: { ...route.query, category: 'deals' } })
 }
 
 const loadProducts = async () => {
@@ -1071,9 +1395,12 @@ const loadProducts = async () => {
   }
 }
 
-const handleCartAnimation = (data: { startX: number; startY: number }) => {
+const handleCartAnimation = async (data: { startX: number; startY: number }) => {
   console.log('🎯 handleCartAnimation called:', data)
-  console.log('📍 cartAnimationOverlay ref:', cartAnimationOverlay.value)
+
+  if (!cartAnimationOverlay.value) {
+    await waitForCartOverlay()
+  }
 
   if (!cartAnimationOverlay.value) {
     console.error('❌ cartAnimationOverlay ref is not available')
@@ -1097,12 +1424,26 @@ const handleCartAnimation = (data: { startX: number; startY: number }) => {
   }
 
   console.log('🚀 Triggering animation to:', { endX, endY, isMobile })
-  cartAnimationOverlay.value.addAnimation(data.startX, data.startY, endX, endY)
+  cartAnimationOverlay.value?.addAnimation(data.startX, data.startY, endX, endY)
 }
 
 const addToCart = async (product: Product, quantity?: number, bottles?: any, bottleCost?: number) => {
   // Haptic feedback for better UX
   await capacitorService.hapticImpact('light')
+
+  // Check if this is a bundle product
+  if (product.is_bundle) {
+    try {
+      await cartStore.addBundleProduct(product, quantity || 1)
+      // Success haptic feedback
+      await capacitorService.hapticNotification('success')
+      return
+    } catch (error) {
+      console.error('Failed to add bundle product:', error)
+      await capacitorService.hapticNotification('error')
+      return
+    }
+  }
 
   const cartItem: any = {
     product_id: product.id,
@@ -1181,6 +1522,10 @@ const calculateDeliveryFee = (distanceKm: number): number => {
 const handleCategoryFromURL = () => {
   const categoryParam = route.query.category as string
   if (categoryParam && categoriesWithProducts.value.length > 0) {
+    if (categoryParam === 'deals') {
+      selectDealsCategory()
+      return
+    }
     // Find category by slug first (preferred), then by display_name (legacy support)
     const category = categoriesWithProducts.value.find(cat =>
       cat.slug === categoryParam ||
@@ -1218,6 +1563,15 @@ const loadProductsForCategory = async (categoryId: string) => {
 }
 
 // Watch for route changes to handle category parameter
+watch(
+  [displayedProducts, selectedCategory, searchQuery, showSearchResults, selectedBranch],
+  () => {
+    updateShopSeoMetadata()
+    updateLcpPreloadLink()
+  },
+  { immediate: true }
+)
+
 watch(() => route.query.category, () => {
   handleCategoryFromURL()
 }, { immediate: false })
@@ -1296,6 +1650,14 @@ onMounted(async () => {
   } finally {
     // Always set initial loading to false when done
     loading.value.initial = false
+  }
+})
+
+onUnmounted(() => {
+  removeStructuredData(SHOP_ITEM_LIST_ID)
+  if (typeof document !== 'undefined') {
+    const preloadLink = document.head.querySelector(`link[${SHOP_LCP_PRELOAD_ATTR}]`)
+    preloadLink?.remove()
   }
 })
 </script>

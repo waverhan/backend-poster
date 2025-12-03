@@ -202,7 +202,10 @@ export function calculateBottleCost(bottles: BottleSelection): number {
  * Get total number of bottles selected
  */
 export function getTotalBottles(bottles: BottleSelection): number {
-  return Object.values(bottles).reduce((total, quantity) => total + quantity, 0)
+  return Object.entries(bottles).reduce((total, [, quantity]) => {
+    if (typeof quantity !== 'number') return total
+    return total + quantity
+  }, 0)
 }
 
 /**
@@ -212,6 +215,7 @@ export function getTotalBottleVolume(bottles: BottleSelection): number {
   let totalVolume = 0
 
   for (const [size, quantity] of Object.entries(bottles)) {
+    if (typeof quantity !== 'number') continue
     const volume = parseFloat(size.replace('L', ''))
     totalVolume += volume * quantity
   }
@@ -234,6 +238,7 @@ export function getBottleSelectionSummary(bottles: BottleSelection): string {
   const selections = []
 
   for (const [size, quantity] of Object.entries(bottles)) {
+    if (typeof quantity !== 'number') continue
     if (quantity > 0) {
       selections.push(`${size} x ${quantity}`)
     }

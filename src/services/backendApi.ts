@@ -384,6 +384,38 @@ class BackendApiService {
     return `${BACKEND_BASE_URL}${imagePath}`
   }
 
+  // Generate an optimized image URL that leverages the backend transformer when available
+  getOptimizedImageUrl(
+    imagePath: string,
+    options: { width?: number; format?: 'webp' | 'avif' | 'jpeg' | 'png'; quality?: number } = {}
+  ): string {
+    if (!imagePath) return ''
+
+    const baseUrl = this.getImageUrl(imagePath)
+    const canTransform = imagePath.startsWith('/api/upload/minio-image')
+
+    if (!canTransform || !baseUrl) {
+      return baseUrl
+    }
+
+    try {
+      const optimizedUrl = new URL(baseUrl)
+      if (options.width) {
+        optimizedUrl.searchParams.set('w', String(Math.round(options.width)))
+      }
+      if (options.format) {
+        optimizedUrl.searchParams.set('format', options.format)
+      }
+      if (options.quality) {
+        optimizedUrl.searchParams.set('q', String(Math.round(options.quality)))
+      }
+      return optimizedUrl.toString()
+    } catch (error) {
+      console.warn('Failed to build optimized image URL, falling back to original:', error)
+      return baseUrl
+    }
+  }
+
   // Get Poster image URL with smart fallback
   getPosterImageUrl(posterProductId: string): string {
     if (!posterProductId) return ''

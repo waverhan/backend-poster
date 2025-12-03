@@ -86,12 +86,44 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
   }
 })
 
-// GET /api/upload/minio-image/:filename?w=300 - Serve MinIO images with optional resizing
-// This endpoint supports responsive image loading with width parameter
+// Simple in-memory cache for transformed images to avoid reprocessing the same variant
+const imageCache = new Map()
+const CACHE_TTL_MS = 1000 * 60 * 15 // 15 minutes
+
+const getCacheKey = (filename, width, format, quality) =>
+  `${filename}:${width || 'auto'}:${format || 'orig'}:${quality || 'default'}`
+
+// Clamp helper to keep params within sane limits
+const clampNumber = (value, min, max) => Math.min(Math.max(value, min), max)
+
+// GET /api/upload/minio-image/:filename?w=300&format=webp - Serve MinIO images with optional resizing
+// Supports responsive image loading with width + optional format/quality conversion
 router.get('/minio-image/:filename', async (req, res) => {
   try {
     const { filename } = req.params
-    const { w } = req.query // width parameter for responsive images
+    const { w, format: requestedFormat, q } = req.query // width/format/quality params
+
+    const width = w ? clampNumber(parseInt(w, 10) || 0, 60, 2000) : null
+    const format = typeof requestedFormat === 'string' ? requestedFormat.toLowerCase() : null
+    const supportedFormats = ['webp', 'avif', 'jpeg', 'png']
+    const safeFormat = supportedFormats.includes(format) ? format : null
+    const quality = q ? clampNumber(parseInt(q, 10) || 0, 40, 95) : 82
+
+    const cacheKey = getCacheKey(filename, width, safeFormat, quality)
+    const now = Date.now()
+    const cachedEntry = imageCache.get(cacheKey)
+
+    if (cachedEntry) {
+      if (cachedEntry.expiresAt > now) {
+        res.setHeader('Content-Type', cachedEntry.contentType)
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'GET')
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+        return res.send(cachedEntry.buffer)
+      }
+      imageCache.delete(cacheKey)
+    }
 
     // Set cache headers for long-term caching (images are immutable)
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable') // 1 year cache
@@ -120,16 +152,62 @@ router.get('/minio-image/:filename', async (req, res) => {
     const buffer = await response.arrayBuffer()
     const imageBuffer = Buffer.from(buffer)
 
-    // Set content type from MinIO response
-    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    let contentType = response.headers.get('content-type') || 'image/jpeg'
+    let outputBuffer = imageBuffer
+
+    const canTransform =
+      (width || safeFormat) &&
+      !contentType.includes('gif') &&
+      !contentType.includes('svg')
+
+    if (canTransform) {
+      try {
+        const pipeline = sharp(imageBuffer, { failOn: 'none', unlimited: false })
+
+        if (width) {
+          pipeline.resize({
+            width,
+            withoutEnlargement: true,
+            fit: 'inside'
+          })
+        }
+
+        if (safeFormat === 'webp') {
+          pipeline.webp({ quality, effort: 4 })
+          contentType = 'image/webp'
+        } else if (safeFormat === 'avif') {
+          pipeline.avif({ quality: clampNumber(quality, 40, 85), effort: 4 })
+          contentType = 'image/avif'
+        } else if (safeFormat === 'png') {
+          pipeline.png({ quality: clampNumber(quality, 40, 100), compressionLevel: 9 })
+          contentType = 'image/png'
+        } else if (safeFormat === 'jpeg') {
+          pipeline.jpeg({ quality, mozjpeg: true })
+          contentType = 'image/jpeg'
+        }
+
+        outputBuffer = await pipeline.toBuffer()
+      } catch (error) {
+        console.warn('⚠️ Image transform failed, falling back to original:', error.message)
+        outputBuffer = imageBuffer
+      }
+    }
+
     res.setHeader('Content-Type', contentType)
+    res.send(outputBuffer)
 
-    // Add cache headers for better performance
-    res.setHeader('Cache-Control', 'public, max-age=86400') // 24 hours
+    imageCache.set(cacheKey, {
+      buffer: outputBuffer,
+      contentType,
+      expiresAt: Date.now() + CACHE_TTL_MS
+    })
 
-    // Send the image directly without processing to avoid segmentation faults
-    // Image resizing is handled on the frontend or during upload optimization
-    res.send(imageBuffer)
+    if (imageCache.size > 200) {
+      const oldestKey = imageCache.keys().next().value
+      if (oldestKey) {
+        imageCache.delete(oldestKey)
+      }
+    }
   } catch (error) {
     console.error('Error serving image:', error)
     res.status(500).json({ error: 'Failed to serve image' })

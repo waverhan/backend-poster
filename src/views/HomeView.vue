@@ -1,10 +1,19 @@
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Promotion Popup Slider -->
-    <PromotionPopupSlider />
+    <div ref="promotionObserverRef">
+      <PromotionPopupSlider v-if="showPromotionSlider" />
+    </div>
 
     <!-- Banner Slider -->
-    <BannerSlider />
+    <div ref="bannerObserverRef">
+      <BannerSlider v-if="hasBanners && showBannerSlider" />
+      <div
+        v-else-if="showBannerSkeleton"
+        class="relative h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"
+        aria-hidden="true"
+      ></div>
+    </div>
 
     <!-- Fallback Hero Section (shown when no banners) -->
     <div v-if="!hasBanners" class="relative bg-white overflow-hidden">
@@ -53,11 +62,16 @@
         </div>
       </div>
       <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
-        <img
-          v-if="siteConfig.hero_banner_url && siteConfig.hero_banner_url !== '/hero-banner.jpg'"
-          class="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full"
-          :src="siteConfig.hero_banner_url"
+        <OptimizedImage
+          v-if="hasCustomHeroImage"
+          :src="heroImageSrc"
           :alt="siteConfig.hero_title"
+          :widths="heroImageWidths"
+          :sizes="heroImageSizes"
+          aspect-ratio="4 / 3"
+          wrapper-class="h-56 w-full sm:h-72 md:h-96 lg:w-full lg:h-full"
+          img-class="h-full w-full"
+          :priority="true"
           @error="showFallbackBanner = true"
         />
         <div
@@ -177,14 +191,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useIntersectionObserver } from '@vueuse/core'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useBannerStore } from '@/stores/banners'
 import { useAuthStore } from '@/stores/auth'
-import BannerSlider from '@/components/BannerSlider.vue'
-import PromotionPopupSlider from '@/components/PromotionPopupSlider.vue'
-import AdminLogin from '@/components/auth/AdminLogin.vue'
+const BannerSlider = defineAsyncComponent(() => import('@/components/BannerSlider.vue'))
+const PromotionPopupSlider = defineAsyncComponent(() => import('@/components/PromotionPopupSlider.vue'))
+const AdminLogin = defineAsyncComponent(() => import('@/components/auth/AdminLogin.vue'))
+import OptimizedImage from '@/components/ui/OptimizedImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -196,11 +212,71 @@ const siteConfig = computed(() => siteConfigStore.currentConfig)
 const showFallbackBanner = ref(false)
 const hasBanners = computed(() => bannerStore.banners.length > 0)
 const showAdminLogin = ref(false)
+const showPromotionSlider = ref(false)
+const showBannerSlider = ref(false)
+const promotionObserverRef = ref<HTMLElement | null>(null)
+const bannerObserverRef = ref<HTMLElement | null>(null)
+const showBannerSkeleton = computed(() => hasBanners.value && !showBannerSlider.value)
+const heroImageSrc = computed(() => siteConfig.value.hero_banner_url || '')
+const hasCustomHeroImage = computed(() => heroImageSrc.value && heroImageSrc.value !== '/hero-banner.jpg')
+const heroImageWidths = [480, 768, 1024, 1440]
+const heroImageSizes = '(max-width: 1024px) 100vw, 50vw'
+
+if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+  useIntersectionObserver(
+    bannerObserverRef,
+    (entries, observer) => {
+      if (entries[0]?.isIntersecting) {
+        showBannerSlider.value = true
+        observer.disconnect()
+      }
+    },
+    {
+      rootMargin: '200px 0px 0px 0px'
+    }
+  )
+
+  useIntersectionObserver(
+    promotionObserverRef,
+    (entries, observer) => {
+      if (entries[0]?.isIntersecting) {
+        showPromotionSlider.value = true
+        observer.disconnect()
+      }
+    },
+    {
+      rootMargin: '120px 0px 0px 0px'
+    }
+  )
+} else {
+  showPromotionSlider.value = true
+  showBannerSlider.value = true
+}
 
 // Check if admin login is requested via query parameter
 onMounted(() => {
   if (route.query.admin === 'true') {
     showAdminLogin.value = true
+  }
+
+  if (!bannerStore.banners.length) {
+    bannerStore.fetchBanners().catch((error) => {
+      console.error('Failed to preload banners:', error)
+    })
+  }
+
+  if (typeof window !== 'undefined') {
+    window.setTimeout(() => {
+      if (!showPromotionSlider.value) {
+        showPromotionSlider.value = true
+      }
+    }, 1500)
+
+    window.setTimeout(() => {
+      if (!showBannerSlider.value) {
+        showBannerSlider.value = true
+      }
+    }, 1200)
   }
 })
 
@@ -219,5 +295,3 @@ const closeAdminLogin = () => {
   router.replace({ query: { ...route.query, admin: undefined } })
 }
 </script>
-
-

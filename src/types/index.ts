@@ -29,6 +29,7 @@ export interface Coordinates {
 export interface Branch {
   id: string
   poster_id?: string
+  display_name?: string
   name: string
   address: string
   phone?: string
@@ -37,8 +38,11 @@ export interface Branch {
   longitude: number
   delivery_available: boolean
   pickup_available: boolean
+  working_hours?: string
   operating_hours?: OperatingHours
+  is_active?: boolean
   distance_km?: number
+  distance?: number
   delivery_fee?: number
   created_at?: string
   updated_at?: string
@@ -67,8 +71,11 @@ export interface Category {
   name: string
   display_name: string
   slug?: string // URL-friendly slug for category links
-  description?: string
-  image_url?: string
+  description?: string | null
+  seo_title?: string | null
+  seo_meta_description?: string | null
+  seo_content?: string | null
+  image_url?: string | null
   sort_order?: number
   is_active: boolean
   created_at?: string
@@ -83,12 +90,18 @@ export interface ProductAttribute {
   color?: string // For visual indicators like red bars
 }
 
+export interface BundleItem {
+  product_id: string
+  quantity: number
+}
+
 export interface Product {
   id: string
   poster_product_id?: string
   category_id: string
   name: string
   display_name: string
+  slug?: string
   description?: string
   subtitle?: string
   price: number
@@ -96,9 +109,12 @@ export interface Product {
   sale_expires_at?: string
   image_url?: string
   display_image_url?: string
+  category_name?: string
   unit?: string // 'pcs', 'kg', 'г', etc.
   min_quantity?: number
   max_quantity?: number
+  quantity?: number | null
+  stock_quantity?: number | null
   is_active: boolean
   available: boolean
   is_new?: boolean // Mark as new product
@@ -109,6 +125,10 @@ export interface Product {
   custom_quantity?: number | null // Custom selling quantity (e.g., 0.05 for 50g, 0.5 for 500ml)
   custom_unit?: string // Display unit (e.g., "г", "мл", "шт")
   quantity_step?: number | null // Step for quantity increase (e.g., 0.5 for beer, 0.05 for snacks)
+  // Bundle/Gift Set system
+  is_bundle?: boolean // Mark product as a bundle/gift set
+  bundle_items?: BundleItem[] // Array of products included in the bundle
+  bottles?: BottleSelection
   branch_id?: string
   category?: Category
   created_at?: string
@@ -122,8 +142,20 @@ export interface BottleSize {
   quantity: number // Number of bottles selected
 }
 
+export interface BottleSelectionItem {
+  id: string
+  poster_product_id?: string
+  name: string
+  price: number
+  quantity: number
+  unit?: string
+  image_url?: string
+  max_quantity?: number
+}
+
 export interface BottleSelection {
   [key: string]: number // bottle size -> quantity
+  bottles?: BottleSelectionItem[]
 }
 
 // Cart Types
@@ -309,7 +341,7 @@ export interface LocationData {
   longitude: number
   accuracy?: number
   address?: string
-  timestamp: number
+  timestamp?: number
 }
 
 // Network Types
@@ -431,6 +463,7 @@ export interface SiteConfig {
   delivery_base_distance_km: number // Base distance included (e.g., 2 km)
   delivery_extra_fee_per_km: number // Extra fee per km beyond base (e.g., 30 UAH)
   free_delivery_threshold: number // Free delivery above this amount
+  delivery_fee?: number
 
   // Features
   enable_reviews: boolean

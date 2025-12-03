@@ -119,6 +119,44 @@ export const useCartStore = defineStore('cart', () => {
     saveToStorage()
   }
 
+  const addBundleProduct = async (bundleProduct: Product, bundleQuantity: number = 1) => {
+    // Fetch bundle items from backend
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/products/${bundleProduct.id}/bundle-items`)
+      const data = await response.json()
+
+      if (!data.bundle_items || data.bundle_items.length === 0) {
+        console.warn('No bundle items found for product:', bundleProduct.id)
+        return
+      }
+
+      // Add each bundle item to cart
+      for (const bundleItem of data.bundle_items) {
+        const product = bundleItem.product
+        const itemQuantity = bundleItem.quantity * bundleQuantity
+
+        addItem({
+          product_id: product.id,
+          poster_product_id: product.poster_product_id,
+          name: product.display_name || product.name,
+          price: product.price,
+          quantity: itemQuantity,
+          image_url: product.display_image_url || product.image_url,
+          unit: product.unit || 'шт',
+          max_quantity: product.max_quantity,
+          custom_quantity: product.custom_quantity,
+          custom_unit: product.custom_unit,
+          quantity_step: product.quantity_step
+        })
+      }
+
+      console.log(`✅ Added bundle product "${bundleProduct.display_name}" with ${data.bundle_items.length} items`)
+    } catch (error) {
+      console.error('Failed to add bundle product:', error)
+      throw error
+    }
+  }
+
   const updateItemQuantity = (cartItemId: string, quantity: number) => {
     const item = items.value.find(i => i.cart_item_id === cartItemId)
 
@@ -322,6 +360,7 @@ export const useCartStore = defineStore('cart', () => {
 
     // Actions
     addItem,
+    addBundleProduct,
     updateItemQuantity,
     removeItem,
     clearCart,

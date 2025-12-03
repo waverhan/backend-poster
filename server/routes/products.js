@@ -89,7 +89,9 @@ router.put('/:id', async (req, res) => {
       max_quantity,
       is_new,
       new_until,
-      sale_expires_at
+      sale_expires_at,
+      is_bundle,
+      bundle_items
     } = req.body
 
     // Validation
@@ -124,7 +126,9 @@ router.put('/:id', async (req, res) => {
         max_quantity: max_quantity || null,
         is_new: is_new || false,
         new_until: new_until ? new Date(new_until) : null,
-        sale_expires_at: sale_expires_at ? new Date(sale_expires_at) : null
+        sale_expires_at: sale_expires_at ? new Date(sale_expires_at) : null,
+        is_bundle: is_bundle || false,
+        bundle_items: bundle_items ? JSON.stringify(bundle_items) : null
       },
       include: {
         category: true,
@@ -712,6 +716,84 @@ router.post('/bulk-update-attributes', async (req, res) => {
       error: 'Bulk attribute update failed',
       message: error.message
     })
+  }
+})
+
+// GET /api/products/:id/bundle-items - Get bundle items with full product details
+router.get('/:id/bundle-items', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    // Get the bundle product
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    if (!product.is_bundle || !product.bundle_items) {
+      return res.json({ bundle_items: [] })
+    }
+
+    // Parse bundle items
+    const bundleItems = JSON.parse(product.bundle_items)
+
+    // Get full product details for each bundle item
+    const productIds = bundleItems.map(item => item.product_id)
+    const products = await prisma.product.findMany({
+      where: {
+        id: { in: productIds }
+      },
+      include: {
+        category: true,
+        inventory: true
+      }
+    })
+
+    // Map bundle items with full product details
+    const bundleItemsWithDetails = bundleItems.map(bundleItem => {
+      const product = products.find(p => p.id === bundleItem.product_id)
+      if (!product) return null
+
+      const inventory = product.inventory[0]
+
+      return {
+        ...bundleItem,
+        product: {
+          id: product.id,
+          poster_product_id: product.poster_product_id,
+          name: product.name,
+          display_name: product.display_name,
+          slug: product.slug,
+          description: product.description,
+          price: product.price,
+          original_price: product.original_price,
+          image_url: product.image_url,
+          display_image_url: product.display_image_url,
+          category_id: product.category_id,
+          category_name: product.category?.display_name || product.category?.name,
+          is_active: product.is_active,
+          requires_bottles: product.requires_bottles,
+          attributes: product.attributes ? JSON.parse(product.attributes) : null,
+          custom_quantity: product.custom_quantity,
+          custom_unit: product.custom_unit,
+          quantity_step: product.quantity_step,
+          min_quantity: product.min_quantity,
+          max_quantity: product.max_quantity,
+          quantity: inventory?.quantity || 0,
+          unit: inventory?.unit || 'pcs',
+          available: product.is_active && (inventory?.quantity || 0) > 0
+        }
+      }
+    }).filter(item => item !== null)
+
+    res.json({ bundle_items: bundleItemsWithDetails })
+
+  } catch (error) {
+    console.error('❌ Error fetching bundle items:', error)
+    res.status(500).json({ error: 'Failed to fetch bundle items' })
   }
 })
 

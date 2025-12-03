@@ -403,6 +403,10 @@ const i18n = createI18n({
 
 export default i18n
 
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = savedLanguage
+}
+
 // Helper function to change language
 export const changeLanguage = (locale: string) => {
   i18n.global.locale.value = locale

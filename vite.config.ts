@@ -2,32 +2,49 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import path from 'node:path'
+import fs from 'node:fs'
+import Critters from 'critters'
+
+const inlineCriticalCss = () => ({
+  name: 'inline-critical-css',
+  apply: 'build',
+  enforce: 'post',
+  async closeBundle() {
+    try {
+      const distDir = path.resolve(process.cwd(), 'dist')
+      const indexPath = path.join(distDir, 'index.html')
+
+      if (!fs.existsSync(indexPath)) {
+        return
+      }
+
+      const html = await fs.promises.readFile(indexPath, 'utf8')
+      const critters = new Critters({
+        path: distDir,
+        preload: 'swap',
+        reduceInlineStyles: false,
+        pruneSource: false,
+        inlineFonts: true,
+        logLevel: 'warn'
+      })
+      const inlinedHtml = await critters.process(html)
+      await fs.promises.writeFile(indexPath, inlinedHtml, 'utf8')
+      console.log('✅ Critical CSS inlined into dist/index.html')
+    } catch (error) {
+      console.warn('⚠️ Critical CSS inlining skipped:', error)
+    }
+  }
+})
 
 export default defineConfig({
   plugins: [
     vue(),
-    {
-      name: 'defer-css',
-      apply: 'build',
-      enforce: 'post',
-      transformIndexHtml(html) {
-        // Transform CSS links to defer loading
-        return html.replace(
-          /<link([^>]*?)rel="stylesheet"([^>]*?)>/g,
-          (match, before, after) => {
-            // Check if it's already deferred or preload
-            if (match.includes('media=') || match.includes('onload=')) {
-              return match
-            }
-            // Defer the CSS by using media="print" and onload to switch to "all"
-            return `<link${before}rel="stylesheet"${after} media="print" onload="this.media='all'"><noscript><link${before}rel="stylesheet"${after}></noscript>`
-          }
-        )
-      }
-    },
+    inlineCriticalCss(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
+      minify: false,
       devOptions: {
         enabled: true
       },

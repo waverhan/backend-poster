@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import { updateSeoMeta, removeStructuredData, appendStructuredData, buildBreadcrumbSchema, absoluteUrl } from '@/utils/seoUtils'
 
 // Prefetch critical routes on idle
 const prefetchRoute = (routeName: string) => {
@@ -20,6 +21,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "home" */ '@/views/HomeView.vue'),
       meta: {
         title: 'Опілля - Найкращі напої та делікатеси з доставкою по Києву',
+        description: 'Онлайн-магазин Опілля — крафтове пиво, сидри та делікатеси з доставкою по Києву та області.',
+        breadcrumb: 'Головна',
         requiresAuth: false,
         prefetch: true
       }
@@ -30,6 +33,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "shop" */ '@/views/ShopView.vue'),
       meta: {
         title: 'Магазин - Опілля | Найкращі напої та делікатеси з доставкою по Києву',
+        description: 'Каталог напоїв, делікатесів та наборів. Фільтри за стилем, міцністю та акційними пропозиціями.',
+        breadcrumb: 'Магазин',
         requiresAuth: false,
         prefetch: true
       }
@@ -40,7 +45,9 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "product-detail" */ '@/views/ProductDetailView.vue'),
       meta: {
         title: 'Деталі товару - Опілля',
-        requiresAuth: false
+        description: 'Детальні характеристики, наявність по магазинах, відгуки та рекомендації для кожного товару.',
+        requiresAuth: false,
+        disableDefaultBreadcrumb: true
       }
     },
     {
@@ -49,6 +56,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "cart" */ '@/views/CartView.vue'),
       meta: {
         title: 'Кошик - Опілля',
+        description: 'Перевірте товари перед оформленням: змінюйте кількість, застосовуйте промокоди та подарункові набори.',
+        breadcrumb: 'Кошик',
         requiresAuth: false
       }
     },
@@ -57,7 +66,9 @@ const router = createRouter({
       name: 'checkout',
       component: () => import(/* webpackChunkName: "checkout" */ '@/views/CheckoutView.vue'),
       meta: {
-        title: 'Checkout',
+        title: 'Оформлення замовлення - Опілля',
+        description: 'Вкажіть адресу доставки, контактні дані та спосіб оплати, щоб завершити покупку.',
+        breadcrumb: 'Оформлення',
         requiresAuth: false
       }
     },
@@ -85,6 +96,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "order-success" */ '@/views/OrderSuccessView.vue'),
       meta: {
         title: 'Замовлення оформлено - PWA Shop',
+        description: 'Підтвердження успішного замовлення та наступні кроки для отримання доставки.',
+        breadcrumb: 'Замовлення оформлено',
         requiresAuth: false
       }
     },
@@ -103,6 +116,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "profile" */ '@/views/ProfileView.vue'),
       meta: {
         title: 'Профіль користувача - Опілля',
+        description: 'Керуйте адресами доставки, вподобаннями та історією замовлень у своєму акаунті.',
+        breadcrumb: 'Профіль',
         requiresAuth: true
       }
     },
@@ -112,6 +127,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "order-history" */ '@/views/OrderHistoryView.vue'),
       meta: {
         title: 'Історія замовлень - Опілля',
+        description: 'Усі попередні замовлення з можливістю повторити покупку в один клік.',
+        breadcrumb: 'Історія замовлень',
         requiresAuth: false // Allow access but show login prompt if not authenticated
       }
     },
@@ -141,6 +158,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "branches" */ '@/views/BranchesView.vue'),
       meta: {
         title: 'Наші магазини - PWA Shop',
+        description: 'Адреси фірмових магазинів Опілля, графік роботи та доступні сервіси.',
+        breadcrumb: 'Магазини',
         requiresAuth: false
       }
     },
@@ -150,6 +169,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "contact" */ '@/views/ContactView.vue'),
       meta: {
         title: 'Зв\'язатися з нами - PWA Shop',
+        description: 'Контактний центр, месенджери та форма зворотного зв’язку Опілля.',
+        breadcrumb: 'Контакти',
         requiresAuth: false
       }
     },
@@ -177,6 +198,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "about" */ '@/views/AboutView.vue'),
       meta: {
         title: 'Про нас - PWA Shop',
+        description: 'Дізнайтесь історію бренду Опілля, цінності команди та наші підходи до сервісу.',
+        breadcrumb: 'Про нас',
         requiresAuth: false
       }
     },
@@ -276,6 +299,8 @@ const router = createRouter({
       component: () => import(/* webpackChunkName: "privacy" */ '@/views/PrivacyPolicyView.vue'),
       meta: {
         title: 'Політика приватності - Опілля',
+        description: 'Як ми обробляємо персональні дані, куки та інформацію про замовлення клієнтів.',
+        breadcrumb: 'Політика приватності',
         requiresAuth: false
       }
     },
@@ -343,6 +368,46 @@ router.beforeEach(async (to, from, next) => {
   }
 
   next()
+})
+
+router.afterEach((to) => {
+  const siteConfigStore = useSiteConfigStore()
+  const defaultTitle = siteConfigStore.currentConfig.seo_title
+  const defaultDescription = siteConfigStore.currentConfig.seo_description
+
+  const canonicalTarget = typeof to.meta.canonical === 'string' ? to.meta.canonical : to.fullPath
+
+  updateSeoMeta({
+    title: (to.meta.title as string) || defaultTitle,
+    description: (to.meta.description as string) || defaultDescription,
+    canonical: canonicalTarget,
+    ogType: (to.meta.ogType as string) || 'website'
+  })
+
+  removeStructuredData()
+
+  if (!to.meta.disableDefaultBreadcrumb) {
+    const breadcrumbItems = [
+      { name: 'Головна', url: absoluteUrl('/') }
+    ]
+
+    if (to.name !== 'home') {
+      const breadcrumbLabel = (to.meta.breadcrumb as string) || (to.meta.title as string) || 'Сторінка'
+      breadcrumbItems.push({
+        name: breadcrumbLabel,
+        url: absoluteUrl(to.fullPath || '/')
+      })
+    }
+
+    if (breadcrumbItems.length > 1) {
+      appendStructuredData([
+        {
+          id: 'route-breadcrumb',
+          data: buildBreadcrumbSchema(breadcrumbItems)
+        }
+      ])
+    }
+  }
 })
 
 export default router

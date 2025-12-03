@@ -14,6 +14,9 @@ model Category {
   display_name       String
   slug               String?   @unique // URL-friendly slug for category links
   description        String?
+  seo_title          String?
+  seo_meta_description String?
+  seo_content        String?
   image_url          String?
   sort_order         Int       @default(0)
   is_active          Boolean   @default(true)
@@ -53,6 +56,9 @@ model Product {
   new_until         DateTime?          // Show new badge until this date
   // Sale system
   sale_expires_at   DateTime?          // When sale pricing expires
+  // Bundle/Gift Set system
+  is_bundle         Boolean            @default(false)  // Mark product as a bundle/gift set
+  bundle_items      String?            // JSON array of bundle items: [{"product_id": "xxx", "quantity": 1}, ...]
   created_at        DateTime           @default(now())
   updated_at        DateTime           @updatedAt
   cart_items        CartItem[]

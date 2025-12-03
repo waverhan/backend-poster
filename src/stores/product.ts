@@ -482,7 +482,7 @@ export const useProductStore = defineStore('product', () => {
   }
 
   // Persistence
-  const CACHE_VERSION = 'v2' // Increment this to invalidate old cache
+  const CACHE_VERSION = 'v3' // Increment this to invalidate old cache
 
   const saveToStorage = () => {
     try {

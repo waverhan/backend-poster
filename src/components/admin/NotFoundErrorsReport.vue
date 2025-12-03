@@ -206,8 +206,8 @@ const formatDate = (dateString: string | null | undefined): string => {
 
 const refreshData = async () => {
   try {
-    const response = await backendApi.get('/404-errors/stats')
-    stats.value = response.data
+    const { data } = await backendApi.get<Stats>('/404-errors/stats')
+    stats.value = data
   } catch (error) {
     console.error('Error fetching 404 stats:', error)
   }
@@ -237,4 +237,3 @@ onMounted(() => {
   refreshData()
 })
 </script>
-

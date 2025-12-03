@@ -130,9 +130,17 @@ router.post('/generate-slugs', async (req, res) => {
 // POST /api/categories
 router.post('/', async (req, res) => {
   try {
-
-
-    const { name, display_name, description, image_url, sort_order, is_active } = req.body
+    const {
+      name,
+      display_name,
+      description,
+      image_url,
+      sort_order,
+      is_active,
+      seo_title,
+      seo_meta_description,
+      seo_content
+    } = req.body
 
     // Validation
     if (!display_name || display_name.trim() === '') {
@@ -154,6 +162,9 @@ router.post('/', async (req, res) => {
         display_name: display_name.trim(),
         slug: slug || null,
         description: description || null,
+        seo_title: seo_title || null,
+        seo_meta_description: seo_meta_description || null,
+        seo_content: seo_content || null,
         image_url: image_url || null,
         sort_order: sort_order || 0,
         is_active: is_active !== undefined ? is_active : true
@@ -172,7 +183,11 @@ router.post('/', async (req, res) => {
       id: category.id,
       name: category.name,
       display_name: category.display_name,
+      slug: category.slug,
       description: category.description || '',
+      seo_title: category.seo_title || '',
+      seo_meta_description: category.seo_meta_description || '',
+      seo_content: category.seo_content || '',
       image_url: category.image_url || '',
       sort_order: category.sort_order,
       is_active: category.is_active,
@@ -212,7 +227,17 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params
     console.log(`📥 PUT /api/categories/${id} - Request received`)
 
-    const { name, display_name, description, image_url, sort_order, is_active } = req.body
+    const {
+      name,
+      display_name,
+      description,
+      image_url,
+      sort_order,
+      is_active,
+      seo_title,
+      seo_meta_description,
+      seo_content
+    } = req.body
 
     console.log(`🔄 Updating category ${id} with data:`, {
       name, display_name, description, image_url, sort_order, is_active
@@ -241,6 +266,9 @@ router.put('/:id', async (req, res) => {
       }
     }
     if (description !== undefined) updateData.description = description
+    if (seo_title !== undefined) updateData.seo_title = seo_title
+    if (seo_meta_description !== undefined) updateData.seo_meta_description = seo_meta_description
+    if (seo_content !== undefined) updateData.seo_content = seo_content
     if (image_url !== undefined) updateData.image_url = image_url
     if (sort_order !== undefined) {
       // Ensure sort_order is a number
@@ -275,7 +303,11 @@ router.put('/:id', async (req, res) => {
       id: category.id,
       name: category.name,
       display_name: category.display_name,
+      slug: category.slug,
       description: category.description || '',
+      seo_title: category.seo_title || '',
+      seo_meta_description: category.seo_meta_description || '',
+      seo_content: category.seo_content || '',
       image_url: category.image_url || '',
       sort_order: category.sort_order,
       is_active: category.is_active,

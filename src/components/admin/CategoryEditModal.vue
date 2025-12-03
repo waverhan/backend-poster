@@ -1,6 +1,6 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
       <h2 class="text-xl font-bold mb-4">{{ isEditing ? 'Edit Category' : 'Add Category' }}</h2>
       
       <form @submit.prevent="handleSubmit">
@@ -42,6 +42,56 @@
             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Category description"
           ></textarea>
+        </div>
+
+        <div class="mt-6 border-t border-gray-200 pt-4">
+          <h3 class="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">SEO</h3>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              SEO Title
+            </label>
+            <input
+              v-model="formData.seo_title"
+              type="text"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Custom title for search engines"
+            />
+            <p class="text-xs text-gray-500 mt-1">
+              Overrides the default page title when this category is selected.
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              SEO Meta Description
+            </label>
+            <textarea
+              v-model="formData.seo_meta_description"
+              rows="3"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Short summary that will be shown in search results"
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-1">
+              Aim for 140–160 characters describing the category benefits.
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Category SEO Description (HTML allowed)
+            </label>
+            <textarea
+              v-model="formData.seo_content"
+              rows="6"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="<h2>Категорія</h2><p>Опис для користувачів та пошуку...</p>"
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-1">
+              Підтримуються базові теги: &lt;p&gt;, &lt;h2&gt;, &lt;h3&gt;, &lt;ul&gt;, &lt;strong&gt;, &lt;a&gt;.
+              Вони відображатимуться під списком продуктів із кнопкою «Показати більше».
+            </p>
+          </div>
         </div>
 
         <!-- Image URL -->
@@ -130,6 +180,9 @@ const formData = ref({
   name: '',
   display_name: '',
   description: '',
+  seo_title: '',
+  seo_meta_description: '',
+  seo_content: '',
   image_url: '',
   sort_order: 0,
   is_active: true
@@ -142,6 +195,9 @@ watch(() => props.category, (newCategory) => {
       name: newCategory.name || '',
       display_name: newCategory.display_name || '',
       description: newCategory.description || '',
+      seo_title: newCategory.seo_title || '',
+      seo_meta_description: newCategory.seo_meta_description || '',
+      seo_content: newCategory.seo_content || '',
       image_url: newCategory.image_url || '',
       sort_order: newCategory.sort_order || 0,
       is_active: newCategory.is_active
@@ -152,6 +208,9 @@ watch(() => props.category, (newCategory) => {
       name: '',
       display_name: '',
       description: '',
+      seo_title: '',
+      seo_meta_description: '',
+      seo_content: '',
       image_url: '',
       sort_order: 0,
       is_active: true

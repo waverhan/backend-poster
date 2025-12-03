@@ -132,59 +132,93 @@ class AddressAutocompleteService {
   // OpenStreetMap Nominatim API with Ukrainian focus
   private async searchOpenStreetMap(query: string, limit = 5): Promise<AddressSuggestion[]> {
     try {
-      const url = new URL('https://nominatim.openstreetmap.org/search')
-      // Only add Kyiv if not already present in the query
-      const searchQuery = query.toLowerCase().includes('київ') || query.toLowerCase().includes('kyiv')
-        ? query
-        : `${query}, Київ, Україна`
-      url.searchParams.set('q', searchQuery)
-      url.searchParams.set('format', 'json')
-      url.searchParams.set('addressdetails', '1')
-      url.searchParams.set('limit', (limit * 2).toString()) // Get more results to filter
-      url.searchParams.set('countrycodes', 'ua')
-      url.searchParams.set('bounded', '1')
-      url.searchParams.set('viewbox', `${this.kyivBounds.west},${this.kyivBounds.south},${this.kyivBounds.east},${this.kyivBounds.north}`)
-      url.searchParams.set('accept-language', 'uk,ru,en') // Prefer Ukrainian
-      url.searchParams.set('extratags', '1')
+      // Normalize the query - remove common prefixes for better matching
+      let normalizedQuery = query.trim()
+        .replace(/^вул\.?\s*/i, '')
+        .replace(/^вулиця\s*/i, '')
+        .replace(/^просп\.?\s*/i, '')
+        .replace(/^проспект\s*/i, '')
+        .replace(/^бул\.?\s*/i, '')
+        .replace(/^бульвар\s*/i, '')
+        .replace(/^пл\.?\s*/i, '')
+        .replace(/^площа\s*/i, '')
 
-      const response = await fetch(url.toString(), {
-        headers: {
-          'User-Agent': 'PWA-POS-Shop/1.0',
-          'Accept-Language': 'uk,ru,en'
+      // Try multiple search strategies for better results
+      const searchQueries = [
+        `${normalizedQuery}, Київ, Україна`,
+        `вулиця ${normalizedQuery}, Київ`,
+        normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv') ? normalizedQuery : `${normalizedQuery}, Kyiv`
+      ]
+
+      const allResults: any[] = []
+
+      for (const searchQuery of searchQueries) {
+        if (allResults.length >= limit * 2) break
+
+        const url = new URL('https://nominatim.openstreetmap.org/search')
+        url.searchParams.set('q', searchQuery)
+        url.searchParams.set('format', 'json')
+        url.searchParams.set('addressdetails', '1')
+        url.searchParams.set('limit', '10')
+        url.searchParams.set('countrycodes', 'ua')
+        url.searchParams.set('bounded', '1')
+        url.searchParams.set('viewbox', `${this.kyivBounds.west},${this.kyivBounds.south},${this.kyivBounds.east},${this.kyivBounds.north}`)
+        url.searchParams.set('accept-language', 'uk,ru,en')
+        url.searchParams.set('extratags', '1')
+
+        try {
+          const response = await fetch(url.toString(), {
+            headers: {
+              'User-Agent': 'PWA-POS-Shop/1.0',
+              'Accept-Language': 'uk,ru,en'
+            }
+          })
+          const data = await response.json()
+
+          if (Array.isArray(data)) {
+            allResults.push(...data)
+          }
+        } catch (e) {
+          console.warn('OSM search failed for query:', searchQuery)
         }
-      })
-      const data = await response.json()
+      }
+
+      // Deduplicate by osm_id
+      const uniqueResults = allResults.filter((item, index, arr) =>
+        arr.findIndex(other => other.osm_id === item.osm_id) === index
+      )
 
       // Filter and prioritize residential addresses over businesses
-      const filteredResults = data
+      const filteredResults = uniqueResults
         .filter((item: any) => {
-          // Prioritize residential addresses and exclude specific businesses
-          const isResidential = item.type === 'house' ||
-                               item.type === 'building' ||
-                               item.type === 'residential' ||
-                               item.class === 'place' ||
-                               item.class === 'building'
+          // Accept more types for better coverage
+          const isAddress = item.type === 'house' ||
+                           item.type === 'building' ||
+                           item.type === 'residential' ||
+                           item.type === 'street' ||
+                           item.type === 'road' ||
+                           item.class === 'place' ||
+                           item.class === 'building' ||
+                           item.class === 'highway'
 
           const isBusiness = item.type === 'shop' ||
                            item.type === 'commercial' ||
-                           item.class === 'shop' ||
-                           item.class === 'amenity'
+                           item.class === 'shop'
 
           // Exclude MEDMAG specifically if we're looking for residential
           const isMedmag = item.display_name?.toLowerCase().includes('medmag')
 
           if (isMedmag && query.match(/\d+/)) {
-            // If query has house number and result is MEDMAG, deprioritize
             return false
           }
 
-          return isResidential || !isBusiness
+          return isAddress || !isBusiness
         })
         .slice(0, limit)
 
       return filteredResults.map((item: any) => {
         // Create Ukrainian address format
-        const street = item.address?.road || this.extractStreet(item.display_name)
+        const street = item.address?.road || item.address?.pedestrian || this.extractStreet(item.display_name)
         const houseNumber = item.address?.house_number
         const district = this.translateDistrict(item.address?.suburb || item.address?.city_district || item.address?.county)
 
