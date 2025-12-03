@@ -62,6 +62,62 @@ router.get('/branch/:branchId', async (req, res) => {
   }
 })
 
+// POST /api/inventory - Create or update inventory for a product
+router.post('/', async (req, res) => {
+  try {
+    const { product_id, branch_id, quantity, unit } = req.body
+
+    if (!product_id || !branch_id || quantity === undefined) {
+      return res.status(400).json({
+        error: 'Invalid request. product_id, branch_id, and quantity are required'
+      })
+    }
+
+    const now = new Date()
+
+    const inventory = await prisma.productInventory.upsert({
+      where: {
+        product_id_branch_id: {
+          product_id: product_id,
+          branch_id: branch_id
+        }
+      },
+      update: {
+        quantity: quantity,
+        unit: unit || 'pcs',
+        last_updated: now,
+        last_sync_at: now
+      },
+      create: {
+        product_id: product_id,
+        branch_id: branch_id,
+        quantity: quantity,
+        unit: unit || 'pcs',
+        last_updated: now,
+        last_sync_at: now
+      }
+    })
+
+    res.json({
+      success: true,
+      inventory: {
+        product_id: inventory.product_id,
+        branch_id: inventory.branch_id,
+        quantity: inventory.quantity,
+        unit: inventory.unit,
+        last_updated: inventory.last_updated.toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error creating/updating inventory:', error)
+    res.status(500).json({
+      error: 'Failed to create/update inventory',
+      message: error.message
+    })
+  }
+})
+
 // POST /api/inventory/products - Get inventory for specific products
 router.post('/products', async (req, res) => {
   try {

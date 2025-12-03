@@ -206,7 +206,6 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
 
   const products = await prisma.product.findMany({
     where,
-    orderBy: { sort_order: 'asc' },
     include: {
       category: true,
       inventory: branchId ? {
@@ -215,7 +214,21 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
     }
   })
 
-  return products.map(product => {
+  // Sort products: sale items first, then by sort_order
+  const sortedProducts = products.sort((a, b) => {
+    // Check if products have sale prices (original_price > price)
+    const aHasSale = a.original_price && a.original_price > a.price
+    const bHasSale = b.original_price && b.original_price > b.price
+
+    // If one has sale and other doesn't, sale comes first
+    if (aHasSale && !bHasSale) return -1
+    if (!aHasSale && bHasSale) return 1
+
+    // If both have sale or both don't have sale, sort by sort_order
+    return (a.sort_order || 999) - (b.sort_order || 999)
+  })
+
+  return sortedProducts.map(product => {
     const inventory = branchId
       ? product.inventory.find(inv => inv.branch_id === branchId)
       : product.inventory[0] // Get first inventory if no specific branch
