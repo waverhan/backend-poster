@@ -45,20 +45,15 @@ router.post('/', async (req, res) => {
     console.log(`📝 Setting ${bundle_items.length} bundle items`)
 
     // Update the gift box to be a bundle
-    // Only update poster_product_id if it's not already empty to avoid unique constraint error
-    const updateData = {
-      is_bundle: true,
-      bundle_items: JSON.stringify(bundle_items)
-    }
-
-    // Only set poster_product_id to empty if it's not already empty
-    if (giftBox.poster_product_id !== '') {
-      updateData.poster_product_id = ''
-    }
-
+    // Set poster_product_id to null (not empty string) to avoid unique constraint issues
+    // since poster_product_id has a unique constraint and empty string counts as a value
     const updated = await prisma.product.update({
       where: { id: giftBox.id },
-      data: updateData
+      data: {
+        is_bundle: true,
+        bundle_items: JSON.stringify(bundle_items),
+        poster_product_id: null // Use null instead of empty string for unique constraint
+      }
     })
 
     console.log(`✅ Gift box updated successfully`)
