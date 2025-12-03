@@ -46,24 +46,35 @@ class AddressAutocompleteService {
   ): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return []
 
+    console.log('🔍 [AddressAutocompleteService] searchAddresses called')
+    console.log('🔍 [AddressAutocompleteService] Query:', query)
+    console.log('🔍 [AddressAutocompleteService] Options:', options)
+
     const results: AddressSuggestion[] = []
 
     try {
       // Auto mode: try multiple providers
       if (options.provider === 'auto') {
+        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying OSM first')
+
         // Try OpenStreetMap first (faster and free)
         const osmResults = await this.searchOpenStreetMap(query, options.limit || 5)
+        console.log('🔍 [AddressAutocompleteService] OSM returned:', osmResults.length, 'results')
         results.push(...osmResults)
 
         // If OSM didn't return enough results, try local database
         if (results.length < (options.limit || 5)) {
+          console.log('🔍 [AddressAutocompleteService] OSM results not enough, trying local database')
           const localResults = await this.searchLocalDatabase(query, (options.limit || 5) - results.length)
+          console.log('🔍 [AddressAutocompleteService] Local DB returned:', localResults.length, 'results')
           results.push(...localResults)
         }
 
         // Only try Google if we still don't have enough results and API key is available
         if (results.length < (options.limit || 5) && this.googleApiKey) {
+          console.log('🔍 [AddressAutocompleteService] Still not enough, trying Google')
           const googleResults = await this.searchGooglePlaces(query, (options.limit || 5) - results.length)
+          console.log('🔍 [AddressAutocompleteService] Google returned:', googleResults.length, 'results')
           results.push(...googleResults)
         }
       } else {

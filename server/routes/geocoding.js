@@ -28,7 +28,7 @@ router.post('/nominatim-search', async (req, res) => {
     url.searchParams.set('addressdetails', '1')
     url.searchParams.set('limit', String(limit))
     url.searchParams.set('countrycodes', 'ua')
-    url.searchParams.set('bounded', '1')
+    // Don't use bounded=1 as it's too restrictive - use viewbox for prioritization instead
     url.searchParams.set('viewbox', `${kyivBounds.west},${kyivBounds.south},${kyivBounds.east},${kyivBounds.north}`)
     url.searchParams.set('accept-language', 'uk,ru,en')
     url.searchParams.set('extratags', '1')
