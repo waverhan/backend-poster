@@ -29,6 +29,7 @@ import authRouter from './routes/auth.js'
 import userOrdersRouter from './routes/userOrders.js'
 import notFoundErrorsRouter from './routes/notFoundErrors.js'
 import discountsRouter from './routes/discounts.js'
+import geocodingRouter from './routes/geocoding.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -215,6 +216,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/user', userOrdersRouter)
 app.use('/api/404-errors', notFoundErrorsRouter)
 app.use('/api/discounts', discountsRouter)
+app.use('/api/geocoding', geocodingRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

@@ -148,23 +148,24 @@ class AddressAutocompleteService {
         ? normalizedQuery
         : `${normalizedQuery}, Київ, Україна`
 
-      const url = new URL('https://nominatim.openstreetmap.org/search')
-      url.searchParams.set('q', searchQuery)
-      url.searchParams.set('format', 'json')
-      url.searchParams.set('addressdetails', '1')
-      url.searchParams.set('limit', String(limit * 2)) // Get more results for better filtering
-      url.searchParams.set('countrycodes', 'ua')
-      url.searchParams.set('bounded', '1')
-      url.searchParams.set('viewbox', `${this.kyivBounds.west},${this.kyivBounds.south},${this.kyivBounds.east},${this.kyivBounds.north}`)
-      url.searchParams.set('accept-language', 'uk,ru,en')
-      url.searchParams.set('extratags', '1')
-
-      const response = await fetch(url.toString(), {
+      // Use backend proxy to avoid CORS and User-Agent issues
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+      const response = await fetch(`${backendUrl}/api/geocoding/nominatim-search`, {
+        method: 'POST',
         headers: {
-          'User-Agent': 'PWA-POS-Shop/1.0',
-          'Accept-Language': 'uk,ru,en'
-        }
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          limit: limit * 2 // Get more results for better filtering
+        })
       })
+
+      if (!response.ok) {
+        console.warn('Nominatim proxy error:', response.status)
+        return []
+      }
+
       const allResults = await response.json()
 
       if (!Array.isArray(allResults)) {
