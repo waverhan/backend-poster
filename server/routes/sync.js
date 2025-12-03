@@ -214,6 +214,13 @@ router.post('/full', async (req, res) => {
 
       }
 
+      // Skip if poster_product_id is empty - these are custom products (like bundles)
+      // that should not be synced from Poster POS
+      if (!productData.poster_product_id || productData.poster_product_id.trim() === '') {
+        console.log(`⏭️  Skipping product with empty poster_product_id: ${productData.name}`)
+        continue
+      }
+
       // Get existing product to preserve bundle fields
       const existingBundleProduct = await prisma.product.findUnique({
         where: { poster_product_id: productData.poster_product_id },
@@ -1016,6 +1023,13 @@ router.post('/products-only', async (req, res) => {
         custom_quantity: isWeightBased ? 0.05 : (isBeverageWithKgUnit ? 0.5 : null),
         custom_unit: isWeightBased ? 'г' : (isBeverageWithKgUnit ? 'л' : null),
         quantity_step: (isWeightBased || isBeverageWithKgUnit) ? 1 : null
+      }
+
+      // Skip if poster_product_id is empty - these are custom products (like bundles)
+      // that should not be synced from Poster POS
+      if (!posterProduct.product_id || posterProduct.product_id.trim() === '') {
+        console.log(`⏭️  Skipping product with empty poster_product_id: ${posterProduct.product_name}`)
+        continue
       }
 
       // Get existing product to preserve custom quantities

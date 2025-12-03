@@ -35,6 +35,12 @@ export const sanitizeHtml = (rawHtml?: string | null): string => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(rawHtml, 'text/html')
 
+    // Check if doc.body exists before trying to access it
+    if (!doc.body) {
+      console.warn('Failed to sanitize HTML content: doc.body is null')
+      return rawHtml
+    }
+
     const traverse = (node: Node) => {
       if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement
