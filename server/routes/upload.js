@@ -66,9 +66,10 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
       )
 
       if (minioPath) {
-        imagePath = minioPath
+        // Return MinIO path with minio:// prefix for proper handling
+        imagePath = `minio://${minioPath}`
         storageType = 'minio'
-        console.log(`✅ Image uploaded to MinIO: ${minioPath}`)
+        console.log(`✅ Image uploaded to MinIO: ${imagePath}`)
       }
     }
 
