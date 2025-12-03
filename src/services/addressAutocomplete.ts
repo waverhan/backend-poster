@@ -132,6 +132,8 @@ class AddressAutocompleteService {
   // OpenStreetMap Nominatim API with Ukrainian focus
   private async searchOpenStreetMap(query: string, limit = 5): Promise<AddressSuggestion[]> {
     try {
+      console.log('🔍 OSM Search - Input query:', query)
+
       // Normalize the query - remove common prefixes for better matching
       let normalizedQuery = query.trim()
         .replace(/^вул\.?\s*/i, '')
@@ -143,13 +145,19 @@ class AddressAutocompleteService {
         .replace(/^пл\.?\s*/i, '')
         .replace(/^площа\s*/i, '')
 
+      console.log('🔍 OSM Search - Normalized query:', normalizedQuery)
+
       // Use single optimized query instead of multiple queries for better performance
       const searchQuery = normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv')
         ? normalizedQuery
         : `${normalizedQuery}, Київ, Україна`
 
+      console.log('🔍 OSM Search - Final search query:', searchQuery)
+
       // Use backend proxy to avoid CORS and User-Agent issues
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+      console.log('🔍 OSM Search - Backend URL:', backendUrl)
+
       const response = await fetch(`${backendUrl}/api/geocoding/nominatim-search`, {
         method: 'POST',
         headers: {
@@ -161,14 +169,18 @@ class AddressAutocompleteService {
         })
       })
 
+      console.log('🔍 OSM Search - Response status:', response.status)
+
       if (!response.ok) {
         console.warn('Nominatim proxy error:', response.status)
         return []
       }
 
       const allResults = await response.json()
+      console.log('🔍 OSM Search - Results count:', allResults?.length || 0)
 
       if (!Array.isArray(allResults)) {
+        console.warn('🔍 OSM Search - Results is not an array:', allResults)
         return []
       }
 
