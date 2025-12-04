@@ -55,16 +55,16 @@ class AddressAutocompleteService {
     try {
       // Auto mode: try multiple providers
       if (options.provider === 'auto') {
-        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying OSM first')
+        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying Photon first')
 
-        // Try OpenStreetMap first (faster and free)
-        const osmResults = await this.searchOpenStreetMap(query, options.limit || 5)
-        console.log('🔍 [AddressAutocompleteService] OSM returned:', osmResults.length, 'results')
-        results.push(...osmResults)
+        // Try Photon first (faster and more reliable than Nominatim)
+        const photonResults = await this.searchOpenStreetMap(query, options.limit || 5)
+        console.log('🔍 [AddressAutocompleteService] Photon returned:', photonResults.length, 'results')
+        results.push(...photonResults)
 
-        // If OSM didn't return enough results, try local database
+        // If Photon didn't return enough results, try local database
         if (results.length < (options.limit || 5)) {
-          console.log('🔍 [AddressAutocompleteService] OSM results not enough, trying local database')
+          console.log('🔍 [AddressAutocompleteService] Photon results not enough, trying local database')
           const localResults = await this.searchLocalDatabase(query, (options.limit || 5) - results.length)
           console.log('🔍 [AddressAutocompleteService] Local DB returned:', localResults.length, 'results')
           results.push(...localResults)
@@ -140,10 +140,10 @@ class AddressAutocompleteService {
     }
   }
 
-  // OpenStreetMap Nominatim API with Ukrainian focus
+  // Photon Geocoding API (Komoot) - faster and more reliable than Nominatim
   private async searchOpenStreetMap(query: string, limit = 5): Promise<AddressSuggestion[]> {
     try {
-      console.log('🔍 OSM Search - Input query:', query)
+      console.log('🔍 Photon Search - Input query:', query)
 
       // Normalize the query - remove common prefixes for better matching
       let normalizedQuery = query.trim()
@@ -156,107 +156,75 @@ class AddressAutocompleteService {
         .replace(/^пл\.?\s*/i, '')
         .replace(/^площа\s*/i, '')
 
-      console.log('🔍 OSM Search - Normalized query:', normalizedQuery)
+      console.log('🔍 Photon Search - Normalized query:', normalizedQuery)
 
-      // Use single optimized query instead of multiple queries for better performance
-      const searchQuery = normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv')
-        ? normalizedQuery
-        : `${normalizedQuery}, Київ, Україна`
-
-      console.log('🔍 OSM Search - Final search query:', searchQuery)
-
-      // Use backend proxy to avoid CORS and User-Agent issues
+      // Use Photon API via backend proxy (faster and more reliable than Nominatim)
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
-      console.log('🔍 OSM Search - Backend URL:', backendUrl)
+      console.log('🔍 Photon Search - Backend URL:', backendUrl)
 
-      const response = await fetch(`${backendUrl}/api/geocoding/nominatim-search`, {
+      const response = await fetch(`${backendUrl}/api/geocoding/photon-search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          query: searchQuery,
+          query: normalizedQuery, // Photon works better without adding "Київ, Україна"
           limit: limit * 2 // Get more results for better filtering
         })
       })
 
-      console.log('🔍 OSM Search - Response status:', response.status)
+      console.log('🔍 Photon Search - Response status:', response.status)
 
       if (!response.ok) {
-        console.warn('Nominatim proxy error:', response.status)
+        console.warn('Photon proxy error:', response.status)
         return []
       }
 
       const allResults = await response.json()
-      console.log('🔍 OSM Search - Results count:', allResults?.length || 0)
+      console.log('🔍 Photon Search - Results count:', allResults?.length || 0)
+      console.log('🔍 Photon Search - Raw results:', allResults)
 
       if (!Array.isArray(allResults)) {
-        console.warn('🔍 OSM Search - Results is not an array:', allResults)
+        console.warn('🔍 Photon Search - Results is not an array:', allResults)
         return []
       }
 
-      // Deduplicate by osm_id
+      // Photon returns results in a simpler format already transformed by backend
+      // Filter and deduplicate
       const uniqueResults = allResults.filter((item, index, arr) =>
         arr.findIndex(other => other.osm_id === item.osm_id) === index
       )
 
-      // Filter and prioritize residential addresses over businesses
+      // Filter for streets and addresses
       const filteredResults = uniqueResults
         .filter((item: any) => {
-          // Accept more types for better coverage
-          const isAddress = item.type === 'house' ||
-                           item.type === 'building' ||
-                           item.type === 'residential' ||
-                           item.type === 'street' ||
-                           item.type === 'road' ||
-                           item.class === 'place' ||
-                           item.class === 'building' ||
-                           item.class === 'highway'
-
-          const isBusiness = item.type === 'shop' ||
-                           item.type === 'commercial' ||
-                           item.class === 'shop'
-
-          // Exclude MEDMAG specifically if we're looking for residential
-          const isMedmag = item.display_name?.toLowerCase().includes('medmag')
-
-          if (isMedmag && query.match(/\d+/)) {
-            return false
-          }
-
-          return isAddress || !isBusiness
+          // Photon focuses on streets by default due to osm_tag=highway:*
+          return item.street && item.street.length > 0
         })
         .slice(0, limit)
 
-      return filteredResults.map((item: any) => {
-        // Create Ukrainian address format
-        const street = item.address?.road || item.address?.pedestrian || this.extractStreet(item.display_name)
-        const houseNumber = item.address?.house_number
-        const district = this.translateDistrict(item.address?.suburb || item.address?.city_district || item.address?.county)
+      console.log('🔍 Photon Search - Filtered results:', filteredResults)
 
+      return filteredResults.map((item: any) => {
         // Format display name in Ukrainian
-        let ukrainianAddress = street
-        if (houseNumber) {
-          ukrainianAddress += `, ${houseNumber}`
+        let ukrainianAddress = item.street
+        if (item.house_number) {
+          ukrainianAddress += `, ${item.house_number}`
         }
-        ukrainianAddress += ', Київ'
-        if (district) {
-          ukrainianAddress += `, ${district}`
-        }
-        ukrainianAddress += ', Україна'
+        ukrainianAddress += ', Київ, Україна'
 
         return {
-          id: `osm_${item.osm_id}`,
+          id: `photon_${item.osm_id}`,
           display_name: ukrainianAddress,
-          street: street,
-          house_number: houseNumber,
-          district: district,
+          street: item.street,
+          house_number: item.house_number || '',
+          district: '',
           full_address: ukrainianAddress,
           coordinates: {
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon)
+            lat: item.lat,
+            lng: item.lon
           },
-          source: 'osm' as const
+          source: 'photon' as const
         }
       })
     } catch (error) {
