@@ -1562,7 +1562,8 @@ const loadProductsForCategory = async (categoryId: string) => {
     console.log('📥 Lazy loading products for category:', categoryId)
     loadingStore.setGlobalLoading(true)
     loadingStore.startLoading('products')
-    await productStore.fetchProducts(categoryId, false, selectedBranch.value?.id, true)
+    // Load products without inventory - inventory is managed by cron jobs in the background
+    await productStore.fetchProducts(categoryId, false, undefined, true)
   } catch (error) {
     console.error('❌ Failed to lazy load category products:', error)
   } finally {

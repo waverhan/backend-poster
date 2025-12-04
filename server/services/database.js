@@ -282,7 +282,9 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       display_image_url: product.display_image_url || '',
       quantity: inventory?.quantity || 0,
       unit: inventory?.unit || (isWeightBased ? 'kg' : 'pcs'),
-      available: inventory ? inventory.quantity > 0 : false,
+      // Products are available by default if is_active is true
+      // Inventory sync updates quantity in background via cron jobs
+      available: product.is_active,
       is_active: product.is_active,
       requires_bottles: product.requires_bottles || false,
       attributes: product.attributes ? JSON.parse(product.attributes) : [],

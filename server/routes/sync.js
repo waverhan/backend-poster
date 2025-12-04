@@ -412,7 +412,7 @@ router.post('/inventory', async (req, res) => {
         while (true) {
           const products = await prisma.product.findMany({
             where: { is_active: true },
-            select: { id: true, ingredient_id: true, name: true },
+            select: { id: true, ingredient_id: true, name: true, is_bundle: true },
             skip: offset,
             take: batchSize
           })
