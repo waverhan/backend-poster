@@ -3,6 +3,48 @@ import { prisma } from '../services/database.js'
 
 const router = express.Router()
 
+// DELETE /api/inventory/cleanup-bundles - Remove inventory records for bundle products
+router.delete('/cleanup-bundles', async (req, res) => {
+  try {
+    console.log('🧹 Cleaning up inventory records for bundle products...')
+
+    // Find all bundle products
+    const bundleProducts = await prisma.product.findMany({
+      where: { is_bundle: true },
+      select: { id: true, name: true, display_name: true }
+    })
+
+    console.log(`📦 Found ${bundleProducts.length} bundle products`)
+
+    // Delete inventory records for bundle products
+    const deleteResult = await prisma.productInventory.deleteMany({
+      where: {
+        product_id: {
+          in: bundleProducts.map(p => p.id)
+        }
+      }
+    })
+
+    console.log(`✅ Deleted ${deleteResult.count} inventory records for bundle products`)
+
+    return res.json({
+      success: true,
+      message: `Cleaned up ${deleteResult.count} inventory records for ${bundleProducts.length} bundle products`,
+      bundle_products: bundleProducts.map(p => ({
+        id: p.id,
+        name: p.display_name || p.name
+      })),
+      deleted_count: deleteResult.count
+    })
+  } catch (error) {
+    console.error('❌ Error cleaning up bundle inventory:', error)
+    return res.status(500).json({
+      error: 'Failed to cleanup bundle inventory',
+      details: error.message
+    })
+  }
+})
+
 // GET /api/inventory/branch/:branchId - Get all inventory for a branch
 router.get('/branch/:branchId', async (req, res) => {
   try {

@@ -1267,8 +1267,8 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
       loadingStore.startLoading('products')
 
       try {
-        const branchId = selectedBranch.value?.id
-        await productStore.fetchProducts(firstCategory.id, true, branchId, true)
+        // Load products without inventory - inventory is managed by cron jobs
+        await productStore.fetchProducts(firstCategory.id, true, undefined, true)
         console.log('✅ STEP 2: First category products loaded')
       } catch (prodError) {
         console.error('❌ Failed to fetch first category products:', prodError)
@@ -1282,14 +1282,14 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
     // STEP 3: Load other categories' products in background (non-blocking)
     if (categoriesWithProducts.value.length > 1) {
       console.log('📥 STEP 3: Loading other categories in background...')
-      const branchId = selectedBranch.value?.id
       const otherCategories = categoriesWithProducts.value.slice(1)
 
       // Load other categories in background without blocking
       otherCategories.forEach((category, index) => {
         setTimeout(() => {
           console.log(`📥 Background: Loading category ${index + 2}/${categoriesWithProducts.value.length}: ${category.display_name}`)
-          productStore.fetchProducts(category.id, true, branchId, true).catch(err => {
+          // Load products without inventory - inventory is managed by cron jobs
+          productStore.fetchProducts(category.id, true, undefined, true).catch(err => {
             console.warn(`⚠️ Failed to load category ${category.display_name}:`, err)
           })
         }, 1000 + (index * 500)) // Stagger requests to avoid overwhelming server
