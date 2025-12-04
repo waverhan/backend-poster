@@ -220,9 +220,20 @@ export const useProductStore = defineStore('product', () => {
       return products.value
     }
 
-    if (!force && products.value.length > 0 && !isDataStale.value && !categoryId && !includeInactive) {
-      console.log('⚡ Using cached products')
-      return products.value
+    // Improved caching: Check if we already have products for this category
+    if (!force && !isDataStale.value && !includeInactive) {
+      if (categoryId) {
+        // Check if we have products for this specific category
+        const categoryProducts = products.value.filter(p => String(p.category_id) === String(categoryId))
+        if (categoryProducts.length > 0) {
+          console.log(`⚡ Using cached products for category ${categoryId}: ${categoryProducts.length} products`)
+          return categoryProducts
+        }
+      } else if (products.value.length > 0) {
+        // No category specified, return all cached products
+        console.log('⚡ Using cached products')
+        return products.value
+      }
     }
 
     isLoading.value = true
