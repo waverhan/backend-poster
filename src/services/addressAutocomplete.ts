@@ -55,19 +55,19 @@ class AddressAutocompleteService {
     try {
       // Auto mode: try multiple providers
       if (options.provider === 'auto') {
-        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying OSM first')
+        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying Local DB first')
 
-        // Try OpenStreetMap/Nominatim first
-        const osmResults = await this.searchOpenStreetMap(query, options.limit || 5)
-        console.log('🔍 [AddressAutocompleteService] OSM returned:', osmResults.length, 'results')
-        results.push(...osmResults)
+        // Try local database first (fastest and works with Ukrainian)
+        const localResults = await this.searchLocalDatabase(query, options.limit || 5)
+        console.log('🔍 [AddressAutocompleteService] Local DB returned:', localResults.length, 'results')
+        results.push(...localResults)
 
-        // If OSM didn't return enough results, try local database
+        // If local DB didn't return enough results, try OSM
         if (results.length < (options.limit || 5)) {
-          console.log('🔍 [AddressAutocompleteService] OSM results not enough, trying local database')
-          const localResults = await this.searchLocalDatabase(query, (options.limit || 5) - results.length)
-          console.log('🔍 [AddressAutocompleteService] Local DB returned:', localResults.length, 'results')
-          results.push(...localResults)
+          console.log('🔍 [AddressAutocompleteService] Local DB results not enough, trying OSM')
+          const osmResults = await this.searchOpenStreetMap(query, (options.limit || 5) - results.length)
+          console.log('🔍 [AddressAutocompleteService] OSM returned:', osmResults.length, 'results')
+          results.push(...osmResults)
         }
 
         // Only try Google if we still don't have enough results and API key is available
@@ -158,24 +158,18 @@ class AddressAutocompleteService {
 
       console.log('🔍 OSM Search - Normalized query:', normalizedQuery)
 
-      // Use single optimized query instead of multiple queries for better performance
-      const searchQuery = normalizedQuery.includes('київ') || normalizedQuery.includes('kyiv')
-        ? normalizedQuery
-        : `${normalizedQuery}, Київ, Україна`
-
-      console.log('🔍 OSM Search - Final search query:', searchQuery)
-
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
       console.log('🔍 OSM Search - Backend URL:', backendUrl)
 
       // Use backend proxy for Nominatim (better reliability and no CORS issues)
+      // Send just the normalized query without adding "Київ, Україна" - the backend will handle it
       const response = await fetch(`${backendUrl}/api/geocoding/nominatim-search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          query: searchQuery,
+          query: normalizedQuery,
           limit: limit * 2 // Get more results for better filtering
         })
       })

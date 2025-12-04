@@ -90,6 +90,13 @@ router.post('/nominatim-search', async (req, res) => {
 
     console.log(`🔍 Nominatim search proxy: "${query}"`)
 
+    // Add "київ" to query if not already present for better results
+    let searchQuery = query
+    if (!query.toLowerCase().includes('київ') && !query.toLowerCase().includes('kyiv')) {
+      searchQuery = `${query}, київ`
+      console.log(`🔍 Enhanced query: "${searchQuery}"`)
+    }
+
     // Kyiv bounds
     const kyivBounds = {
       west: 30.239258,
@@ -99,7 +106,7 @@ router.post('/nominatim-search', async (req, res) => {
     }
 
     const url = new URL('https://nominatim.openstreetmap.org/search')
-    url.searchParams.set('q', query)
+    url.searchParams.set('q', searchQuery)
     url.searchParams.set('format', 'json')
     url.searchParams.set('addressdetails', '1')
     url.searchParams.set('limit', String(limit))
