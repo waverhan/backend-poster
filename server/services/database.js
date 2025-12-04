@@ -204,14 +204,24 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
     where.category_id = categoryId
   }
 
+  // Optimize: Only include inventory if branchId is specified
+  // Loading all inventory for all branches is very slow
+  const includeConfig = {
+    category: true
+  }
+
+  if (branchId) {
+    includeConfig.inventory = {
+      where: { branch_id: branchId }
+    }
+  }
+
   const products = await prisma.product.findMany({
     where,
-    include: {
-      category: true,
-      inventory: branchId ? {
-        where: { branch_id: branchId }
-      } : true
-    }
+    include: includeConfig,
+    orderBy: [
+      { sort_order: 'asc' }
+    ]
   })
 
   // Sort products: sale items first, then by sort_order
@@ -229,9 +239,10 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
   })
 
   return sortedProducts.map(product => {
-    const inventory = branchId
+    // Only process inventory if it was loaded (when branchId is specified)
+    const inventory = branchId && product.inventory
       ? product.inventory.find(inv => inv.branch_id === branchId)
-      : product.inventory[0] // Get first inventory if no specific branch
+      : null
 
     // Create enhanced product object with inventory for weight-based detection
     const productWithInventory = {

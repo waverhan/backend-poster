@@ -69,6 +69,9 @@ model Product {
   likes             ProductLike[]
   category          Category           @relation(fields: [category_id], references: [id], onDelete: Cascade)
 
+  @@index([category_id])
+  @@index([is_active])
+  @@index([category_id, is_active, sort_order])
   @@map("products")
 }
 
