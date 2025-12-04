@@ -120,20 +120,36 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   const addBundleProduct = async (bundleProduct: Product, bundleQuantity: number = 1) => {
+    console.log('🛒 [CartStore] addBundleProduct called')
+    console.log('🛒 [CartStore] Bundle product:', bundleProduct.display_name || bundleProduct.name)
+    console.log('🛒 [CartStore] Bundle product ID:', bundleProduct.id)
+    console.log('🛒 [CartStore] Bundle quantity:', bundleQuantity)
+
     // Fetch bundle items from backend
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/products/${bundleProduct.id}/bundle-items`)
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/products/${bundleProduct.id}/bundle-items`
+      console.log('🛒 [CartStore] Fetching bundle items from:', url)
+
+      const response = await fetch(url)
+      console.log('🛒 [CartStore] Response status:', response.status)
+
       const data = await response.json()
+      console.log('🛒 [CartStore] Response data:', data)
+      console.log('🛒 [CartStore] Bundle items count:', data.bundle_items?.length || 0)
 
       if (!data.bundle_items || data.bundle_items.length === 0) {
-        console.warn('No bundle items found for product:', bundleProduct.id)
+        console.warn('🛒 [CartStore] No bundle items found for product:', bundleProduct.id)
         return
       }
+
+      console.log('🛒 [CartStore] Adding', data.bundle_items.length, 'items to cart')
 
       // Add each bundle item to cart
       for (const bundleItem of data.bundle_items) {
         const product = bundleItem.product
         const itemQuantity = bundleItem.quantity * bundleQuantity
+
+        console.log('🛒 [CartStore] Adding bundle item:', product.display_name || product.name, 'x', itemQuantity)
 
         addItem({
           product_id: product.id,
@@ -150,9 +166,9 @@ export const useCartStore = defineStore('cart', () => {
         })
       }
 
-      console.log(`✅ Added bundle product "${bundleProduct.display_name}" with ${data.bundle_items.length} items`)
+      console.log(`✅ [CartStore] Successfully added bundle product "${bundleProduct.display_name}" with ${data.bundle_items.length} items`)
     } catch (error) {
-      console.error('Failed to add bundle product:', error)
+      console.error('❌ [CartStore] Failed to add bundle product:', error)
       throw error
     }
   }

@@ -1431,19 +1431,28 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
   // Haptic feedback for better UX
   await capacitorService.hapticImpact('light')
 
+  console.log('🛒 [ShopView] addToCart called for:', product.display_name || product.name)
+  console.log('🛒 [ShopView] Product ID:', product.id)
+  console.log('🛒 [ShopView] is_bundle:', product.is_bundle)
+  console.log('🛒 [ShopView] Full product object:', product)
+
   // Check if this is a bundle product
   if (product.is_bundle) {
+    console.log('🛒 [ShopView] Detected bundle product, calling addBundleProduct')
     try {
       await cartStore.addBundleProduct(product, quantity || 1)
+      console.log('🛒 [ShopView] Bundle product added successfully')
       // Success haptic feedback
       await capacitorService.hapticNotification('success')
       return
     } catch (error) {
-      console.error('Failed to add bundle product:', error)
+      console.error('🛒 [ShopView] Failed to add bundle product:', error)
       await capacitorService.hapticNotification('error')
       return
     }
   }
+
+  console.log('🛒 [ShopView] Not a bundle product, adding as regular product')
 
   const cartItem: any = {
     product_id: product.id,

@@ -303,27 +303,30 @@ const geocodeAddress = async (address: string) => {
 
     for (const query of searchQueries) {
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?` + new URLSearchParams({
-            q: query,
-            format: 'json',
-            limit: '10', // Increased limit for better matching
-            countrycodes: 'ua',
-            bounded: '1',
-            viewbox: `${30.239258},${50.213273},${30.825272},${50.590798}`, // Kyiv bounds
-            'accept-language': 'uk,ru,en',
-            addressdetails: '1',
-            dedupe: '0' // Don't deduplicate to get more options
-          }),
-          {
-            headers: {
-              'User-Agent': 'PWA-POS-Shop/1.0',
-              'Accept-Language': 'uk,ru,en'
-            }
-          }
-        )
+        console.log('🔍 [DeliveryMapSelector] Geocoding query:', query)
+
+        // Use backend proxy for Nominatim (better reliability and no CORS issues)
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
+        const response = await fetch(`${backendUrl}/api/geocoding/nominatim-search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            query: query,
+            limit: 10
+          })
+        })
+
+        console.log('🔍 [DeliveryMapSelector] Response status:', response.status)
+
+        if (!response.ok) {
+          console.warn('⚠️ Nominatim proxy error:', response.status)
+          continue
+        }
 
         const data = await response.json()
+        console.log('🔍 [DeliveryMapSelector] Results count:', data.length)
 
 
         if (data.length > 0) {
