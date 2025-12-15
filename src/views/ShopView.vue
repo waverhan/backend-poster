@@ -270,6 +270,46 @@
           </div>
         </div>
 
+        <!-- Mobile: Sticky Category Navigation (Links to section headers) -->
+        <div class="md:hidden sticky z-[40] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" style="top: 64px;">
+          <!-- Loading State -->
+          <div v-if="loading.categories" class="px-4 py-3 flex justify-center">
+            <div class="spinner w-5 h-5"></div>
+          </div>
+
+          <!-- Categories List - Mobile -->
+          <div v-else-if="categoriesWithProducts.length > 0" class="px-4 py-3 overflow-x-auto scrollbar-hide">
+            <div class="flex gap-2 whitespace-nowrap">
+              <!-- Mobile: Daily Deals Tab -->
+              <button
+                v-if="productsOnSale.length > 0"
+                type="button"
+                @click="scrollToDealsSection()"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 flex-shrink-0',
+                  'bg-red-100 text-red-700 hover:bg-red-200'
+                ]"
+              >
+                <span>🔥 {{ $t('deals.title') }}</span>
+              </button>
+
+              <!-- Mobile: Category Buttons -->
+              <button
+                v-for="category in categoriesWithProducts"
+                :key="category.id"
+                type="button"
+                @click="scrollToCategorySection(category.id)"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0',
+                  'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ]"
+              >
+                {{ category.display_name }}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Mobile: Vertical Category Sections (Native App Style) -->
         <div class="md:hidden mt-4 space-y-6">
           <!-- Loading State -->
@@ -280,7 +320,7 @@
           </div>
 
           <!-- Deals Section (if products on sale) -->
-          <div v-else-if="productsOnSale.length > 0" class="space-y-3">
+          <div v-else-if="productsOnSale.length > 0" class="space-y-3" id="deals-section">
             <div class="flex items-center justify-between px-1">
               <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                 <span>🔥</span>
@@ -367,6 +407,7 @@
             v-for="category in categoriesWithProducts"
             :key="category.id"
             class="space-y-3"
+            :id="`category-section-${category.id}`"
           >
             <!-- Category Header -->
             <div class="flex items-center justify-between px-1">
@@ -2090,6 +2131,32 @@ const selectCategoryAndScroll = async (categoryId: string) => {
 
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Scroll to deals section
+const scrollToDealsSection = () => {
+  const dealsSection = document.getElementById('deals-section')
+  if (dealsSection) {
+    const headerHeight = 64 + 56 // header + sticky nav height
+    const elementPosition = dealsSection.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({
+      top: elementPosition - headerHeight,
+      behavior: 'smooth'
+    })
+  }
+}
+
+// Scroll to category section
+const scrollToCategorySection = (categoryId: string) => {
+  const categorySection = document.getElementById(`category-section-${categoryId}`)
+  if (categorySection) {
+    const headerHeight = 64 + 56 // header + sticky nav height
+    const elementPosition = categorySection.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({
+      top: elementPosition - headerHeight,
+      behavior: 'smooth'
+    })
+  }
 }
 </script>
 
