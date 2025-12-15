@@ -290,7 +290,6 @@ import {
   getMaxQuantity,
   formatQuantityDisplay
 } from '@/utils/quantityUtils'
-import { formatProductName } from '@/utils/productNameFormatter'
 import ratingService from '@/services/ratingService'
 import type { CombinedRating } from '@/services/ratingService'
 import BottleSelector from './BottleSelector.vue'
@@ -405,9 +404,9 @@ const displayQuantity = computed(() => {
   return formatQuantityDisplay(selectedQuantity.value, displayUnit.value)
 })
 
-// Formatted product name
+// Product name (no formatting applied)
 const formattedProductName = computed(() => {
-  return formatProductName(props.product.display_name || props.product.name)
+  return props.product.display_name || props.product.name
 })
 
 // Truncated description (max 100 characters)
