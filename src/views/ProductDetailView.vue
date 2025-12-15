@@ -484,8 +484,7 @@ import type { CombinedRating } from '@/services/ratingService'
 import {
   isDraftBeverage,
   getDefaultBottleSelection,
-  calculateBottleCost,
-  getBottleCartItems
+  calculateBottleCost
 } from '@/utils/bottleUtils'
 import ReviewList from '@/components/reviews/ReviewList.vue'
 import ReviewForm from '@/components/reviews/ReviewForm.vue'
