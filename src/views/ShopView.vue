@@ -270,52 +270,6 @@
           </div>
         </div>
 
-        <!-- Mobile: Sticky Category Navigation -->
-        <div class="md:hidden sticky z-[40] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" style="top: 64px;">
-          <!-- Loading State -->
-          <div v-if="loading.categories" class="px-4 py-3 flex justify-center">
-            <div class="spinner w-5 h-5"></div>
-          </div>
-
-          <!-- Categories List - Mobile -->
-          <div v-else-if="categoriesWithProducts.length > 0" class="px-4 py-3 overflow-x-auto scrollbar-hide">
-            <div class="flex gap-2 whitespace-nowrap">
-              <!-- Mobile: Daily Deals Tab -->
-              <button
-                v-if="productsOnSale.length > 0"
-                type="button"
-                @click="selectDealsCategory()"
-                :aria-pressed="selectedCategory?.id === 'deals'"
-                :class="[
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 flex-shrink-0',
-                  selectedCategory?.id === 'deals'
-                    ? 'bg-red-600 text-white shadow-md'
-                    : 'bg-red-100 text-red-700'
-                ]"
-              >
-                <span>🔥 {{ $t('deals.title') }}</span>
-              </button>
-
-              <!-- Mobile: Category Buttons -->
-              <button
-                v-for="category in categoriesWithProducts"
-                :key="category.id"
-                type="button"
-                @click="selectCategory(category)"
-                :aria-pressed="selectedCategory?.id === category.id"
-                :class="[
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0',
-                  selectedCategory?.id === category.id
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                ]"
-              >
-                {{ category.display_name }}
-              </button>
-            </div>
-          </div>
-        </div>
-
         <!-- Mobile: Vertical Category Sections (Native App Style) -->
         <div class="md:hidden mt-4 space-y-6">
           <!-- Loading State -->
