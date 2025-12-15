@@ -697,7 +697,8 @@ import {
   isDraftBeverage,
   isBottledProduct,
   getDefaultBottleSelection,
-  calculateBottleCost
+  calculateBottleCost,
+  getBottleCartItems
 } from '@/utils/bottleUtils'
 import { updateSeoMeta, appendStructuredData, removeStructuredData, absoluteUrl } from '@/utils/seoUtils'
 
@@ -2075,7 +2076,6 @@ const quickAddToCart = async (product: Product) => {
       // For draft beverages, use default 1L quantity and auto bottle selection
       const quantity = 1 // Default 1L
       const autoBottles = getDefaultBottleSelection(quantity)
-      const bottleCost = calculateBottleCost(autoBottles)
 
       // Create cart item for the beverage
       const cartItem: any = {
@@ -2090,11 +2090,27 @@ const quickAddToCart = async (product: Product) => {
         is_draft_beverage: true
       }
 
-      // For draft beverages, ONLY add auto bottles to the main product (no separate bottle items)
-      cartItem.bottles = autoBottles
-      cartItem.bottle_cost = bottleCost
-
+      // Add the beverage to cart
       cartStore.addItem(cartItem)
+
+      // Add bottles separately as individual cart items
+      const bottleCartItems = getBottleCartItems(autoBottles)
+
+      for (const bottleItem of bottleCartItems) {
+        const bottleCartItem: any = {
+          product_id: bottleItem.product_id || bottleItem.id,
+          poster_product_id: bottleItem.poster_product_id,
+          name: bottleItem.name,
+          price: bottleItem.price,
+          quantity: bottleItem.quantity,
+          image_url: '',
+          unit: 'шт',
+          is_bottle_product: true,
+          is_auto_added: true // Mark as auto-added so it can't be edited/deleted separately
+        }
+
+        cartStore.addItem(bottleCartItem)
+      }
     } else {
       // Regular product (non-draft) or bottled product
       cartStore.addItem({
