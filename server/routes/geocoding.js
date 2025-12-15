@@ -13,7 +13,7 @@ router.post('/photon-search', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required' })
     }
 
-    console.log(`🔍 Photon search proxy: "${query}"`)
+    
 
     // Kyiv bounds for filtering results
     const kyivBounds = {
@@ -40,7 +40,7 @@ router.post('/photon-search', async (req, res) => {
       timeout: 5000 // 5 second timeout
     })
 
-    console.log(`✅ Photon returned ${response.data.features?.length || 0} results`)
+    
 
     // Transform Photon GeoJSON format to simpler format
     const results = (response.data.features || []).map(feature => ({
@@ -88,13 +88,13 @@ router.post('/nominatim-search', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required' })
     }
 
-    console.log(`🔍 Nominatim search proxy: "${query}"`)
+    
 
     // Add "київ" to query if not already present for better results
     let searchQuery = query
     if (!query.toLowerCase().includes('київ') && !query.toLowerCase().includes('kyiv')) {
       searchQuery = `${query}, київ`
-      console.log(`🔍 Enhanced query: "${searchQuery}"`)
+      
     }
 
     // Kyiv bounds
@@ -126,7 +126,7 @@ router.post('/nominatim-search', async (req, res) => {
       timeout: 5000 // 5 second timeout
     })
 
-    console.log(`✅ Nominatim returned ${response.data.length} results`)
+    
 
     res.json(response.data)
 

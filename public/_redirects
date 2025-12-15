@@ -1,5 +1,5 @@
 # Old website redirects to new shop pages
-# Converted from CSV format - all old URLs redirect to new shop pages
+# Converted from CSV format - all old URLs redirect to new shop pages with Latin category slugs
 
 /karta-sajtu/ /sitemap 301
 /pro-nas-merezha-firmovykh-mahazyniv-pyvo-opillia-v-kyievi/ /about 301
@@ -18,45 +18,46 @@
 /product/vyno-trakijske-manho-l/ /shop?category=vino 301
 /kelykhy/ /shop?category=kelihi 301
 /vyno/ /shop?category=vino 301
-/pyvo-volfas-engelman-baltic-porter-zhb-0-568-l-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-hollandia-strong-svetloe-fyltrovannoe-7-5-0-5-l/ /shop?category=pivo-rozlivne 301
+/pyvo-volfas-engelman-baltic-porter-zhb-0-568-l-sht/ /shop?category=import 301
+/pyvo-hollandia-strong-svetloe-fyltrovannoe-7-5-0-5-l/ /shop?category=import 301
 /pyvo-opillia-export-zero/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-koryfej-1-5-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-koryfej-1-5-l-sht/ /shop?category=u-plyashtsibantsi 301
 /product/vyno-pani-slyva-l/ /shop?category=vino 301
-/pyvo-opillia-koryfej-0-5-l-sklo-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-export-koryfei-0-5-l-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-firmove-u-pliashtsi/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-koryfej-0-5-l-sklo-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo-opillia-export-koryfei-0-5-l-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo-opillia-firmove-u-pliashtsi/ /shop?category=u-plyashtsibantsi 301
 /pyvo/rozlyvne/ /shop?category=pivo-rozlivne 301
-/pyvo-zhyhul-firmovyj-1-5l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-zhyhul-firmovyj-1-5l-sht/ /shop?category=u-plyashtsibantsi 301
 /pyvo-dunkel-l/ /shop?category=pivo-rozlivne 301
 /2023/10/vyno-chateau-petrus-smak-elehantnosti-ta-tradytsii/ /shop?category=vino 301
-/pyvo-opillia-zhyhulivske-pet-1-5-l-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-bavaria-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=pivo-rozlivne 301
-/product/pyvo-volfas-engelman-ipa-zhb-0-568-l-sht/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-zhyhulivske-pet-1-5-l-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo-bavaria-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=import 301
+/product/pyvo-volfas-engelman-ipa-zhb-0-568-l-sht/ /shop?category=import 301
 /product/pyvo-opillia-mitsne-l/ /shop?category=pivo-rozlivne 301
-/product/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=u-plyashtsibantsi 301
 /2023/09/hariache-pyvo-opillia-retsepty-ta-tradytsii-dlia-sviatkovoho-nastroiu/ /shop?category=pivo-rozlivne 301
-/product/pyvo-opillia-klasychne-0-5-l-sklo-sht/ /shop?category=pivo-rozlivne 301
-/pyvo/u-pliashtsi/ /shop?category=pivo-rozlivne 301
-/product/pyvo-dab-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=pivo-rozlivne 301
-/product/pyvo-ipa-cherkaska-bavariia/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-klasychne-0-5-l-sklo-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo/u-pliashtsi/ /shop?category=u-plyashtsibantsi 301
+/product/pyvo-dab-svetloe-fyltrovannoe-5-0-0-5-l/ /shop?category=import 301
+/product/pyvo-ipa-cherkaska-bavariia/ /shop?category=import 301
 /pyvo-opillia-videnske-l/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-koryfej-2-l-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-klasychne-1l-sht/ /shop?category=pivo-rozlivne 301
-/pyvo-opillia-rizdviane-zymova-vyshnia-zhb-0-5-l/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-koryfej-2-l-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo-opillia-export-koryfei-pet-1-0-l/ /shop?category=u-plyashtsibantsi 301
+/pyvo-opillia-klasychne-1l-sht/ /shop?category=u-plyashtsibantsi 301
+/pyvo-opillia-rizdviane-zymova-vyshnia-zhb-0-5-l/ /shop?category=u-plyashtsibantsi 301
 /vyno-saperavi/ /shop?category=vino 301
-/pyvo-opillia-bile-zhb-0-5-l/ /shop?category=pivo-rozlivne 301
-/pyvo-volfas-engelman-balta-pinta-zhb-0-568-l/ /shop?category=pivo-rozlivne 301
+/pyvo-opillia-bile-zhb-0-5-l/ /shop?category=u-plyashtsibantsi 301
+/pyvo-volfas-engelman-balta-pinta-zhb-0-568-l/ /shop?category=import 301
 /pyvo-alt-hopfen/ /shop?category=pivo-rozlivne 301
 /zakusky/m-iaso/ /shop?category=zakuski-shtuchni 301
 /pyvo-opillia-porter-l/ /shop?category=pivo-rozlivne 301
 /zakusky/ryba-2/ /shop?category=zakuski-shtuchni 301
 /vyno-kniahynia-lydyia/ /shop?category=vino 301
-/product/pyvo-opillia-videnske-sklo-0-5-l/ /shop?category=pivo-rozlivne 301
+/product/pyvo-opillia-videnske-sklo-0-5-l/ /shop?category=u-plyashtsibantsi 301
 /product/pyvo-opillia-wheat-l/ /shop?category=pivo-rozlivne 301
 /product-category/vyno/ /shop?category=vino 301
 /catalog/bezalkogolnye-napitki/ /shop?category=napoyi-ba 301
+/mahazyny-opillia/ /branches 301
 
 # Sitemap is now served from backend API with dynamic categories and products
 /sitemap.xml https://backend-api-production-b3a0.up.railway.app/api/sitemap.xml 200!

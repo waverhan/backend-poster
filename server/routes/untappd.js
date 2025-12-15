@@ -117,16 +117,7 @@ function extractBeerInfo($, beerId) {
       }
     }
 
-    console.log('Extracted beer info:', {
-      beer_name: beerName,
-      brewery_name: breweryName,
-      beer_style: beerStyle,
-      beer_abv: abv,
-      beer_ibu: ibu,
-      rating_score: rating,
-      rating_count: ratingCount,
-      description_length: description.length
-    });
+    ;
 
     return {
       beer_id: parseInt(beerId),
@@ -211,7 +202,7 @@ function extractReviews($) {
       }
     });
 
-    console.log(`Extracted ${reviews.length} reviews with comments`);
+    ;
   } catch (error) {
     console.error('Error extracting reviews:', error);
   }
@@ -231,7 +222,7 @@ router.get('/beer/:beerId', async (req, res) => {
     }
     
     const url = `https://untappd.com/b/beer/${beerId}`;
-    console.log(`Fetching beer info from: ${url}`);
+    ;
     
     const html = await makeRequest(url);
     const $ = cheerio.load(html);
@@ -260,7 +251,7 @@ router.get('/beer/:beerId/reviews', async (req, res) => {
     }
     
     const url = `https://untappd.com/b/beer/${beerId}`;
-    console.log(`Fetching beer reviews from: ${url}`);
+    ;
     
     const html = await makeRequest(url);
     const $ = cheerio.load(html);
@@ -285,7 +276,7 @@ router.get('/search', async (req, res) => {
     }
     
     const url = `https://untappd.com/search?q=${encodeURIComponent(q)}&type=beer`;
-    console.log(`Searching beers: ${url}`);
+    ;
     
     const html = await makeRequest(url);
     const $ = cheerio.load(html);

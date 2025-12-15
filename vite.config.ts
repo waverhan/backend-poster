@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import compression from 'vite-plugin-compression'
 import { fileURLToPath, URL } from 'node:url'
 import path from 'node:path'
 import fs from 'node:fs'
@@ -41,52 +42,20 @@ export default defineConfig({
   plugins: [
     vue(),
     inlineCriticalCss(),
+    compression({
+      verbose: true,
+      disable: false,
+      threshold: 10240, // Only compress files larger than 10KB
+      algorithm: 'brotli',
+      ext: '.br'
+    }),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: null, // Disable service worker registration
+      disable: true, // Disable PWA
       minify: false,
       devOptions: {
-        enabled: true
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/joinposter\.com\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'poster-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
-              }
-            }
-          },
-          {
-            // Cache backend images with CacheFirst strategy
-            urlPattern: /^https:\/\/backend-api-production-b3a0\.up\.railway\.app\/images\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'backend-images-cache',
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
-              }
-            }
-          },
-          {
-            // Cache Poster images with aggressive caching (primary source)
-            urlPattern: /^https:\/\/joinposter\.com\/upload\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'poster-images-cache',
-              expiration: {
-                maxEntries: 1000,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          }
-        ]
+        enabled: false // Disable in dev mode too
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', 'opillia-192x192.png', 'opillia-512x512.png'],
       manifest: {
@@ -190,7 +159,8 @@ export default defineConfig({
     sourcemap: false,
     // Enable CSS code splitting to defer non-critical styles
     cssCodeSplit: true,
-    // Optimize chunk sizes
+    // Optimize chunk sizes and reduce bundle size
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         // Optimize chunk naming for better caching

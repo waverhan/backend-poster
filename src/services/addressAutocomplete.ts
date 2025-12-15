@@ -46,35 +46,35 @@ class AddressAutocompleteService {
   ): Promise<AddressSuggestion[]> {
     if (!query || query.length < 2) return []
 
-    console.log('🔍 [AddressAutocompleteService] searchAddresses called')
-    console.log('🔍 [AddressAutocompleteService] Query:', query)
-    console.log('🔍 [AddressAutocompleteService] Options:', options)
+    
+    
+    
 
     const results: AddressSuggestion[] = []
 
     try {
       // Auto mode: try multiple providers
       if (options.provider === 'auto') {
-        console.log('🔍 [AddressAutocompleteService] Using AUTO mode - trying Local DB first')
+        
 
         // Try local database first (fastest and works with Ukrainian)
         const localResults = await this.searchLocalDatabase(query, options.limit || 5)
-        console.log('🔍 [AddressAutocompleteService] Local DB returned:', localResults.length, 'results')
+        
         results.push(...localResults)
 
         // If local DB didn't return enough results, try OSM
         if (results.length < (options.limit || 5)) {
-          console.log('🔍 [AddressAutocompleteService] Local DB results not enough, trying OSM')
+          
           const osmResults = await this.searchOpenStreetMap(query, (options.limit || 5) - results.length)
-          console.log('🔍 [AddressAutocompleteService] OSM returned:', osmResults.length, 'results')
+          
           results.push(...osmResults)
         }
 
         // Only try Google if we still don't have enough results and API key is available
         if (results.length < (options.limit || 5) && this.googleApiKey) {
-          console.log('🔍 [AddressAutocompleteService] Still not enough, trying Google')
+          
           const googleResults = await this.searchGooglePlaces(query, (options.limit || 5) - results.length)
-          console.log('🔍 [AddressAutocompleteService] Google returned:', googleResults.length, 'results')
+          
           results.push(...googleResults)
         }
       } else {
@@ -143,7 +143,7 @@ class AddressAutocompleteService {
   // OpenStreetMap Nominatim API with Ukrainian focus
   private async searchOpenStreetMap(query: string, limit = 5): Promise<AddressSuggestion[]> {
     try {
-      console.log('🔍 OSM Search - Input query:', query)
+      
 
       // Normalize the query - remove common prefixes for better matching
       let normalizedQuery = query.trim()
@@ -156,10 +156,10 @@ class AddressAutocompleteService {
         .replace(/^пл\.?\s*/i, '')
         .replace(/^площа\s*/i, '')
 
-      console.log('🔍 OSM Search - Normalized query:', normalizedQuery)
+      
 
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
-      console.log('🔍 OSM Search - Backend URL:', backendUrl)
+      
 
       // Use backend proxy for Nominatim (better reliability and no CORS issues)
       // Send just the normalized query without adding "Київ, Україна" - the backend will handle it
@@ -174,7 +174,7 @@ class AddressAutocompleteService {
         })
       })
 
-      console.log('🔍 OSM Search - Response status:', response.status)
+      
 
       if (!response.ok) {
         console.warn('Nominatim proxy error:', response.status)
@@ -182,7 +182,7 @@ class AddressAutocompleteService {
       }
 
       const allResults = await response.json()
-      console.log('🔍 OSM Search - Results count:', allResults?.length || 0)
+      
 
       if (!Array.isArray(allResults)) {
         console.warn('🔍 OSM Search - Results is not an array:', allResults)

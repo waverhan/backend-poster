@@ -75,7 +75,7 @@ const defaultConfig = {
 // GET /api/site-config
 router.get('/', async (req, res) => {
   try {
-    console.log('📖 Fetching site config')
+    
 
     // Try to get existing config from database
     let config = null
@@ -83,20 +83,20 @@ router.get('/', async (req, res) => {
     try {
       config = await prisma.siteConfig.findFirst()
       if (config) {
-        console.log('✅ Site config found in database')
+        
       }
     } catch (dbError) {
       console.error('❌ Database error fetching site config:', dbError.message)
     }
 
     if (!config) {
-      console.log('📝 No config found, creating default')
+      
       try {
         // Create default config if none exists
         config = await prisma.siteConfig.create({
           data: defaultConfig
         })
-        console.log('✅ Default config created')
+        
       } catch (createError) {
         console.error('❌ Error creating default config:', createError.message)
         // Fallback to static config with enable_dark_mode
@@ -129,8 +129,6 @@ router.get('/', async (req, res) => {
 // PUT /api/site-config
 router.put('/', async (req, res) => {
   try {
-    console.log('📝 Updating site config:', Object.keys(req.body))
-
     let updatedConfig = null
 
     try {
@@ -138,7 +136,7 @@ router.put('/', async (req, res) => {
       let existingConfig = await prisma.siteConfig.findFirst()
 
       if (!existingConfig) {
-        console.log('📝 Creating new site config')
+        
         existingConfig = await prisma.siteConfig.create({
           data: defaultConfig
         })
@@ -154,15 +152,12 @@ router.put('/', async (req, res) => {
         }
       }
 
-      console.log('📝 Filtered update data:', Object.keys(updateData))
-
       // Update the configuration
-      console.log('📝 Updating config with ID:', existingConfig.id)
       updatedConfig = await prisma.siteConfig.update({
         where: { id: existingConfig.id },
         data: updateData
       })
-      console.log('✅ Site config updated successfully')
+      
     } catch (dbError) {
       console.error('❌ Database error updating site config:', dbError.message)
       console.error('❌ Error details:', dbError)

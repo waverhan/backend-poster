@@ -1,12 +1,7 @@
 <template>
   <div id="app" class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Network Status Banner -->
-    <div
-      v-if="!isOnline"
-      class="bg-warning-500 text-white text-center py-2 px-4 text-sm font-medium safe-top"
-    >
-      📡 {{ $t('ui.offline') }}
-    </div>
+    <!-- Offline Banner -->
+    <OfflineBanner />
 
     <!-- Header (Outside flex container for sticky positioning) -->
     <AppHeader />
@@ -36,9 +31,6 @@
 
     <!-- Loading Overlay -->
     <LoadingOverlay />
-
-    <!-- AI Chat Widget -->
-    <ChatWidget @product-selected="handleProductSelected" />
 
     <!-- License Components -->
     <LicenseModal />
@@ -72,7 +64,7 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 import MobileBottomNav from '@/components/layout/MobileBottomNav.vue'
 import NotificationContainer from '@/components/ui/NotificationContainer.vue'
 import LoadingOverlay from '@/components/ui/LoadingOverlay.vue'
-import ChatWidget from '@/components/chat/ChatWidget.vue'
+import OfflineBanner from '@/components/ui/OfflineBanner.vue'
 import LicenseModal from '@/components/license/LicenseModal.vue'
 import LicenseWarning from '@/components/license/LicenseWarning.vue'
 import CookieConsent from '@/components/CookieConsent.vue'
@@ -95,11 +87,6 @@ const productStore = useProductStore()
 const { isOnline } = storeToRefs(networkStore)
 const { isGlobalLoading } = storeToRefs(loadingStore)
 
-// Methods
-const handleProductSelected = (product: Product) => {
-  router.push(`/product/${product.slug || product.id}`)
-}
-
 // Lifecycle
 onMounted(async () => {
   // Initialize dark mode first
@@ -121,23 +108,25 @@ onMounted(async () => {
   // Preload branches and categories for better UX
   try {
     console.log('🚀 App.vue: Starting data preloading...')
-    loadingStore.setGlobalLoading(true)
-    loadingStore.startLoading('categories')
-    loadingStore.startLoading('products')
+    // Don't show global loading overlay - removed for better UX
+    // loadingStore.setGlobalLoading(true)
+    // loadingStore.startLoading('categories')
+    // loadingStore.startLoading('products')
 
-    // Load branches first
-    await branchStore.fetchBranches()
+    // Load branches first (force=true to ensure fresh data on app startup)
+    await branchStore.fetchBranches(true)
     console.log('📥 App.vue: Branches loaded:', branchStore.branches.length)
 
-    // Find and select default branch (Branch 4 or first available)
+    // Get default branch ID from site config
+    const configBranchId = siteConfigStore.currentConfig.default_shop_branch_id
     const branches = branchStore.branches
-    const defaultBranch = branches.find(b => b.name.includes('4')) || branches[0]
+    const defaultBranch = branches.find(b => b.id === configBranchId) || branches[0]
 
     if (defaultBranch) {
       branchStore.selectBranch(defaultBranch)
-      console.log('🎯 App.vue: Selected default branch:', defaultBranch.name)
+      console.log('🎯 App.vue: Selected default branch:', defaultBranch.name, '(config ID:', configBranchId, ')')
 
-      // STEP 1: Load categories first (CRITICAL - must complete before products)
+      // STEP 1: Load categories only (no products preloading)
       console.log('📥 App.vue: STEP 1 - Loading categories...')
       const categories = await productStore.fetchCategories(true, true, false) // force=true, useDatabase=true, includeInactive=false
       console.log('📥 App.vue: STEP 1 - Categories loaded:', categories?.length || 0)
@@ -147,27 +136,7 @@ onMounted(async () => {
         throw new Error('Failed to load categories')
       }
 
-      // STEP 2: Load products for all categories in background
-      console.log('📥 App.vue: STEP 2 - Loading products for all categories...')
-      const firstCategory = categories[0]
-      productStore.selectCategory(firstCategory)
-
-      // Load first category products (blocking)
-      await productStore.fetchProducts(firstCategory.id, true, defaultBranch.id, true)
-      console.log('📥 App.vue: STEP 2 - First category products loaded:', productStore.products.length)
-
-      // Load other categories in background (non-blocking)
-      if (categories.length > 1) {
-        categories.slice(1).forEach((category, index) => {
-          setTimeout(() => {
-            productStore.fetchProducts(category.id, true, defaultBranch.id, true).catch(err => {
-              console.warn(`⚠️ App.vue: Failed to load category ${category.display_name}:`, err)
-            })
-          }, 500 + (index * 300))
-        })
-      }
-
-      console.log('✅ App.vue: Preloaded categories and products for default branch')
+      console.log('✅ App.vue: Categories preloaded. Products will load on-demand when user visits shop.')
     } else {
       console.warn('⚠️ App.vue: No default branch found')
     }
@@ -175,9 +144,10 @@ onMounted(async () => {
     console.warn('⚠️ App.vue: Failed to preload data:', error)
     // Don't show error notification on app startup - let individual pages handle their own loading
   } finally {
-    loadingStore.stopLoading('categories')
-    loadingStore.stopLoading('products')
-    loadingStore.setGlobalLoading(false)
+    // Don't show global loading overlay - removed for better UX
+    // loadingStore.stopLoading('categories')
+    // loadingStore.stopLoading('products')
+    // loadingStore.setGlobalLoading(false)
   }
 
   // Welcome notification removed - was showing unwanted popup

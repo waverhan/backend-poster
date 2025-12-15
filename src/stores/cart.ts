@@ -120,38 +120,36 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   const addBundleProduct = async (bundleProduct: Product, bundleQuantity: number = 1) => {
-    console.log('🛒 [CartStore] addBundleProduct called')
-    console.log('🛒 [CartStore] Bundle product:', bundleProduct.display_name || bundleProduct.name)
-    console.log('🛒 [CartStore] Bundle product ID:', bundleProduct.id)
-    console.log('🛒 [CartStore] Bundle quantity:', bundleQuantity)
+    
+    
+    
+    
 
     // Fetch bundle items from backend
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/products/${bundleProduct.id}/bundle-items`
-      console.log('🛒 [CartStore] Fetching bundle items from:', url)
+      
 
       const response = await fetch(url)
-      console.log('🛒 [CartStore] Response status:', response.status)
+      
 
       const data = await response.json()
-      console.log('🛒 [CartStore] Response data:', data)
-      console.log('🛒 [CartStore] Bundle items count:', data.bundle_items?.length || 0)
+      
+      
 
       if (!data.bundle_items || data.bundle_items.length === 0) {
         console.warn('🛒 [CartStore] No bundle items found for product:', bundleProduct.id)
         return
       }
 
-      console.log('🛒 [CartStore] Adding', data.bundle_items.length, 'items to cart')
+      
 
-      // Add each bundle item to cart
-      for (const bundleItem of data.bundle_items) {
+      // Create bundle items array (these are NOT added to cart separately)
+      const bundleItems: CartItem[] = data.bundle_items.map((bundleItem: any) => {
         const product = bundleItem.product
         const itemQuantity = bundleItem.quantity * bundleQuantity
 
-        console.log('🛒 [CartStore] Adding bundle item:', product.display_name || product.name, 'x', itemQuantity)
-
-        addItem({
+        return {
           product_id: product.id,
           poster_product_id: product.poster_product_id,
           name: product.display_name || product.name,
@@ -163,10 +161,27 @@ export const useCartStore = defineStore('cart', () => {
           custom_quantity: product.custom_quantity,
           custom_unit: product.custom_unit,
           quantity_step: product.quantity_step
-        })
-      }
+        }
+      })
 
-      console.log(`✅ [CartStore] Successfully added bundle product "${bundleProduct.display_name}" with ${data.bundle_items.length} items`)
+      // Calculate total price of all bundle items
+      const bundleTotalPrice = bundleItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+
+      // Add the bundle product as a single cart item with sub-items
+      addItem({
+        product_id: bundleProduct.id,
+        poster_product_id: bundleProduct.poster_product_id,
+        name: bundleProduct.display_name || bundleProduct.name,
+        price: bundleTotalPrice / bundleQuantity, // Price per bundle
+        quantity: bundleQuantity,
+        image_url: bundleProduct.display_image_url || bundleProduct.image_url,
+        unit: bundleProduct.unit || 'шт',
+        max_quantity: bundleProduct.max_quantity,
+        is_bundle: true,
+        bundle_items: bundleItems
+      })
+
+      
     } catch (error) {
       console.error('❌ [CartStore] Failed to add bundle product:', error)
       throw error

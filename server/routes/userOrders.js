@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 router.get('/orders', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id
-    console.log(`📋 Fetching order history for user: ${userId}`)
+    
 
     const orders = await prisma.order.findMany({
       where: {
@@ -64,7 +64,7 @@ router.get('/orders', authenticateToken, async (req, res) => {
         // Debug product name resolution
         const productName = item.product_name || item.product?.name || `Product ${item.product_id}`
         if (!item.product_name && !item.product?.name) {
-          console.log(`⚠️ Missing product name for item ${item.id}, product_id: ${item.product_id}`)
+          
         }
 
         return {
@@ -84,7 +84,7 @@ router.get('/orders', authenticateToken, async (req, res) => {
       })
     }))
 
-    console.log(`✅ Found ${transformedOrders.length} orders for user ${userId}`)
+    
     res.json({
       success: true,
       orders: transformedOrders,
@@ -105,7 +105,7 @@ router.get('/orders/:id', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id
     const orderId = req.params.id
-    console.log(`📋 Fetching order ${orderId} for user: ${userId}`)
+    
 
     const order = await prisma.order.findFirst({
       where: {
@@ -186,7 +186,7 @@ router.get('/orders/:id', authenticateToken, async (req, res) => {
       }))
     }
 
-    console.log(`✅ Found order ${orderId} for user ${userId}`)
+    
     res.json({
       success: true,
       order: transformedOrder
@@ -206,7 +206,7 @@ router.post('/orders/:id/reorder', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id
     const orderId = req.params.id
-    console.log(`🔄 Processing reorder for order ${orderId} by user: ${userId}`)
+    
 
     // Get the order with items
     const order = await prisma.order.findFirst({
@@ -275,7 +275,7 @@ router.post('/orders/:id/reorder', authenticateToken, async (req, res) => {
       }
     }
 
-    console.log(`✅ Prepared ${reorderItems.length} items for reorder, ${unavailableItems.length} unavailable`)
+    
 
     res.json({
       success: true,

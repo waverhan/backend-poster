@@ -1,223 +1,469 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
+  <div class="min-h-screen bg-white">
     <!-- Cart Animation Overlay -->
     <CartAnimationOverlay ref="cartAnimationOverlay" />
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Back Button -->
-      <div class="mb-6">
-        <router-link to="/shop" class="inline-flex items-center text-blue-600 hover:text-blue-800">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Mobile Native Back Button (iOS/Android style) - Only on mobile -->
+    <div class="md:hidden fixed top-0 left-0 right-0 z-[60] bg-white border-b border-gray-200 shadow-sm safe-area-top">
+      <div class="flex items-center h-14 px-4">
+        <button
+          @click="goBack"
+          class="flex items-center justify-center w-10 h-10 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+        >
+          <svg class="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
           </svg>
-          Назад до магазину
-        </router-link>
+        </button>
+        <h1 class="flex-1 text-center text-base font-semibold text-gray-900 pr-10 truncate">
+          {{ product?.display_name || 'Товар' }}
+        </h1>
       </div>
+    </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="text-center py-16">
-        <div class="spinner w-8 h-8 mx-auto mb-4"></div>
-        <p class="text-gray-600">Завантаження деталей товару...</p>
-      </div>
+    <!-- Loading State -->
+    <ProductDetailSkeleton v-if="loading" />
 
-      <!-- Product Not Found -->
-      <div v-else-if="!product" class="text-center py-16">
+    <!-- Product Not Found -->
+    <div v-else-if="!product" class="flex items-center justify-center min-h-screen px-4">
+      <div class="text-center">
         <div class="text-6xl mb-4">❌</div>
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Товар не знайдено</h1>
-        <p class="text-gray-600 mb-8">Товар, який ви шукаєте, не існує.</p>
-        <router-link to="/shop" class="btn-primary">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Товар не знайдено</h2>
+        <p class="text-gray-600 mb-6">Товар, який ви шукаєте, не існує.</p>
+        <button @click="goBack" class="btn-primary">
           Назад до магазину
-        </router-link>
+        </button>
       </div>
+    </div>
 
-      <!-- Product Details -->
-      <div v-else class="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
-          <!-- Product Image -->
-          <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
-            <img
-              v-if="product.display_image_url"
-              :src="getImageUrl(product.display_image_url)"
-              :alt="product.display_name"
-              class="w-full h-full object-cover"
-              @error="handleImageError"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-              <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+    <!-- Product Details -->
+    <div v-else>
+      <!-- Mobile: Native App Style (Full-screen layout) -->
+      <div class="md:hidden pt-14 pb-32">
+        <!-- Image Gallery Section (Full-width on mobile) -->
+        <div class="relative bg-gray-50">
+        <!-- Main Product Image -->
+        <div class="aspect-square w-full bg-gray-100 relative">
+          <img
+            v-if="product.display_image_url"
+            :src="getImageUrl(product.display_image_url)"
+            :alt="product.display_name"
+            class="w-full h-full object-cover"
+            @error="handleImageError"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+            <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+
+          <!-- Badges Container - Top-right corner -->
+          <div class="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
+            <!-- Sale Badge -->
+            <div v-if="product.original_price && product.original_price > product.price">
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-500 text-white shadow-lg">
+                SALE
+              </span>
             </div>
 
-            <!-- Badges Container - Stack vertically -->
-            <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
-              <!-- Sale Badge -->
-              <div v-if="product.original_price && product.original_price > product.price">
-                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-red-500 text-white shadow-lg">
-                  SALE
+            <!-- New Product Badge -->
+            <div v-if="isNewProduct" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+              ✨ Новинка
+            </div>
+          </div>
+
+          <!-- Like Button - Top-left corner (opposite of badges) -->
+          <div class="absolute top-4 left-4 z-10">
+            <LikeButton
+              :product="product"
+              size="large"
+              variant="floating"
+              :show-count="true"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Info Section -->
+      <div class="px-4 py-6 space-y-6">
+        <!-- Title & Rating -->
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ product.display_name }}</h2>
+
+          <!-- Product Subtitle -->
+          <p v-if="productSubtitle" class="text-base text-gray-600 mb-3">{{ productSubtitle }}</p>
+
+          <!-- Rating -->
+          <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-4">
+            <div class="flex">
+              <span
+                v-for="star in 5"
+                :key="star"
+                class="text-base"
+                :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
+              >
+                ⭐
+              </span>
+            </div>
+            <a
+              href="#reviews-section"
+              class="text-sm text-gray-600 hover:text-primary-600 underline cursor-pointer"
+              @click="scrollToReviews"
+            >
+              ({{ combinedRating.totalReviews }} відгуків)
+            </a>
+          </div>
+        </div>
+
+        <!-- Price Section -->
+        <div class="bg-gray-50 -mx-4 px-4 py-4 border-y border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-3">
+                <span :class="[
+                  'text-3xl font-black',
+                  product.original_price && product.original_price > product.price
+                    ? 'text-red-600'
+                    : 'text-gray-900'
+                ]">
+                  {{ formatPrice(product.price) }}₴
+                </span>
+                <span v-if="product.original_price && product.original_price > product.price"
+                      class="text-lg text-gray-500 line-through">
+                  {{ formatPrice(product.original_price) }}₴
                 </span>
               </div>
+              <p class="text-sm text-gray-600 mt-1">{{ getUnitLabel(product.unit) }}</p>
+            </div>
+          </div>
+        </div>
 
-              <!-- New Product Badge -->
-              <div v-if="isNewProduct" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-full text-sm font-bold shadow-lg animate-pulse">
-                ✨ Новинка
+        <!-- Product Attributes -->
+        <div v-if="displayAttributes && displayAttributes.length > 0">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Характеристики</h3>
+          <div class="grid grid-cols-3 gap-3">
+            <div
+              v-for="attribute in displayAttributes"
+              :key="attribute.name"
+              class="bg-gray-50 rounded-lg p-3 text-center"
+            >
+              <div class="text-xs text-gray-600 mb-1">{{ attribute.name }}</div>
+              <div
+                class="text-base font-bold"
+                :class="attribute.color === 'orange' ? 'text-primary-600' : 'text-gray-900'"
+              >
+                {{ attribute.value }}{{ attribute.unit }}
+              </div>
+              <div v-if="attribute.color === 'orange'" class="w-full h-1 bg-primary-600 rounded mt-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div v-if="displayDescription">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">Опис</h3>
+          <div class="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+            <span v-if="!isLongDescription || showFullDescription">{{ displayDescription }}</span>
+            <span v-else>{{ truncatedDescription }}</span>
+          </div>
+          <button
+            v-if="isLongDescription"
+            @click="showFullDescription = !showFullDescription"
+            class="text-primary-600 hover:text-primary-700 text-sm mt-3 font-medium"
+          >
+            {{ showFullDescription ? '▲ Показати менше' : '▼ Показати більше' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Reviews Section -->
+      <div id="reviews-section" v-if="siteConfigStore.currentConfig.enable_reviews" class="border-t-8 border-gray-100 py-6 px-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-gray-900">Відгуки</h3>
+          <button
+            @click="showReviewForm = !showReviewForm"
+            class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          >
+            {{ showReviewForm ? 'Скасувати' : 'Написати відгук' }}
+          </button>
+        </div>
+
+        <!-- Review Form -->
+        <div v-if="showReviewForm" class="mb-6">
+          <ReviewForm
+            v-if="product"
+            :product="product"
+            :order-id="'guest-review'"
+            :show-cancel="true"
+            @submitted="handleReviewSubmitted"
+            @cancel="showReviewForm = false"
+          />
+        </div>
+
+        <!-- Review List -->
+        <div>
+          <ReviewList
+            v-if="product"
+            :product-id="product.id"
+            :show-summary="false"
+            :show-filters="false"
+          />
+        </div>
+      </div>
+
+        <!-- Related Products Section -->
+        <div v-if="product" class="border-t-8 border-gray-100 py-6">
+          <div class="px-4 mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Схожі товари</h3>
+          </div>
+          <RelatedProducts
+            :current-product="product"
+            :max-products="6"
+            @cart-animation="handleCartAnimation"
+          />
+        </div>
+
+        <!-- Sticky Bottom Button (Native App Style) - Above mobile nav -->
+        <div
+          v-if="product"
+          class="fixed left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg"
+          style="bottom: calc(env(safe-area-inset-bottom) + 64px);"
+        >
+          <div class="px-4 py-3">
+            <button
+              ref="addToCartButton"
+              @click="handleAddToCart"
+              :disabled="!product.available"
+              class="w-full h-14 bg-primary-600 text-white rounded-xl font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg"
+            >
+              <span v-if="product.available" class="flex items-center justify-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+                <span>Додати до кошика</span>
+              </span>
+              <span v-else>Немає в наявності</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop: Traditional Layout (Two-column grid) -->
+      <div class="hidden md:block">
+        <!-- Desktop Header with Back Button -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+              <button
+                @click="goBack"
+                class="text-xl font-bold text-gray-900 hover:text-gray-700 transition-colors"
+              >
+                ← Повернутися до магазину
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Product Content -->
+        <div class="container mx-auto px-4 py-8">
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Left Column: Image Gallery -->
+          <div class="sticky top-4 self-start">
+            <div class="relative bg-gray-50 rounded-xl overflow-hidden">
+              <!-- Main Product Image -->
+              <div class="aspect-square w-full bg-gray-100 relative">
+                <img
+                  v-if="product.display_image_url"
+                  :src="getImageUrl(product.display_image_url)"
+                  :alt="product.display_name"
+                  class="w-full h-full object-cover"
+                  @error="handleImageError"
+                />
+                <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+                  <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+
+                <!-- Badges Container - Top-right corner -->
+                <div class="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
+                  <!-- Sale Badge -->
+                  <div v-if="product.original_price && product.original_price > product.price">
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-500 text-white shadow-lg">
+                      SALE
+                    </span>
+                  </div>
+
+                  <!-- New Product Badge -->
+                  <div v-if="isNewProduct" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                    ✨ Новинка
+                  </div>
+                </div>
+
+                <!-- Like Button - Top-left corner -->
+                <div class="absolute top-4 left-4 z-10">
+                  <LikeButton
+                    :product="product"
+                    size="large"
+                    variant="floating"
+                    :show-count="true"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Product Info -->
+          <!-- Right Column: Product Info -->
           <div class="space-y-6">
-            <!-- Title -->
+            <!-- Title & Rating -->
             <div>
               <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ product.display_name }}</h1>
 
               <!-- Product Subtitle -->
-              <p v-if="productSubtitle" class="text-lg text-gray-600 mb-4">{{ productSubtitle }}</p>
+              <p v-if="productSubtitle" class="text-lg text-gray-600 mb-3">{{ productSubtitle }}</p>
 
-              <!-- Rating and Like Button Row -->
-              <div class="flex items-center justify-between mb-4">
-                <!-- Rating on the left -->
-                <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2">
-                  <div class="flex">
-                    <span
-                      v-for="star in 5"
-                      :key="star"
-                      class="text-lg"
-                      :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
-                    >
-                      ⭐
-                    </span>
-                  </div>
-                  <a
-                    href="#reviews-section"
-                    class="text-sm text-gray-600 hover:text-blue-600 underline cursor-pointer"
-                    @click="scrollToReviews"
+              <!-- Rating -->
+              <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-4">
+                <div class="flex">
+                  <span
+                    v-for="star in 5"
+                    :key="star"
+                    class="text-lg"
+                    :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
                   >
-                    ({{ combinedRating.totalReviews }})
-                  </a>
+                    ⭐
+                  </span>
                 </div>
-
-                <!-- Like Button on the right -->
-                <LikeButton
-                  :product="product"
-                  size="normal"
-                  variant="default"
-                  :show-count="true"
-                />
+                <a
+                  href="#reviews-section"
+                  class="text-sm text-gray-600 hover:text-primary-600 underline cursor-pointer"
+                  @click="scrollToReviews"
+                >
+                  ({{ combinedRating.totalReviews }} відгуків)
+                </a>
               </div>
             </div>
 
-            <!-- Price and Add to Cart -->
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex flex-col">
-                <div class="flex items-center gap-4">
-                  <span :class="[
-                    'text-3xl font-black tracking-tight',
-                    product.original_price && product.original_price > product.price
-                      ? 'text-red-600'
-                      : 'text-gray-900'
-                  ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
-                    {{ formatPrice(product.price) }} ₴
-                  </span>
-                  <span v-if="product.original_price && product.original_price > product.price"
-                        class="text-lg text-gray-500 line-through">
-                    {{ formatPrice(product.original_price) }} ₴
-                  </span>
+            <!-- Price Section -->
+            <div class="bg-gray-50 rounded-xl p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-3">
+                    <span :class="[
+                      'text-4xl font-black',
+                      product.original_price && product.original_price > product.price
+                        ? 'text-red-600'
+                        : 'text-gray-900'
+                    ]">
+                      {{ formatPrice(product.price) }}₴
+                    </span>
+                    <span v-if="product.original_price && product.original_price > product.price"
+                          class="text-xl text-gray-500 line-through">
+                      {{ formatPrice(product.original_price) }}₴
+                    </span>
+                  </div>
+                  <p class="text-base text-gray-600 mt-1">{{ getUnitLabel(product.unit) }}</p>
                 </div>
-                <p class="text-sm text-gray-600 mt-1">{{ getUnitLabel(product.unit) }}</p>
-              </div>
-              <div class="flex-shrink-0 ml-6">
                 <button
-                  ref="addToCartButton"
                   @click="handleAddToCart"
                   :disabled="!product.available"
-                  class="bg-blue-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-lg"
+                  class="px-8 py-4 bg-primary-600 text-white rounded-xl font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all active:scale-95 shadow-lg"
                 >
-                  {{ product.available ? 'КУПИТИ' : 'Немає в наявності' }}
+                  <span v-if="product.available" class="flex items-center gap-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                    </svg>
+                    <span>Додати до кошика</span>
+                  </span>
+                  <span v-else>Немає в наявності</span>
                 </button>
               </div>
             </div>
 
             <!-- Product Attributes -->
-            <div v-if="displayAttributes && displayAttributes.length > 0" class="space-y-4 mb-6">
+            <div v-if="displayAttributes && displayAttributes.length > 0" class="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">Характеристики</h3>
               <div class="grid grid-cols-3 gap-4">
                 <div
                   v-for="attribute in displayAttributes"
                   :key="attribute.name"
-                  class="text-center"
+                  class="bg-gray-50 rounded-lg p-4 text-center"
                 >
                   <div class="text-sm text-gray-600 mb-1">{{ attribute.name }}</div>
                   <div
                     class="text-lg font-bold"
-                    :class="attribute.color === 'orange' ? 'text-orange-500' : 'text-gray-900'"
+                    :class="attribute.color === 'orange' ? 'text-primary-600' : 'text-gray-900'"
                   >
                     {{ attribute.value }}{{ attribute.unit }}
                   </div>
-                  <div v-if="attribute.color === 'orange'" class="w-full h-1 bg-orange-500 rounded mt-1"></div>
+                  <div v-if="attribute.color === 'orange'" class="w-full h-1 bg-primary-600 rounded mt-1"></div>
                 </div>
               </div>
             </div>
 
             <!-- Description -->
-            <div v-if="displayDescription" class="mt-6">
-              <div class="text-gray-600 whitespace-pre-line">
+            <div v-if="displayDescription" class="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">Опис</h3>
+              <div class="text-gray-700 text-base leading-relaxed whitespace-pre-line">
                 <span v-if="!isLongDescription || showFullDescription">{{ displayDescription }}</span>
                 <span v-else>{{ truncatedDescription }}</span>
               </div>
               <button
                 v-if="isLongDescription"
                 @click="showFullDescription = !showFullDescription"
-                class="text-blue-600 hover:text-blue-800 text-sm mt-2 underline"
+                class="text-primary-600 hover:text-primary-700 text-sm mt-4 font-medium"
               >
-                {{ showFullDescription ? 'Показати менше' : 'Показати більше' }}
+                {{ showFullDescription ? '▲ Показати менше' : '▼ Показати більше' }}
               </button>
+            </div>
+
+            <!-- Reviews Section -->
+            <div id="reviews-section" v-if="siteConfigStore.currentConfig.enable_reviews" class="bg-white rounded-xl border border-gray-200 p-6">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Відгуки</h3>
+                <button
+                  @click="showReviewForm = !showReviewForm"
+                  class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {{ showReviewForm ? 'Скасувати' : 'Написати відгук' }}
+                </button>
+              </div>
+
+              <!-- Review Form -->
+              <div v-if="showReviewForm" class="mb-6">
+                <ReviewForm
+                  v-if="product"
+                  :product="product"
+                  :order-id="'guest-review'"
+                  :show-cancel="true"
+                  @submitted="handleReviewSubmitted"
+                  @cancel="showReviewForm = false"
+                />
+              </div>
+
+              <!-- Review List -->
+              <div>
+                <ReviewList
+                  v-if="product"
+                  :product-id="product.id"
+                  :show-summary="false"
+                  :show-filters="false"
+                />
+              </div>
+            </div>
+
+            <!-- Related Products Section -->
+            <div v-if="product" class="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 class="text-2xl font-bold text-gray-900 mb-6">Схожі товари</h3>
+              <RelatedProducts
+                :current-product="product"
+                :max-products="6"
+                @cart-animation="handleCartAnimation"
+              />
             </div>
           </div>
         </div>
-
-        <!-- Reviews Section -->
-        <div id="reviews-section" v-if="siteConfigStore.currentConfig.enable_reviews" class="mt-8 border-t border-gray-200 pt-8 px-8">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Відгуки</h2>
-            <button
-              @click="showReviewForm = !showReviewForm"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-            >
-              {{ showReviewForm ? 'Скасувати' : 'Написати відгук' }}
-            </button>
-          </div>
-
-          <!-- Review Form -->
-          <div v-if="showReviewForm" class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Ваш відгук</h3>
-            <ReviewForm
-              v-if="product"
-              :product="product"
-              :order-id="'guest-review'"
-              :show-cancel="true"
-              @submitted="handleReviewSubmitted"
-              @cancel="showReviewForm = false"
-            />
-          </div>
-
-          <!-- Review List -->
-          <div class="mt-8">
-            <ReviewList
-              v-if="product"
-              :product-id="product.id"
-              :show-summary="false"
-              :show-filters="false"
-            />
-          </div>
         </div>
-      </div>
-
-      <!-- Related Products Section -->
-      <div v-if="product" class="mt-8">
-        <RelatedProducts
-          :current-product="product"
-          :max-products="4"
-          @cart-animation="handleCartAnimation"
-        />
       </div>
     </div>
   </div>
@@ -231,6 +477,7 @@ import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
 import { useNotificationStore } from '@/stores/notification'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import { useBranchStore } from '@/stores/branch'
 import { backendApi } from '@/services/backendApi'
 import ratingService from '@/services/ratingService'
 import type { CombinedRating } from '@/services/ratingService'
@@ -245,6 +492,7 @@ import ReviewForm from '@/components/reviews/ReviewForm.vue'
 import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import LikeButton from '@/components/product/LikeButton.vue'
 import CartAnimationOverlay from '@/components/CartAnimationOverlay.vue'
+import ProductDetailSkeleton from '@/components/ui/ProductDetailSkeleton.vue'
 import type { Product } from '@/types'
 import { updateSeoMeta, appendStructuredData, buildBreadcrumbSchema, absoluteUrl, removeStructuredData } from '@/utils/seoUtils'
 
@@ -258,6 +506,7 @@ const productStore = useProductStore()
 const cartStore = useCartStore()
 const notificationStore = useNotificationStore()
 const siteConfigStore = useSiteConfigStore()
+const branchStore = useBranchStore()
 
 const loading = ref(true)
 const product = ref<Product | null>(null)
@@ -681,6 +930,13 @@ const scrollToReviews = () => {
   }
 }
 
+// Native back button handler
+const goBack = () => {
+  // Always navigate to shop page to ensure proper app state
+  // This works better than relying on history.length which may not work in incognito mode
+  router.push('/shop')
+}
+
 const handleCartAnimation = (data: { startX: number; startY: number }) => {
   if (!cartAnimationOverlay.value) return
 
@@ -718,8 +974,21 @@ const handleAddToCart = () => {
   addToCart()
 }
 
-const addToCart = () => {
+const addToCart = async () => {
   if (!product.value) return
+
+  // Check if this is a bundle product
+  if (product.value.is_bundle) {
+    
+    try {
+      await cartStore.addBundleProduct(product.value, 1)
+      
+      return
+    } catch (error) {
+      console.error('🛒 [ProductDetailView] Failed to add bundle product:', error)
+      return
+    }
+  }
 
   // Check if this is a draft beverage that requires bottles
   if (isDraftBeverage(product.value)) {
@@ -743,28 +1012,19 @@ const addToCart = () => {
 
     cartStore.addItem(cartItem)
 
-    // Add bottles to cart if auto selection is enabled
-    if (autoBottles && autoBottles.bottles && autoBottles.bottles.length > 0) {
-      autoBottles.bottles.forEach(bottle => {
-        if (bottle.quantity > 0) {
-          const bottleCartItem = {
-            cart_item_id: `bottle_${bottle.id}_${Date.now()}`,
-            product_id: bottle.id,
-            poster_product_id: bottle.poster_product_id,
-            name: bottle.name,
-            price: bottle.price,
-            quantity: bottle.quantity,
-            subtotal: bottle.price * bottle.quantity,
-            image_url: bottle.image_url,
-            unit: bottle.unit,
-            max_quantity: bottle.max_quantity,
-            is_draft_beverage: false,
-            is_bottle_product: true
-          }
-          cartStore.addItem(bottleCartItem)
-        }
-      })
+    // Add 1L bottles to cart - quantity matches the beverage quantity
+    // 1L beverage = 1 bottle, 2L beverage = 2 bottles
+    const bottle1L = {
+      product_id: 'cmclpuhc4003dstlk7h9hxdmn', // 1L bottle ID
+      poster_product_id: '189',
+      name: 'ПЕТ 1 л + кришка',
+      price: 4.71,
+      quantity: Math.ceil(quantity), // Round up to ensure enough bottles
+      unit: 'шт',
+      is_bottle_product: true,
+      is_auto_added: true // Mark as auto-added so it can't be edited
     }
+    cartStore.addItem(bottle1L)
   } else {
     // Regular product (non-draft)
     const cartItem: any = {
@@ -829,21 +1089,44 @@ onMounted(async () => {
   try {
     const productIdOrSlug = route.params.id as string
 
+    // Ensure branches are loaded
+    if (branchStore.branches.length === 0) {
+      await branchStore.fetchBranches(true)
+    }
+
+    // Ensure a branch is selected (use default from config or first available)
+    if (!branchStore.selectedBranch) {
+      const configBranchId = siteConfigStore.currentConfig.default_shop_branch_id
+      const defaultBranch = branchStore.branches.find(b => b.id === configBranchId) || branchStore.branches[0]
+      if (defaultBranch) {
+        branchStore.selectBranch(defaultBranch)
+      }
+    }
+
+    const currentBranchId = branchStore.selectedBranch?.id
+
+    // Load all products for the branch if not already loaded
+    // This ensures related products and shop page work correctly
+    if (productStore.products.length === 0 && currentBranchId) {
+      
+      await productStore.fetchProducts(undefined, false, currentBranchId, true)
+    }
+
     // Try to find product in store first (by slug or ID)
     const existingProduct = productStore.productBySlugOrId(productIdOrSlug)
     if (existingProduct) {
       product.value = existingProduct
-      loading.value = false
       // Load combined rating and add structured data after product is loaded
       await loadCombinedRating()
       nextTick(() => {
         addStructuredData()
       })
+      loading.value = false
       return
     }
 
-    // If not found in store, fetch from API
-    const fetchedProduct = await productStore.fetchProduct(productIdOrSlug)
+    // If not found in store, fetch from API with branch inventory data
+    const fetchedProduct = await productStore.fetchProduct(productIdOrSlug, currentBranchId)
     if (fetchedProduct) {
       product.value = fetchedProduct
       // Load combined rating and add structured data after product is loaded
@@ -870,3 +1153,24 @@ onUnmounted(() => {
   removeStructuredData(['product', 'product-breadcrumb', 'product-faq'])
 })
 </script>
+
+<style scoped>
+/* Safe area support for notched devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Smooth transitions */
+button {
+  transition: all 0.2s ease;
+}
+
+/* Active state for buttons (native feel) */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+</style>

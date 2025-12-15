@@ -23,7 +23,12 @@ const ALLOWED_ATTRS: Record<string, string[]> = {
 }
 
 export const sanitizeHtml = (rawHtml?: string | null): string => {
-  if (!rawHtml) {
+  if (!rawHtml || typeof rawHtml !== 'string') {
+    return ''
+  }
+
+  // Return empty string for empty or whitespace-only content
+  if (rawHtml.trim() === '') {
     return ''
   }
 
@@ -36,9 +41,8 @@ export const sanitizeHtml = (rawHtml?: string | null): string => {
     const doc = parser.parseFromString(rawHtml, 'text/html')
 
     // Check if doc.body exists before trying to access it
-    if (!doc.body) {
-      console.warn('Failed to sanitize HTML content: doc.body is null')
-      return rawHtml
+    if (!doc || !doc.body) {
+      return ''
     }
 
     const traverse = (node: Node) => {
@@ -102,9 +106,15 @@ export const sanitizeHtml = (rawHtml?: string | null): string => {
     }
 
     traverse(doc.body)
+
+    // Final safety check before returning innerHTML
+    if (!doc.body) {
+      return ''
+    }
+
     return doc.body.innerHTML.trim()
   } catch (error) {
-    console.warn('Failed to sanitize HTML content:', error)
-    return rawHtml
+    // Silently return empty string on error - don't log to console
+    return ''
   }
 }

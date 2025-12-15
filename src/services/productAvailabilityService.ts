@@ -150,7 +150,7 @@ export class ProductAvailabilityService {
       const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'}/api`
       const apiUrl = `${API_BASE_URL}/inventory/check/${productId}/${branchId}?quantity=${requiredQuantity}`
 
-      console.log(`🔍 Checking inventory: ${apiUrl}`)
+      
       const response = await fetch(apiUrl)
 
       if (!response.ok) {
@@ -182,7 +182,7 @@ export class ProductAvailabilityService {
       }
 
       const data = await response.json()
-      console.log(`📊 Inventory response for ${productId}:`, data)
+      
 
       return {
         product_id: productId,

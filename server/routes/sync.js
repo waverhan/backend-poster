@@ -217,7 +217,7 @@ router.post('/full', async (req, res) => {
       // Skip if poster_product_id is empty - these are custom products (like bundles)
       // that should not be synced from Poster POS
       if (!productData.poster_product_id || productData.poster_product_id.trim() === '') {
-        console.log(`⏭️  Skipping product with empty poster_product_id: ${productData.name}`)
+        
         continue
       }
 
@@ -306,7 +306,7 @@ router.post('/full', async (req, res) => {
         for (const product of allProducts) {
           // Skip bundle products - they don't have inventory in Poster POS
           if (product.is_bundle) {
-            console.log(`⏭️  Skipping bundle product: ${product.name}`)
+            
             continue
           }
 
@@ -379,7 +379,7 @@ router.post('/inventory', async (req, res) => {
 
     for (const branch of branches) {
       try {
-        console.log(`🔄 Syncing inventory for branch: ${branch.name}`)
+        
 
         const inventoryResponse = await axios.get(`${POSTER_API_BASE}/storage.getStorageLeftovers`, {
           params: {
@@ -390,7 +390,7 @@ router.post('/inventory', async (req, res) => {
         })
 
         const inventoryData = inventoryResponse.data.response || []
-        console.log(`📊 Found ${inventoryData.length} inventory items for ${branch.name}`)
+        
 
         // Create inventory map from API response
         const inventoryMap = new Map()
@@ -420,14 +420,20 @@ router.post('/inventory', async (req, res) => {
           if (products.length === 0) break
 
           batchCount++
-          console.log(`📦 Processing batch ${batchCount} (${products.length} products)`)
 
           // Update inventory for each product in this batch
           for (const product of products) {
             try {
               // Skip bundle products - they don't have inventory in Poster POS
               if (product.is_bundle) {
-                console.log(`⏭️  Skipping bundle product: ${product.name}`)
+                
+                continue
+              }
+
+              // Skip manually managed products (not in Poster POS)
+              const manuallyManagedProducts = ['Подарунковий Набір Опілля']
+              if (manuallyManagedProducts.some(name => product.name.includes(name))) {
+                
                 continue
               }
 
@@ -465,7 +471,7 @@ router.post('/inventory', async (req, res) => {
           }
         }
 
-        console.log(`✅ Completed inventory sync for ${branch.name}: ${totalInventoryRecords} records updated`)
+        
 
       } catch (error) {
         console.error(`❌ Failed to sync inventory for branch ${branch.name}:`, error.message)
@@ -486,7 +492,7 @@ router.post('/inventory', async (req, res) => {
       await updateSyncLog(syncLogId, 'completed', totalInventoryRecords)
     }
 
-    console.log('🎉 Inventory sync completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -1028,7 +1034,7 @@ router.post('/products-only', async (req, res) => {
       // Skip if poster_product_id is empty - these are custom products (like bundles)
       // that should not be synced from Poster POS
       if (!posterProduct.product_id || posterProduct.product_id.trim() === '') {
-        console.log(`⏭️  Skipping product with empty poster_product_id: ${posterProduct.product_name}`)
+        
         continue
       }
 
@@ -1173,7 +1179,7 @@ router.post('/prices-only', async (req, res) => {
               }
             })
             updatedProductsCount++
-            console.log(`💰 Updated price for ${existingProduct.name}: ${existingProduct.price} → ${newPrice} UAH`)
+            
 
           } else {
             skippedProductsCount++
@@ -1498,9 +1504,6 @@ router.post('/images-only', async (req, res) => {
 // POST /api/sync/upload-images-to-minio - Upload all product images to MinIO
 router.post('/upload-images-to-minio', async (req, res) => {
   try {
-    console.log('📤 Starting image upload to MinIO...')
-    console.log(`🔍 MinIO Service Status: ${imageService.minioService?.isMinIOEnabled() ? '✅ Enabled' : '❌ Disabled'}`)
-
     // Get all products with image URLs (both local and MinIO)
     const products = await prisma.product.findMany({
       where: {
@@ -1516,7 +1519,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
       }
     })
 
-    console.log(`📊 Found ${products.length} products to process`)
+    
 
     let uploadedCount = 0
     let skippedCount = 0
@@ -1540,7 +1543,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
               }
             })
             uploadedCount++
-            console.log(`✅ Uploaded image for ${product.name} to MinIO`)
+            
           } else {
             // Already has correct MinIO URL
             skippedCount++
@@ -1568,7 +1571,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
       }
     }
 
-    console.log('🎉 Image upload completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -1584,7 +1587,7 @@ router.post('/upload-images-to-minio', async (req, res) => {
 // POST /api/sync/optimize-images - Optimize existing images to WebP format
 router.post('/optimize-images', async (req, res) => {
   try {
-    console.log('🖼️ Starting image optimization to WebP format...')
+    
 
     const imagesDir = path.join(__dirname, '../public/images/products')
 
@@ -1598,7 +1601,7 @@ router.post('/optimize-images', async (req, res) => {
     const files = fs.readdirSync(imagesDir)
     const imageFiles = files.filter(f => /\.(jpg|jpeg|png)$/i.test(f))
 
-    console.log(`📊 Found ${imageFiles.length} images to optimize`)
+    
 
     let optimizedCount = 0
     let skippedCount = 0
@@ -1645,7 +1648,7 @@ router.post('/optimize-images', async (req, res) => {
       }
     }
 
-    console.log('🎉 Image optimization completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -1691,7 +1694,7 @@ router.post('/update-prices', async (req, res) => {
   let syncLog = null
 
   try {
-    console.log('💰 Starting manual price update...')
+    
 
     syncLog = await createSyncLog('manual-price-update', 'in_progress')
 
@@ -1703,7 +1706,7 @@ router.post('/update-prices', async (req, res) => {
     })
 
     const posterProducts = productsResponse.data.response || []
-    console.log(`📊 Found ${posterProducts.length} products in Poster POS`)
+    
 
     // Get all existing products from database
     const existingProducts = await prisma.product.findMany({
@@ -1742,7 +1745,7 @@ router.post('/update-prices', async (req, res) => {
             })
 
             updatedPricesCount++
-            console.log(`💰 Updated price for ${existingProduct.name}: ${existingProduct.price} → ${newPrice} UAH`)
+            
           } else {
             skippedProductsCount++
           }
@@ -1776,7 +1779,7 @@ router.post('/update-prices', async (req, res) => {
       }
     }
 
-    console.log('🎉 Price update completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -1800,7 +1803,7 @@ router.post('/import-new-products', async (req, res) => {
   let syncLog = null
 
   try {
-    console.log('🆕 Starting manual new products import...')
+    
 
     syncLog = await createSyncLog('manual-new-products-import', 'in_progress')
 
@@ -1812,7 +1815,7 @@ router.post('/import-new-products', async (req, res) => {
     })
 
     const posterProducts = productsResponse.data.response || []
-    console.log(`📊 Found ${posterProducts.length} products in Poster POS`)
+    
 
     // Get all existing products from database
     const existingProducts = await prisma.product.findMany({
@@ -1832,7 +1835,6 @@ router.post('/import-new-products', async (req, res) => {
 
         if (isNewProduct) {
           // NEW PRODUCT: Import it
-          console.log(`🆕 New product found: ${posterProduct.product_name} (ID: ${posterProduct.product_id})`)
 
           // Get category for the product
           let categoryId = null
@@ -1872,7 +1874,7 @@ router.post('/import-new-products', async (req, res) => {
           }
 
           // Create new product
-          await prisma.product.create({
+          const newProduct = await prisma.product.create({
             data: {
               poster_product_id: String(posterProduct.product_id),
               name: posterProduct.product_name || `Product ${posterProduct.product_id}`,
@@ -1887,8 +1889,85 @@ router.post('/import-new-products', async (req, res) => {
             }
           })
 
+          // Sync inventory for the new product from Bratislavska branch only
+          try {
+            // Get Bratislavska branch (poster_branch_id = '7')
+            const defaultBranch = await prisma.branch.findFirst({
+              where: {
+                poster_branch_id: '7',
+                is_active: true
+              },
+              select: { id: true, poster_branch_id: true, name: true }
+            })
+
+            if (defaultBranch) {
+              try {
+                // Get inventory from Poster POS for Bratislavska branch
+                const inventoryResponse = await axios.get(`${POSTER_API_BASE}/storage.getStorageLeftovers`, {
+                  params: {
+                    token: POSTER_TOKEN,
+                    spot_id: defaultBranch.poster_branch_id
+                  }
+                })
+
+                const inventoryData = inventoryResponse.data.response || []
+                const productInventory = inventoryData.find(item => String(item.ingredient_id) === String(posterProduct.ingredient_id))
+
+                if (productInventory) {
+                  const quantity = parseFloat(productInventory.quantity) || 0
+                  const unit = posterProduct.weight_flag === 1 ? 'kg' : 'pcs'
+
+                  await prisma.productInventory.upsert({
+                    where: {
+                      product_id_branch_id: {
+                        product_id: newProduct.id,
+                        branch_id: defaultBranch.id
+                      }
+                    },
+                    create: {
+                      product_id: newProduct.id,
+                      branch_id: defaultBranch.id,
+                      quantity: quantity,
+                      unit: unit
+                    },
+                    update: {
+                      quantity: quantity,
+                      unit: unit
+                    }
+                  })
+                  
+                } else {
+                  // No inventory found, set to 0
+                  await prisma.productInventory.upsert({
+                    where: {
+                      product_id_branch_id: {
+                        product_id: newProduct.id,
+                        branch_id: defaultBranch.id
+                      }
+                    },
+                    create: {
+                      product_id: newProduct.id,
+                      branch_id: defaultBranch.id,
+                      quantity: 0,
+                      unit: posterProduct.weight_flag === 1 ? 'kg' : 'pcs'
+                    },
+                    update: {
+                      quantity: 0
+                    }
+                  })
+                  
+                }
+              } catch (branchError) {
+                console.error(`  ⚠️  Error syncing inventory for Bratislavska branch:`, branchError.message)
+              }
+            } else {
+              console.warn(`  ⚠️  Bratislavska branch not found, skipping inventory sync`)
+            }
+          } catch (inventoryError) {
+            console.error(`  ⚠️  Error syncing inventory for new product:`, inventoryError.message)
+          }
+
           newProductsCount++
-          console.log(`✅ Imported new product: ${posterProduct.product_name} (Price: ${price} UAH)`)
         } else {
           skippedProductsCount++
         }
@@ -1924,7 +2003,7 @@ router.post('/import-new-products', async (req, res) => {
       }
     }
 
-    console.log('🎉 New products import completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -1946,7 +2025,7 @@ router.post('/import-new-products', async (req, res) => {
 // POST /api/sync/migrate-images-to-minio - Migrate all image URLs from local to MinIO
 router.post('/migrate-images-to-minio', async (req, res) => {
   try {
-    console.log('🔄 Starting image URL migration to MinIO...')
+    
 
     if (!minioService.isMinIOEnabled()) {
       return res.status(400).json({
@@ -1967,7 +2046,7 @@ router.post('/migrate-images-to-minio', async (req, res) => {
       select: { id: true, poster_product_id: true, image_url: true, display_image_url: true }
     })
 
-    console.log(`📊 Found ${products.length} products with local image URLs`)
+    
 
     let migratedCount = 0
     let skippedCount = 0
@@ -2001,7 +2080,7 @@ router.post('/migrate-images-to-minio', async (req, res) => {
               }
             })
             migratedCount++
-            console.log(`✅ Migrated: ${filename}`)
+            
           } else {
             skippedCount++
           }
@@ -2025,7 +2104,7 @@ router.post('/migrate-images-to-minio', async (req, res) => {
       }
     }
 
-    console.log('🎉 Image migration completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -2042,7 +2121,7 @@ router.post('/migrate-images-to-minio', async (req, res) => {
 // This endpoint ensures all products have MinIO URLs in the database
 router.post('/auto-sync-images', async (req, res) => {
   try {
-    console.log('🔄 Starting automatic image sync to MinIO...')
+    
 
     // Get all products with image URLs
     const products = await prisma.product.findMany({
@@ -2061,7 +2140,7 @@ router.post('/auto-sync-images', async (req, res) => {
       }
     })
 
-    console.log(`📦 Found ${products.length} products to process`)
+    
 
     let updatedCount = 0
     let skippedCount = 0
@@ -2090,7 +2169,7 @@ router.post('/auto-sync-images', async (req, res) => {
             }
           })
           updatedCount++
-          console.log(`✅ Updated ${product.name} to MinIO`)
+          
         } else {
           // No local image found, keep current URL
           skippedCount++
@@ -2112,7 +2191,7 @@ router.post('/auto-sync-images', async (req, res) => {
       }
     }
 
-    console.log('🎉 Automatic image sync completed:', result.stats)
+    
     res.json(result)
 
   } catch (error) {
@@ -2120,6 +2199,88 @@ router.post('/auto-sync-images', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Automatic image sync failed',
+      message: error.message
+    })
+  }
+})
+
+// POST /api/sync/fix-bundle-inventory - Fix inventory for manually managed bundle products
+router.post('/fix-bundle-inventory', async (req, res) => {
+  try {
+    
+
+    // Find the product
+    const product = await prisma.product.findFirst({
+      where: {
+        name: { contains: 'Подарунковий Набір Опілля' }
+      },
+      select: { id: true, name: true, is_active: true }
+    })
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: 'Product not found'
+      })
+    }
+
+    // Make sure product is active
+    if (!product.is_active) {
+      
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { is_active: true }
+      })
+      
+    }
+
+    // Get all active branches
+    const branches = await prisma.branch.findMany({
+      where: { is_active: true },
+      select: { id: true, name: true }
+    })
+
+    
+
+    // Update inventory for each branch
+    const updates = []
+    for (const branch of branches) {
+      await prisma.productInventory.upsert({
+        where: {
+          product_id_branch_id: {
+            product_id: product.id,
+            branch_id: branch.id
+          }
+        },
+        create: {
+          product_id: product.id,
+          branch_id: branch.id,
+          quantity: 10000,
+          unit: 'pcs'
+        },
+        update: {
+          quantity: 10000,
+          unit: 'pcs'
+        }
+      })
+      updates.push({ branch: branch.name, quantity: 10000 })
+      
+    }
+
+    
+
+    res.json({
+      success: true,
+      message: 'Bundle product inventory fixed successfully',
+      product: product.name,
+      updates: updates
+    })
+
+  } catch (error) {
+    console.error('❌ Error fixing bundle inventory:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fix bundle inventory',
       message: error.message
     })
   }

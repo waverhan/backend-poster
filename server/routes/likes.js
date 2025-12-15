@@ -145,7 +145,7 @@ router.get('/popular', async (req, res) => {
     const products = await prisma.product.findMany({
       where: {
         id: { in: productIds },
-        visible: true
+        is_active: true
       },
       include: {
         category: true
@@ -159,7 +159,7 @@ router.get('/popular', async (req, res) => {
         product,
         like_count: like._count.id
       }
-    }).filter(item => item.product) // Only include products that exist and are visible
+    }).filter(item => item.product) // Only include products that exist and are active
 
     res.json({
       popular_products: result
@@ -169,6 +169,71 @@ router.get('/popular', async (req, res) => {
     console.error('Error getting popular products:', error)
     res.status(500).json({
       error: 'Failed to get popular products',
+      details: error.message
+    })
+  }
+})
+
+// Get likes statistics
+router.get('/stats', async (req, res) => {
+  try {
+    // Total likes count
+    const totalLikes = await prisma.productLike.count()
+
+    // Products with likes
+    const productsWithLikes = await prisma.productLike.groupBy({
+      by: ['product_id'],
+      _count: {
+        id: true
+      }
+    })
+
+    // Top 10 most liked products
+    const topLiked = await prisma.productLike.groupBy({
+      by: ['product_id'],
+      _count: {
+        id: true
+      },
+      orderBy: {
+        _count: {
+          id: 'desc'
+        }
+      },
+      take: 10
+    })
+
+    // Get product details for top liked
+    const topProductIds = topLiked.map(p => p.product_id)
+    const topProducts = await prisma.product.findMany({
+      where: {
+        id: { in: topProductIds }
+      },
+      select: {
+        id: true,
+        display_name: true,
+        price: true
+      }
+    })
+
+    const topLikedWithDetails = topLiked.map(like => {
+      const product = topProducts.find(p => p.id === like.product_id)
+      return {
+        product_id: like.product_id,
+        product_name: product?.display_name || 'Unknown',
+        like_count: like._count.id
+      }
+    })
+
+    res.json({
+      total_likes: totalLikes,
+      products_with_likes: productsWithLikes.length,
+      top_liked_products: topLikedWithDetails
+    })
+
+  } catch (error) {
+    console.error('Error getting likes statistics:', error)
+    res.status(500).json({
+      error: 'Failed to get likes statistics',
       details: error.message
     })
   }

@@ -47,11 +47,11 @@ function generateSlug(text) {
 router.get('/', async (req, res) => {
   try {
     const includeInactive = req.query.includeInactive === 'true'
-    console.log(`📥 GET /api/categories - includeInactive: ${includeInactive}`)
+    
 
     const categories = await getCategories(includeInactive)
 
-    console.log(`✅ Fetched ${categories.length} categories from database`)
+    
     if (categories.length === 0) {
       console.warn('⚠️ WARNING: No categories found in database!')
       console.warn('⚠️ Check if categories are synced and marked as is_active: true')
@@ -75,11 +75,11 @@ router.get('/debug/count', async (req, res) => {
       select: { id: true, name: true, display_name: true, is_active: true, sort_order: true }
     })
 
-    console.log(`📊 Category Debug Info:`)
-    console.log(`   Total: ${totalCount}`)
-    console.log(`   Active: ${activeCount}`)
-    console.log(`   Inactive: ${inactiveCount}`)
-    console.log(`   All categories:`, allCategories)
+    
+    
+    
+    
+    
 
     res.json({
       total: totalCount,
@@ -96,12 +96,12 @@ router.get('/debug/count', async (req, res) => {
 // POST /api/categories/generate-slugs - Generate missing slugs
 router.post('/generate-slugs', async (req, res) => {
   try {
-    console.log('🔄 Generating missing category slugs...')
+    
 
     // Get all categories
     const categories = await prisma.category.findMany()
 
-    console.log(`📝 Found ${categories.length} total categories`)
+    
 
     let updated = 0
     for (const category of categories) {
@@ -111,7 +111,7 @@ router.post('/generate-slugs', async (req, res) => {
           where: { id: category.id },
           data: { slug }
         })
-        console.log(`✅ Generated slug for "${category.display_name}": ${slug}`)
+        
         updated++
       }
     }
@@ -225,7 +225,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    console.log(`📥 PUT /api/categories/${id} - Request received`)
+    
 
     const {
       name,
@@ -239,9 +239,7 @@ router.put('/:id', async (req, res) => {
       seo_content
     } = req.body
 
-    console.log(`🔄 Updating category ${id} with data:`, {
-      name, display_name, description, image_url, sort_order, is_active
-    })
+    
 
     // First check if category exists
     const existingCategory = await prisma.category.findUnique({
@@ -286,7 +284,7 @@ router.put('/:id', async (req, res) => {
     }
     if (is_active !== undefined) updateData.is_active = is_active
 
-    console.log(`📝 Final update data:`, updateData)
+    
 
     const category = await prisma.category.update({
       where: { id },
@@ -317,7 +315,7 @@ router.put('/:id', async (req, res) => {
     }
 
     
-    console.log(`✅ Category updated successfully: ${id}`)
+    
     res.json(formattedCategory)
   } catch (error) {
     console.error('❌ Error updating category:', error)

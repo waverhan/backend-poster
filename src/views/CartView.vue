@@ -3,16 +3,46 @@
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">🛒 {{ $t('cart.title') }}</h1>
 
-      <div v-if="isEmpty" class="text-center py-16">
-        <div class="text-6xl mb-4">🛒</div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ $t('cart.empty') }}</h2>
-        <p class="text-gray-600 mb-8">{{ $t('cart.emptyDescription') }}</p>
-        <router-link to="/shop" class="btn-primary">
+      <!-- Empty Cart State - Native App Style -->
+      <div v-if="isEmpty" class="empty-cart-state">
+        <div class="empty-cart-icon">🛒</div>
+        <h2 class="empty-cart-title">{{ $t('cart.empty') }}</h2>
+        <p class="empty-cart-description">{{ $t('cart.emptyDescription') }}</p>
+        <router-link to="/shop" class="empty-cart-button">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
           {{ $t('cart.continueShopping') }}
         </router-link>
       </div>
 
       <div v-else class="space-y-6">
+        <!-- Minimum Order Warning -->
+        <div v-if="subtotal < MINIMUM_ORDER_AMOUNT" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div class="text-sm text-yellow-800">
+            ⚠️ Мінімальна сума замовлення: {{ MINIMUM_ORDER_AMOUNT }} ₴
+          </div>
+          <div class="text-sm text-yellow-700 mt-1">
+            Додайте ще товарів на {{ (MINIMUM_ORDER_AMOUNT - subtotal).toFixed(2) }} ₴
+          </div>
+          <!-- Shop More Link -->
+          <div class="mt-3">
+            <router-link to="/shop" class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">
+              <span>🛍️</span>
+              <span>Перейти до магазину</span>
+            </router-link>
+          </div>
+        </div>
+
+        <!-- Suggested Products (always show when cart has items) -->
+        <div v-if="firstCartProduct && subtotal < MINIMUM_ORDER_AMOUNT" class="mb-6">
+          <RelatedProducts
+            :current-product="firstCartProduct"
+            :max-products="4"
+            @cart-animation="handleCartAnimation"
+          />
+        </div>
+
         <!-- Free Delivery Notification Banner -->
         <div v-if="freeDeliveryNotification" class="mb-6 p-4 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-300 rounded-lg">
           <div class="flex items-center gap-4">
@@ -59,64 +89,68 @@
               :key="item.cart_item_id || item.product_id"
               class="py-4 border-b border-gray-200"
             >
-              <!-- Mobile Layout -->
+              <!-- Mobile Layout - Native App Style -->
               <div class="block sm:hidden">
-                <div class="flex items-start space-x-2">
-                  <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div class="cart-item-mobile">
+                  <!-- Bigger Product Image -->
+                  <div class="cart-item-image">
                     <img
                       v-if="item.image_url"
                       :src="getImageUrl(item.image_url)"
                       :alt="item.name"
-                      class="w-full h-full object-cover rounded-lg"
+                      class="w-full h-full object-cover rounded-xl"
                     />
-                    <span v-else class="text-sm">🍽️</span>
+                    <div v-else class="w-full h-full flex items-center justify-center text-3xl bg-gray-100 rounded-xl">
+                      🍽️
+                    </div>
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-medium text-xs">{{ item.name }}</h3>
-                    <p class="text-gray-600 text-xs">
-                      {{ formatItemPrice(item) }} ₴
-                      <span v-if="item.is_draft_beverage">за {{ item.quantity }}L</span>
-                      <span v-else-if="item.custom_unit">per {{ formatCustomUnit(item) }}</span>
-                      <span v-else>each</span>
-                    </p>
-                    <!-- Bottle Information - Hidden -->
-                    <!-- Bottle sync happens automatically in background -->
 
-                    <!-- Mobile quantity controls and total -->
-                    <div class="flex items-center justify-between mt-1">
-                      <div class="flex items-center space-x-1">
-                        <!-- Quantity controls (hidden for bottle products) -->
-                        <div v-if="!item.is_bottle_product" class="flex items-center space-x-0.5">
-                          <button
-                            @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
-                            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-xs"
-                          >
-                            -
-                          </button>
-                          <span class="w-5 text-center text-xs">{{ formatQuantityDisplay(item) }}</span>
-                          <button
-                            @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
-                            class="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 text-xs"
-                          >
-                            +
-                          </button>
-                        </div>
-                        <!-- Show quantity only for bottle products -->
-                        <div v-else class="flex items-center space-x-0.5">
-                          <span class="w-5 text-center text-xs text-gray-500">{{ item.quantity }}</span>
-                        </div>
-                        <!-- Draft beverage info - Hidden -->
+                  <!-- Product Info -->
+                  <div class="cart-item-info">
+                    <h3 class="cart-item-name">{{ item.name }}</h3>
+                    <p class="cart-item-price">
+                      {{ formatItemPrice(item) }} ₴
+                      <span v-if="item.is_draft_beverage" class="text-gray-500">за {{ item.quantity }}L</span>
+                      <span v-else-if="item.custom_unit" class="text-gray-500">per {{ formatCustomUnit(item) }}</span>
+                    </p>
+
+                    <!-- Quantity Controls - Larger Touch Targets -->
+                    <div class="cart-item-actions">
+                      <div v-if="!item.is_bottle_product" class="quantity-controls-large">
+                        <button
+                          @click="item.is_draft_beverage ? decreaseDraftQuantity(item) : decreaseQuantity(item.cart_item_id || item.product_id)"
+                          class="quantity-btn"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                          </svg>
+                        </button>
+                        <span class="quantity-display">{{ formatQuantityDisplay(item) }}</span>
+                        <button
+                          @click="item.is_draft_beverage ? increaseDraftQuantity(item) : increaseQuantity(item.cart_item_id || item.product_id)"
+                          class="quantity-btn"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      </div>
+                      <!-- Show quantity only for bottle products -->
+                      <div v-else class="text-sm text-gray-500">
+                        Кількість: {{ item.quantity }}
                       </div>
 
-                      <div class="flex items-center space-x-1">
-                        <div class="font-bold text-xs">{{ formatItemTotal(item) }} ₴</div>
-                        <!-- Hide delete button for bottle products -->
+                      <!-- Item Total and Delete -->
+                      <div class="cart-item-total-actions">
+                        <div class="cart-item-total">{{ formatItemTotal(item) }} ₴</div>
                         <button
                           v-if="!item.is_bottle_product"
                           @click="removeItem(item.cart_item_id || item.product_id)"
-                          class="w-6 h-6 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 flex items-center justify-center text-xs"
+                          class="delete-btn"
                         >
-                          🗑️
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -185,6 +219,22 @@
                   >
                     🗑️
                   </button>
+                </div>
+              </div>
+
+              <!-- Bundle Items (shown under bundle product) -->
+              <div v-if="item.is_bundle && item.bundle_items && item.bundle_items.length > 0" class="mt-3 ml-4 sm:ml-20 space-y-2">
+                <div class="text-xs text-gray-500 font-medium mb-2">{{ $t('cart.bundleIncludes') || 'Включає:' }}</div>
+                <div
+                  v-for="(bundleItem, idx) in item.bundle_items"
+                  :key="`bundle-${item.cart_item_id}-${idx}`"
+                  class="flex items-center justify-between text-xs text-gray-600 py-1 px-2 bg-gray-50 rounded"
+                >
+                  <div class="flex items-center space-x-2">
+                    <span class="text-gray-400">•</span>
+                    <span>{{ bundleItem.name }}</span>
+                  </div>
+                  <span class="text-gray-500">{{ bundleItem.quantity }} {{ bundleItem.unit }}</span>
                 </div>
               </div>
             </div>
@@ -278,22 +328,9 @@
           />
         </div>
 
-        <!-- Cart Summary -->
+        <!-- Order Summary -->
         <div class="card p-6">
           <h2 class="text-xl font-bold mb-4">{{ $t('checkout.orderSummary') }}</h2>
-
-          <!-- Minimum Order Warning -->
-          <div v-if="subtotal < MINIMUM_ORDER_AMOUNT" class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div class="flex items-center gap-2 text-yellow-800">
-              <span>⚠️</span>
-              <span class="text-sm font-medium">
-                Мінімальна сума замовлення: {{ MINIMUM_ORDER_AMOUNT }} ₴
-              </span>
-            </div>
-            <div class="text-sm text-yellow-700 mt-1">
-              Додайте ще товарів на {{ (MINIMUM_ORDER_AMOUNT - subtotal).toFixed(2) }} ₴
-            </div>
-          </div>
 
           <!-- Free Delivery Threshold Message -->
           <div v-if="freeDeliveryThreshold > 0 && subtotal < freeDeliveryThreshold && selectedMethodType === 'delivery'" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -375,7 +412,18 @@
           </div>
         </div>
 
+      </div>
+    </div>
 
+    <!-- Sticky Checkout Button (Mobile Only) -->
+    <div v-if="!isEmpty" class="sticky-checkout-button md:hidden">
+      <div class="sticky-checkout-content">
+        <div class="sticky-checkout-total">
+          <div class="text-sm text-gray-600">Всього</div>
+          <div class="text-xl font-bold text-gray-900">
+            {{ (subtotal - totalDiscount + selectedMethodFee).toFixed(2) }} ₴
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -394,6 +442,7 @@ import { useDiscountStore } from '@/stores/discount'
 import { getBottleSelectionSummary, getDefaultBottleSelection, getBottleProduct } from '@/utils/bottleUtils'
 import { useProductStore } from '@/stores/product'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
+import RelatedProducts from '@/components/product/RelatedProducts.vue'
 import ProductAvailabilityService from '@/services/productAvailabilityService'
 import { backendApi } from '@/services/backendApi'
 import type { Branch, LocationData, Product } from '@/types'
@@ -414,6 +463,15 @@ const { items, totalItems, subtotal, deliveryFee, total, isEmpty } = storeToRefs
 const regularItems = computed(() => items.value.filter(item => !item.is_bottle_product))
 const bottleItems = computed(() => items.value.filter(item => item.is_bottle_product))
 const regularItemsCount = computed(() => regularItems.value.length)
+
+// Suggested products - get first cart product for related products
+const firstCartProduct = computed(() => {
+  const firstItem = regularItems.value[0]
+  if (!firstItem) return null
+
+  // Find the full product from productStore
+  return productStore.products.find(p => p.id === firstItem.product_id) || null
+})
 
 // Constants
 const MINIMUM_ORDER_AMOUNT = 300
@@ -564,26 +622,41 @@ const removeItem = (cartItemId: string) => {
   cartStore.removeItem(cartItemId)
 }
 
+const proceedToCheckout = () => {
+  if (subtotal.value < MINIMUM_ORDER_AMOUNT) {
+    notificationStore.showNotification('Мінімальна сума замовлення: ' + MINIMUM_ORDER_AMOUNT + ' ₴', 'warning')
+    return
+  }
+
+  if (!selectedMethod.value) {
+    notificationStore.showNotification('Будь ласка, оберіть спосіб доставки', 'warning')
+    return
+  }
+
+  // Navigate to checkout
+  router.push('/checkout')
+}
+
 // Draft beverage quantity management with bottle sync
 const increaseDraftQuantity = (draftItem: any) => {
-  console.log('⬆️ Increasing draft quantity for:', draftItem.name, 'from', draftItem.quantity)
+  
 
   // Increase draft beverage quantity first
   cartStore.increaseQuantity(draftItem.cart_item_id || draftItem.product_id)
 
   // Wait a moment for cart to update, then force sync all bottles
   nextTick(() => {
-    console.log('🔄 Force syncing all bottles after quantity increase...')
+    
     forceBottleSync()
   })
 }
 
 const decreaseDraftQuantity = (draftItem: any) => {
-  console.log('⬇️ Decreasing draft quantity for:', draftItem.name, 'from', draftItem.quantity)
+  
 
   if (draftItem.quantity <= 1) {
     // Remove draft beverage and all related bottles
-    console.log('🗑️ Removing draft beverage and all bottles')
+    
     removeDraftBeverageAndBottles(draftItem)
     return
   }
@@ -593,31 +666,31 @@ const decreaseDraftQuantity = (draftItem: any) => {
 
   // Wait a moment for cart to update, then force sync all bottles
   nextTick(() => {
-    console.log('🔄 Force syncing all bottles after quantity decrease...')
+    
     forceBottleSync()
   })
 }
 
 const syncBottleQuantities = (draftItem: any, newQuantity: number) => {
-  console.log('🔄 Syncing 1L bottles for draft beverages')
+  
 
   // Calculate total quantity for ALL draft beverages in cart
   const currentItems = cartStore.items
   const allDraftBeverages = currentItems.filter(item => item.is_draft_beverage)
   const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
 
-  console.log('🍺 Total draft quantity needed:', totalDraftQuantity, 'L')
+  
 
   // Simple calculation: need exactly totalDraftQuantity number of 1L bottles
   const needed1LBottles = Math.ceil(totalDraftQuantity)
-  console.log('🍾 Need', needed1LBottles, '× 1L bottles')
+  
 
   // Get current bottle items
   const bottleItems = currentItems.filter(item => item.is_bottle_product)
 
   // Remove all existing bottles
   for (const bottleItem of bottleItems) {
-    console.log('🗑️ Removing bottle:', bottleItem.name)
+    
     cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
   }
 
@@ -625,7 +698,7 @@ const syncBottleQuantities = (draftItem: any, newQuantity: number) => {
   if (needed1LBottles > 0) {
     const bottle1L = getBottleProduct('1L')
     if (bottle1L) {
-      console.log(`➕ Adding ${needed1LBottles}x ${bottle1L.name}`)
+      
 
       const bottleCartItem = {
         product_id: bottle1L.id,
@@ -641,7 +714,7 @@ const syncBottleQuantities = (draftItem: any, newQuantity: number) => {
     }
   }
 
-  console.log('✅ Bottle sync completed:', needed1LBottles, '× 1L bottles for', totalDraftQuantity, 'L beer')
+  
 }
 
 const removeDraftBeverageAndBottles = (draftItem: any) => {
@@ -657,14 +730,11 @@ const removeDraftBeverageAndBottles = (draftItem: any) => {
 
 // Force sync all bottles based on current draft beverage quantities
 const forceBottleSync = () => {
-  console.log('🔄 Force syncing all bottles...')
+  
 
   const currentItems = cartStore.items
   const allDraftBeverages = currentItems.filter(item => item.is_draft_beverage)
   const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
-
-  console.log('🍺 Total draft quantity:', totalDraftQuantity, 'L')
-  console.log('🍺 Draft beverages:', allDraftBeverages.map(d => `${d.name}: ${d.quantity}L`))
 
   if (totalDraftQuantity > 0) {
     // Use the first draft beverage as a reference for the sync function
@@ -718,7 +788,7 @@ const checkBottleSyncStatus = (draftItem: any): boolean => {
   const isOutOfSync = Math.abs(totalBottleVolume - draftItem.quantity) > 0.1
 
   if (isOutOfSync) {
-    console.log(`⚠️ Bottles out of sync for ${draftItem.name}: ${totalBottleVolume}L bottles vs ${draftItem.quantity}L beverage`)
+    
   }
 
   return isOutOfSync
@@ -731,7 +801,11 @@ const clearCart = () => {
   }
 }
 
-
+// Handle cart animation from RelatedProducts component
+const handleCartAnimation = (event: { x: number; y: number }) => {
+  // Cart animation is handled by the component itself
+  
+}
 
 // Helper functions for cart item display
 const formatItemPrice = (item: any): string => {
@@ -833,7 +907,7 @@ const loadApplicableDiscounts = async () => {
 // Lifecycle
 onMounted(async () => {
   // Force sync bottles on page load to ensure consistency
-  console.log('🔄 Cart page mounted - checking bottle sync...')
+  
   nextTick(() => {
     forceBottleSync()
   })
@@ -867,12 +941,29 @@ onMounted(async () => {
   }
 })
 
+// Watch for changes in delivery method in cart store
+watch(() => cartStore.deliveryMethod, (newMethod) => {
+  if (newMethod && cartStore.deliveryFee !== undefined) {
+    const method = newMethod as 'delivery' | 'pickup'
+    const fee = cartStore.deliveryFee
+    const location = locationStore.userLocation
+    const selectedBranch = branchStore.selectedBranch
+
+    selectedMethod.value = {
+      method,
+      location: method === 'delivery' ? location || undefined : undefined,
+      branch: selectedBranch || undefined,
+      fee
+    }
+  }
+})
+
 // Watch for changes in cart items to auto-sync bottles and reload discounts
 watch(() => cartStore.items, (newItems, oldItems) => {
-  console.log('👁️ Cart watcher triggered. Items count:', newItems?.length || 0)
+  
 
   if (!newItems || !oldItems) {
-    console.log('⚠️ Missing items data, skipping sync')
+    
     return
   }
 
@@ -881,7 +972,7 @@ watch(() => cartStore.items, (newItems, oldItems) => {
 
   // Skip auto-sync on checkout page - checkout handles bottle recalculation manually
   if (route.name === 'checkout') {
-    console.log('🚫 Skipping auto bottle sync on checkout page')
+    
     return
   }
 
@@ -889,7 +980,7 @@ watch(() => cartStore.items, (newItems, oldItems) => {
   const draftBeverages = newItems.filter(item => item.is_draft_beverage)
   const oldDraftBeverages = oldItems.filter(item => item.is_draft_beverage)
 
-  console.log('🍺 Draft beverages found:', draftBeverages.length, 'Old:', oldDraftBeverages.length)
+  
 
   for (const draftItem of draftBeverages) {
     const oldDraftItem = oldDraftBeverages.find(old =>
@@ -897,14 +988,14 @@ watch(() => cartStore.items, (newItems, oldItems) => {
     )
 
     if (oldDraftItem && oldDraftItem.quantity !== draftItem.quantity) {
-      console.log('🔍 Detected draft beverage quantity change:', draftItem.name, oldDraftItem.quantity, '→', draftItem.quantity)
+      
 
       // Auto-sync bottles for this draft beverage immediately
       syncBottleQuantities(draftItem, draftItem.quantity)
     } else if (oldDraftItem) {
-      console.log('📊 Draft beverage unchanged:', draftItem.name, 'Quantity:', draftItem.quantity)
+      
     } else {
-      console.log('🆕 New draft beverage detected:', draftItem.name, 'Quantity:', draftItem.quantity)
+      
     }
   }
 }, { deep: true, immediate: false })
@@ -914,20 +1005,246 @@ window.debugBottleSync = () => {
   const allItems = cartStore.items
   const draftBeverages = allItems.filter(item => item.is_draft_beverage)
   const bottleItems = allItems.filter(item => item.is_bottle_product)
-
-  console.log('🔍 DEBUG: Current cart state')
-  console.log('📦 All cart items:', allItems.map(item => ({
-    name: item.name,
-    quantity: item.quantity,
-    is_draft_beverage: item.is_draft_beverage,
-    is_bottle_product: item.is_bottle_product,
-    product_id: item.product_id,
-    poster_product_id: item.poster_product_id
-  })))
-  console.log('🍺 Draft beverages:', draftBeverages.map(d => `${d.name}: ${d.quantity}L`))
-  console.log('🍾 Bottle items:', bottleItems.map(b => `${b.name}: ${b.quantity}x`))
 }
 
 // Add force sync function to window for debugging
 window.forceBottleSync = forceBottleSync
 </script>
+
+<style scoped>
+/* Empty Cart State - Native App Style */
+.empty-cart-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.empty-cart-icon {
+  font-size: 6rem;
+  margin-bottom: 1.5rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.empty-cart-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+.empty-cart-description {
+  font-size: 1rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+  max-width: 400px;
+}
+
+.empty-cart-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-primary, #FF6B35);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.empty-cart-button:hover {
+  background: var(--color-primary-dark, #E55A2B);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+}
+
+/* Cart Item - Native App Style (Mobile) */
+.cart-item-mobile {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 0.75rem;
+}
+
+.cart-item-image {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cart-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cart-item-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.cart-item-price {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cart-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+/* Larger Quantity Controls */
+.quantity-controls-large {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quantity-btn {
+  width: 48px;
+  height: 48px;
+  min-height: var(--touch-target-comfortable, 48px);
+  border-radius: 12px;
+  background: #f3f4f6;
+  border: none;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.quantity-btn:active {
+  transform: scale(0.95);
+  background: #e5e7eb;
+}
+
+.quantity-display {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  min-width: 40px;
+  text-align: center;
+}
+
+.cart-item-total-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cart-item-total {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary, #FF6B35);
+}
+
+.delete-btn {
+  width: 48px;
+  height: 48px;
+  min-height: var(--touch-target-comfortable, 48px);
+  border-radius: 12px;
+  background: #fef2f2;
+  border: none;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.delete-btn:active {
+  transform: scale(0.95);
+  background: #fee2e2;
+}
+
+/* Sticky Checkout Button (Mobile) */
+.sticky-checkout-button {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom) + 60px); /* Account for mobile nav */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 40;
+}
+
+.sticky-checkout-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.sticky-checkout-total {
+  flex-shrink: 0;
+}
+
+.sticky-checkout-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--color-primary, #FF6B35);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  border: none;
+  font-weight: 600;
+  font-size: 1rem;
+  min-height: var(--touch-target-large, 56px);
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.sticky-checkout-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  background: var(--color-primary-dark, #E55A2B);
+}
+
+/* Dark mode support */
+.dark .sticky-checkout-button {
+  background: #1f2937;
+  border-top-color: #374151;
+}
+
+.dark .sticky-checkout-total {
+  color: #f9fafb;
+}
+</style>

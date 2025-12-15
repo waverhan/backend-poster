@@ -66,11 +66,7 @@ class DiscountService {
 
     // If required fields are missing, return false
     if (!discount.day_of_week || !discount.start_time || !discount.end_time) {
-      console.log('  ⚠️ Happy hours discount missing required fields:', {
-        day_of_week: discount.day_of_week,
-        start_time: discount.start_time,
-        end_time: discount.end_time
-      })
+      
       return false
     }
 
@@ -92,15 +88,10 @@ class DiscountService {
 
   // Get applicable discounts for an order
   async getApplicableDiscounts(orderData) {
-    console.log('🔍 Checking applicable discounts for order:', {
-      subtotal: orderData.subtotal,
-      itemsCount: orderData.items?.length || 0,
-      customerId: orderData.customerId,
-      userId: orderData.userId
-    })
+    
 
     const enabledDiscounts = await this.getEnabledDiscounts()
-    console.log('📋 Enabled discounts:', enabledDiscounts.length)
+    
 
     const applicable = []
 
@@ -110,37 +101,35 @@ class DiscountService {
       switch (discount.type) {
         case 'first_order':
           isApplicable = await this.isFirstTimeCustomer(orderData.customerId, orderData.userId)
-          console.log(`  ✓ First Order: ${isApplicable}`)
+          
           break
 
         case 'happy_hours':
           isApplicable = this.isHappyHours(discount)
-          console.log(`  ✓ Happy Hours: ${isApplicable}`)
+          
           break
 
         case 'free_delivery':
           isApplicable = orderData.subtotal >= (discount.min_order_amount || 1500)
-          console.log(`  ✓ Free Delivery: ${isApplicable} (${orderData.subtotal} >= ${discount.min_order_amount || 1500})`)
           break
 
         case 'fixed_shipping':
           isApplicable = orderData.subtotal >= (discount.min_order_amount || 700)
-          console.log(`  ✓ Fixed Shipping: ${isApplicable} (${orderData.subtotal} >= ${discount.min_order_amount || 700})`)
           break
 
         case 'beer_promo':
           isApplicable = this.hasBeerProducts(orderData.items, discount.product_category)
-          console.log(`  ✓ Beer Promo: ${isApplicable}`)
+          
           break
       }
 
       if (isApplicable) {
-        console.log(`    ➕ Added: ${discount.name}`)
+        
         applicable.push(discount)
       }
     }
 
-    console.log(`✅ Total applicable discounts: ${applicable.length}`)
+    
     return applicable
   }
 

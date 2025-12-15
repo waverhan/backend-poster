@@ -21,7 +21,7 @@ export class SaleService {
       return // Already monitoring
     }
 
-    console.log('🔥 Starting sale expiration monitoring...')
+    
     
     this.checkInterval = window.setInterval(() => {
       this.checkExpiredSales()
@@ -38,7 +38,7 @@ export class SaleService {
     if (this.checkInterval) {
       clearInterval(this.checkInterval)
       this.checkInterval = null
-      console.log('🔥 Stopped sale expiration monitoring')
+      
     }
   }
 
@@ -52,7 +52,7 @@ export class SaleService {
       })
 
       if (response.expiredProducts && response.expiredProducts.length > 0) {
-        console.log(`🔥 Found ${response.expiredProducts.length} expired sales, prices reverted`)
+        
         
         // Emit event to notify components about expired sales
         window.dispatchEvent(new CustomEvent('salesExpired', {
@@ -73,7 +73,7 @@ export class SaleService {
         method: 'POST'
       })
 
-      console.log(`🔥 Manually expired sale for product ${productId}`)
+      
       return true
     } catch (error) {
       console.error(`❌ Failed to expire sale for product ${productId}:`, error)
@@ -93,7 +93,7 @@ export class SaleService {
         })
       })
 
-      console.log(`🔥 Set sale expiration for product ${productId} to ${expiresAt}`)
+      
       return true
     } catch (error) {
       console.error(`❌ Failed to set sale expiration for product ${productId}:`, error)

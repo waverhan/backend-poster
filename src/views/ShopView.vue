@@ -50,7 +50,8 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <header class="mb-8">
+      <!-- Page Heading - Desktop Only -->
+      <header class="mb-8 hidden md:block">
         <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-gray-50">
           {{ pageHeading }}
         </h1>
@@ -186,15 +187,17 @@
       </section>
 
       <!-- Initial Loading Screen -->
-      <section v-if="loading.initial" class="text-center py-20">
-        <div class="spinner w-12 h-12 mx-auto mb-6"></div>
+      <section v-if="loading.initial" class="px-4 py-8">
+        <CategorySkeleton :count="4" />
+        <CategorySkeleton :count="4" />
+        <CategorySkeleton :count="4" />
       </section>
 
       <!-- Selected Branch & Products -->
       <section v-else-if="selectedBranch">
 
-        <!-- Categories Container - Sticky below header -->
-        <div class="sticky z-[50] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-md w-full" style="top: 64px;">
+        <!-- Categories Container - Sticky below header (Desktop Only) -->
+        <div class="hidden md:block sticky z-[50] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-md w-full" style="top: 64px;">
           <!-- Loading State - Just animation -->
           <div v-if="loading.categories" class="px-4 py-3 flex justify-center">
             <div class="spinner w-5 h-5"></div>
@@ -202,59 +205,17 @@
 
           <!-- No Categories State (only show after waiting for retries) -->
           <div v-else-if="categoriesWithProducts.length === 0 && showCategoryError" class="px-4 py-3">
-            <div class="text-center space-y-2">
-              <div class="text-gray-600 text-sm">
-                <p>⚠️ Категорії не завантажилися</p>
-                <p class="text-xs text-gray-500 mt-1">Перевірте з'єднання з інтернетом</p>
-              </div>
-              <button
-                @click="loadCategories()"
-                class="ml-2 text-blue-600 hover:text-blue-800 underline font-medium"
-              >
-                Спробувати ще раз
-              </button>
-            </div>
+            <ErrorState
+              icon="📦"
+              title="Категорії не завантажилися"
+              message="Перевірте з'єднання з інтернетом та спробуйте ще раз"
+              @retry="handleRetryCategories"
+            />
           </div>
 
-          <!-- Categories List -->
+          <!-- Categories List - Desktop Only -->
           <div v-else class="px-4 sm:px-6 py-3">
-            <!-- Mobile: Horizontal scrolling -->
-            <div class="md:hidden flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-              <!-- Mobile: Daily Deals Tab -->
-              <button
-                v-if="productsOnSale.length > 0"
-                type="button"
-                @click="selectDealsCategory()"
-                :aria-pressed="selectedCategory?.id === 'deals'"
-                :class="[
-                  'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-1',
-                  selectedCategory?.id === 'deals'
-                    ? 'bg-red-600 text-white shadow-md'
-                    : 'bg-red-100 text-red-700 hover:bg-red-200'
-                ]"
-              >
-                <span>🔥 {{ $t('deals.title') }}</span>
-              </button>
-
-              <button
-                v-for="category in categoriesWithProducts"
-                :key="category.id"
-                type="button"
-                @click="selectCategory(category)"
-                :aria-pressed="selectedCategory?.id === category.id"
-                :class="[
-                  'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0',
-                  selectedCategory?.id === category.id
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                ]"
-              >
-                {{ category.display_name }}
-              </button>
-            </div>
-
-            <!-- Desktop: 1 row layout with smaller font -->
-            <div class="hidden md:flex md:flex-wrap gap-2 overflow-x-auto scrollbar-hide">
+            <div class="flex flex-wrap gap-2 overflow-x-auto scrollbar-hide">
               <!-- Desktop: Daily Deals Tab -->
               <button
                 v-if="productsOnSale.length > 0"
@@ -309,14 +270,201 @@
           </div>
         </div>
 
-        <!-- Products -->
-        <div class="card p-6 mt-6">
+        <!-- Mobile: Vertical Category Sections (Native App Style) -->
+        <div class="md:hidden mt-4 space-y-6">
+          <!-- Loading State -->
+          <div v-if="loading.products" class="space-y-6">
+            <CategorySkeleton :count="4" />
+            <CategorySkeleton :count="4" />
+            <CategorySkeleton :count="4" />
+          </div>
+
+          <!-- Deals Section (if products on sale) -->
+          <div v-else-if="productsOnSale.length > 0" class="space-y-3">
+            <div class="flex items-center justify-between px-1">
+              <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span>🔥</span>
+                <span>{{ $t('deals.title') }}</span>
+              </h2>
+              <span class="text-sm text-gray-500">{{ productsOnSale.length }} товарів</span>
+            </div>
+            <!-- Horizontal Scroll Container (RelatedProducts Style) -->
+            <div class="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+              <div class="flex gap-4 pb-2">
+                <div
+                  v-for="product in productsOnSale"
+                  :key="product.id"
+                  class="group cursor-pointer flex-shrink-0 w-[160px]"
+                  @click="navigateToProduct(product)"
+                >
+                  <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                    <!-- Product Image -->
+                    <div class="aspect-square w-full overflow-hidden rounded-t-lg bg-gray-100">
+                      <img
+                        v-if="getProductImageUrl(product)"
+                        :src="getProductImageUrl(product)"
+                        :alt="product.display_name || product.name"
+                        class="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity"
+                        loading="lazy"
+                        @error="handleProductImageError"
+                      />
+                      <div v-else class="h-full w-full flex items-center justify-center text-gray-400">
+                        <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="p-4">
+                      <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+                        {{ product.display_name || product.name }}
+                      </h4>
+
+                      <!-- Price and Cart Icon -->
+                      <div class="flex items-center justify-between">
+                        <div class="flex flex-col">
+                          <div class="flex items-center space-x-2">
+                            <span v-if="product.original_price && product.original_price > product.price"
+                                  class="text-xs text-gray-500 line-through">
+                              {{ formatProductPrice(product.original_price, product) }}₴
+                            </span>
+                            <span class="text-sm font-bold text-primary-600">
+                              {{ formatProductPrice(product.price, product) }}₴
+                            </span>
+                          </div>
+                          <span class="text-xs text-gray-500 mt-0.5">
+                            за {{ getProductUnitLabel(product.unit, product) }}
+                          </span>
+                        </div>
+
+                        <!-- Cart Icon Button -->
+                        <button
+                          @click.stop="handleQuickAddToCart(product, $event)"
+                          :disabled="!isProductAvailableInBranch(product)"
+                          class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+                          :title="isProductAvailableInBranch(product) ? 'Додати до кошика' : 'Немає в наявності'"
+                        >
+                          <svg v-if="isProductAvailableInBranch(product)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                          </svg>
+                          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Sections -->
+          <div
+            v-for="category in categoriesWithProducts"
+            :key="category.id"
+            class="space-y-3"
+          >
+            <!-- Category Header -->
+            <div class="flex items-center justify-between px-1">
+              <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {{ category.display_name }}
+              </h2>
+              <span class="text-sm text-gray-500">{{ getCategoryProductCount(category.id) }} товарів</span>
+            </div>
+            <!-- Horizontal Scroll Container (RelatedProducts Style) -->
+            <div class="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+              <div class="flex gap-4 pb-2">
+                <div
+                  v-for="product in getCategoryProducts(category.id)"
+                  :key="product.id"
+                  class="group cursor-pointer flex-shrink-0 w-[160px]"
+                  @click="navigateToProduct(product)"
+                >
+                  <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                    <!-- Product Image -->
+                    <div class="aspect-square w-full overflow-hidden rounded-t-lg bg-gray-100">
+                      <img
+                        v-if="getProductImageUrl(product)"
+                        :src="getProductImageUrl(product)"
+                        :alt="product.display_name || product.name"
+                        class="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity"
+                        loading="lazy"
+                        @error="handleProductImageError"
+                      />
+                      <div v-else class="h-full w-full flex items-center justify-center text-gray-400">
+                        <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="p-4">
+                      <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+                        {{ product.display_name || product.name }}
+                      </h4>
+
+                      <!-- Price and Cart Icon -->
+                      <div class="flex items-center justify-between">
+                        <div class="flex flex-col">
+                          <div class="flex items-center space-x-2">
+                            <span v-if="product.original_price && product.original_price > product.price"
+                                  class="text-xs text-gray-500 line-through">
+                              {{ formatProductPrice(product.original_price, product) }}₴
+                            </span>
+                            <span class="text-sm font-bold text-primary-600">
+                              {{ formatProductPrice(product.price, product) }}₴
+                            </span>
+                          </div>
+                          <span class="text-xs text-gray-500 mt-0.5">
+                            за {{ getProductUnitLabel(product.unit, product) }}
+                          </span>
+                        </div>
+
+                        <!-- Cart Icon Button -->
+                        <button
+                          @click.stop="handleQuickAddToCart(product, $event)"
+                          :disabled="!isProductAvailableInBranch(product)"
+                          class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+                          :title="isProductAvailableInBranch(product) ? 'Додати до кошика' : 'Немає в наявності'"
+                        >
+                          <svg v-if="isProductAvailableInBranch(product)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                          </svg>
+                          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-if="!loading.products && categoriesWithProducts.length === 0 && productsOnSale.length === 0" class="text-center py-12">
+            <div class="text-4xl mb-4">📦</div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">Товари відсутні</h3>
+            <p class="text-gray-600 mb-4">Товари наразі відсутні в цьому магазині.</p>
+          </div>
+        </div>
+
+        <!-- Desktop: Single Category View (Original) -->
+        <div class="hidden md:block card p-6 mt-6">
           <div class="mb-6">
             <h2 class="text-2xl font-bold">🛍️ Товари</h2>
           </div>
 
-          <div v-if="loading.products" class="text-center py-12">
-            <div class="spinner w-8 h-8 mx-auto mb-4"></div>
+          <div v-if="loading.products" class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <ProductCardSkeleton v-for="i in 8" :key="i" />
           </div>
 
           <div v-else-if="displayedProducts.length === 0" class="text-center py-12">
@@ -341,20 +489,41 @@
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <ProductCard
-              v-for="product in displayedProducts"
+              v-for="(product, index) in displayedProducts"
               :key="product.id"
               :product="product"
+              :priority="index < 4"
               @add-to-cart="addToCart"
               @add-bottle-to-cart="addBottleToCart"
               @cart-animation="handleCartAnimation"
             />
-        </div>
-        </div>
+          </div>
 
-        <CategorySeoDescription
-          v-if="categorySeoContent"
-          :content="categorySeoContent"
-        />
+          <!-- Desktop Only: Category SEO Description -->
+          <div
+            v-if="selectedCategory && selectedCategory.seo_content && selectedCategory.id !== 'deals'"
+            class="hidden md:block mt-8 bg-white p-8 rounded-lg shadow-sm"
+          >
+            <div
+              class="category-description relative"
+              :class="{ 'max-h-48 overflow-hidden': !isCategoryDescExpanded }"
+            >
+              <div v-html="selectedCategory.seo_content"></div>
+              <div
+                v-if="!isCategoryDescExpanded && shouldShowExpandButton"
+                class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent pointer-events-none"
+              ></div>
+            </div>
+            <button
+              v-if="shouldShowExpandButton"
+              @click="isCategoryDescExpanded = !isCategoryDescExpanded"
+              class="mt-4 text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+            >
+              <span>{{ isCategoryDescExpanded ? 'Згорнути' : 'Показати більше' }}</span>
+              <span class="text-xs">{{ isCategoryDescExpanded ? '▲' : '▼' }}</span>
+            </button>
+          </div>
+        </div>
 
       </section>
 
@@ -483,14 +652,22 @@ import { backendApi } from '@/services/backendApi'
 
 // Utils
 import { testPosterApi } from '@/utils/testApi'
-import { isDraftBeverage } from '@/utils/bottleUtils'
+import {
+  isDraftBeverage,
+  isBottledProduct,
+  getDefaultBottleSelection,
+  calculateBottleCost
+} from '@/utils/bottleUtils'
 import { updateSeoMeta, appendStructuredData, removeStructuredData, absoluteUrl } from '@/utils/seoUtils'
 
 // Components
 import ProductCard from '@/components/product/ProductCard.vue'
 import AddressAutocomplete from '@/components/AddressAutocomplete.vue'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
-import CategorySeoDescription from '@/components/shop/CategorySeoDescription.vue'
+
+import CategorySkeleton from '@/components/ui/CategorySkeleton.vue'
+import ProductCardSkeleton from '@/components/ui/ProductCardSkeleton.vue'
+import ErrorState from '@/components/ui/ErrorState.vue'
 
 // Types
 import type { Branch, Category, Product, FulfillmentType, LocationData } from '@/types'
@@ -552,6 +729,15 @@ const cartAnimationOverlay = ref<CartAnimationOverlayExposed | null>(null)
 const searchQuery = ref('')
 const showSearchResults = ref(false)
 const searchResults = ref<Product[]>([])
+
+// Category description expand/collapse state
+const isCategoryDescExpanded = ref(false)
+const shouldShowExpandButton = computed(() => {
+  if (!selectedCategory.value?.seo_content) return false
+  // Show expand button if content is longer than ~300 characters
+  const textContent = selectedCategory.value.seo_content.replace(/<[^>]*>/g, '').trim()
+  return textContent.length > 300
+})
 
 // Deferred UI state
 const showPromotionSlider = ref(false)
@@ -644,7 +830,8 @@ const hasBanners = computed(() => bannerStore.banners.length > 0)
 const showFallbackBanner = computed(() => siteConfigStore.currentConfig.show_fallback_banner === true)
 
 const getCategoryProductCount = (categoryId: string) => {
-  return products.value.filter(product => product.category_id === categoryId).length
+  // Use the same filter as getCategoryProducts to show accurate count
+  return getCategoryProducts(categoryId).length
 }
 
 const slugify = (value: string) => {
@@ -672,6 +859,29 @@ const displayedProducts = computed(() => {
 })
 
 const topDisplayedProduct = computed(() => displayedProducts.value[0])
+
+// Helper method for vertical category sections (mobile native app style)
+// Filter to show only in-stock products
+const getCategoryProducts = (categoryId) => {
+  if (!products.value) return []
+  return products.value.filter(product => {
+    // Must match category
+    if (product.category_id !== categoryId) return false
+
+    // Must be active
+    if (!product.is_active) return false
+
+    // Check availability - be more lenient
+    // If quantity is explicitly 0, hide it
+    if (product.quantity !== undefined && product.quantity === 0) {
+      return false
+    }
+
+    // Otherwise, if product is marked as available, show it
+    return product.available !== false
+  })
+}
+
 const lcpProductImagePath = computed(() => {
   const topProduct = topDisplayedProduct.value
   if (!topProduct) return ''
@@ -699,6 +909,14 @@ const shopCanonicalPath = computed(() => {
     return `/shop?category=${normalizedCategorySlug.value}`
   }
   return '/shop'
+})
+
+// Default branch ID for inventory - always use this for product loading
+const defaultBranchId = computed(() => {
+  // Use configured default branch, or fall back to selectedBranch, or first available branch
+  return siteConfigStore.currentConfig.default_shop_branch_id
+    || selectedBranch.value?.id
+    || branches.value[0]?.id
 })
 
 const pageHeading = computed(() => {
@@ -732,7 +950,8 @@ const activeCategoryForSeo = computed(() => {
 
 const categorySeoContent = computed(() => {
   if (hasActiveSearch.value) return ''
-  return activeCategoryForSeo.value?.seo_content || ''
+  // Use seo_content if available, otherwise fallback to description
+  return activeCategoryForSeo.value?.seo_content || activeCategoryForSeo.value?.description || ''
 })
 
 // Discount banners for homepage
@@ -937,10 +1156,18 @@ const updateShopSeoMetadata = () => {
 
 const updateLcpPreloadLink = () => {
   if (typeof document === 'undefined') return
-  const imagePath = lcpProductImagePath.value
+
   const existingLink = document.head.querySelector(`link[${SHOP_LCP_PRELOAD_ATTR}]`) as HTMLLinkElement | null
 
-  if (!imagePath) {
+  // Only add preload if we have displayed products
+  if (!displayedProducts.value || displayedProducts.value.length === 0) {
+    existingLink?.remove()
+    return
+  }
+
+  const imagePath = lcpProductImagePath.value
+
+  if (!imagePath || imagePath.trim() === '') {
     existingLink?.remove()
     return
   }
@@ -948,6 +1175,17 @@ const updateLcpPreloadLink = () => {
   const optimizedHref =
     backendApi.getOptimizedImageUrl(imagePath, { width: 640, format: 'webp', quality: 80 }) ||
     backendApi.getImageUrl(imagePath)
+
+  // Validate href before setting it - be very strict
+  if (!optimizedHref ||
+      typeof optimizedHref !== 'string' ||
+      optimizedHref.trim() === '' ||
+      optimizedHref === 'undefined' ||
+      optimizedHref === 'null' ||
+      !optimizedHref.startsWith('http')) {
+    existingLink?.remove()
+    return
+  }
 
   let linkEl = existingLink
   if (!linkEl) {
@@ -1223,7 +1461,8 @@ const selectBranch = async (branch: Branch) => {
 
 const loadCategories = async (retryCount = 0, maxRetries = 5) => {
   loading.value.categories = true
-  loadingStore.setGlobalLoading(true)
+  // Don't show global loading overlay - removed for better UX
+  // loadingStore.setGlobalLoading(true)
 
   try {
     // Check if categories are already loaded (from App.vue preloading)
@@ -1231,7 +1470,7 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
 
     // STEP 1: Load categories first (CRITICAL - must succeed before loading products)
     if (!hasCategories) {
-      console.log('📥 STEP 1: Fetching categories...')
+      
       loadingStore.startLoading('categories')
       try {
         // Force fetch categories to ensure we get fresh data
@@ -1242,13 +1481,13 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
           throw new Error('No categories available')
         }
 
-        console.log('✅ STEP 1: Categories loaded:', fetchedCategories.length)
+        
       } catch (catError) {
         console.error('❌ Failed to fetch categories:', catError)
         throw catError
       }
     } else {
-      console.log('⚡ STEP 1: Using cached categories')
+      
     }
 
     // Verify categories are loaded before proceeding
@@ -1257,49 +1496,33 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
       throw new Error('Categories failed to load')
     }
 
-    // STEP 2: Auto-select first category and load its products
-    if (!selectedCategory.value && categoriesWithProducts.value.length > 0) {
-      const firstCategory = categoriesWithProducts.value[0]
-      console.log('📥 STEP 2: Loading first category products:', firstCategory.display_name)
-      productStore.selectCategory(firstCategory)
+    // STEP 2: Load ALL products (not just first category) for mobile view
+    
+    loading.value.products = true
+    loadingStore.startLoading('products')
 
-      loading.value.products = true
-      loadingStore.startLoading('products')
-
-      try {
-        // Load products without inventory - inventory is managed by cron jobs
-        await productStore.fetchProducts(firstCategory.id, true, undefined, true)
-        console.log('✅ STEP 2: First category products loaded')
-      } catch (prodError) {
-        console.error('❌ Failed to fetch first category products:', prodError)
-        throw prodError
-      } finally {
-        loading.value.products = false
-        loadingStore.stopLoading('products')
-      }
+    try {
+      // Load ALL products with inventory for default branch (categoryId=undefined loads all)
+      await productStore.fetchProducts(undefined, true, defaultBranchId.value, true)
+      
+    } catch (prodError) {
+      console.error('❌ Failed to fetch products:', prodError)
+      throw prodError
+    } finally {
+      loading.value.products = false
+      loadingStore.stopLoading('products')
     }
 
-    // STEP 3: Load other categories' products in background (non-blocking)
-    if (categoriesWithProducts.value.length > 1) {
-      console.log('📥 STEP 3: Loading other categories in background...')
-      const otherCategories = categoriesWithProducts.value.slice(1)
-
-      // Load other categories in background without blocking
-      otherCategories.forEach((category, index) => {
-        setTimeout(() => {
-          console.log(`📥 Background: Loading category ${index + 2}/${categoriesWithProducts.value.length}: ${category.display_name}`)
-          // Load products without inventory - inventory is managed by cron jobs
-          productStore.fetchProducts(category.id, true, undefined, true).catch(err => {
-            console.warn(`⚠️ Failed to load category ${category.display_name}:`, err)
-          })
-        }, 1000 + (index * 500)) // Stagger requests to avoid overwhelming server
-      })
+    // Auto-select first category for desktop view
+    if (!selectedCategory.value && categoriesWithProducts.value.length > 0) {
+      const firstCategory = categoriesWithProducts.value[0]
+      productStore.selectCategory(firstCategory)
+      
     }
 
   } catch (error) {
     if (retryCount < maxRetries) {
       const waitTime = 1000 * (retryCount + 1)
-      console.log(`🔄 Retrying categories (${retryCount + 1}/${maxRetries}) after ${waitTime}ms...`)
       await new Promise(resolve => setTimeout(resolve, waitTime))
       return loadCategories(retryCount + 1, maxRetries)
     }
@@ -1325,12 +1548,16 @@ const loadCategories = async (retryCount = 0, maxRetries = 5) => {
   } finally {
     loading.value.categories = false
     loadingStore.stopLoading('categories')
-    loadingStore.setGlobalLoading(false)
+    // Don't show global loading overlay - removed for better UX
+    // loadingStore.setGlobalLoading(false)
   }
 }
 
 const selectCategory = async (category: Category | null) => {
   productStore.selectCategory(category)
+
+  // Reset category description expanded state when changing categories
+  isCategoryDescExpanded.value = false
 
   // Update URL with category slug for bookmarkable links
   if (category && category.slug) {
@@ -1374,14 +1601,11 @@ const loadProducts = async () => {
   loading.value.products = true
 
   try {
-    
-
     // Clear cache to force fresh data
     productStore.clearCache()
 
-    await productStore.fetchProducts(undefined, true, undefined, true) // categoryId=undefined, force=true, branchId=undefined, useDatabase=true
-
-    
+    // Load products with inventory for default branch (from config)
+    await productStore.fetchProducts(undefined, true, defaultBranchId.value, true) // categoryId=undefined, force=true, branchId, useDatabase=true
   } catch (error) {
     console.error('❌ Failed to refresh products:', error)
     notificationStore.add({
@@ -1396,7 +1620,7 @@ const loadProducts = async () => {
 }
 
 const handleCartAnimation = async (data: { startX: number; startY: number }) => {
-  console.log('🎯 handleCartAnimation called:', data)
+  
 
   if (!cartAnimationOverlay.value) {
     await waitForCartOverlay()
@@ -1423,7 +1647,7 @@ const handleCartAnimation = async (data: { startX: number; startY: number }) => 
     endY = 80
   }
 
-  console.log('🚀 Triggering animation to:', { endX, endY, isMobile })
+  
   cartAnimationOverlay.value?.addAnimation(data.startX, data.startY, endX, endY)
 }
 
@@ -1431,17 +1655,18 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
   // Haptic feedback for better UX
   await capacitorService.hapticImpact('light')
 
-  console.log('🛒 [ShopView] addToCart called for:', product.display_name || product.name)
-  console.log('🛒 [ShopView] Product ID:', product.id)
-  console.log('🛒 [ShopView] is_bundle:', product.is_bundle)
-  console.log('🛒 [ShopView] Full product object:', product)
+  
+  
+  
+  
+  
 
   // Check if this is a bundle product
   if (product.is_bundle) {
-    console.log('🛒 [ShopView] Detected bundle product, calling addBundleProduct')
+    
     try {
       await cartStore.addBundleProduct(product, quantity || 1)
-      console.log('🛒 [ShopView] Bundle product added successfully')
+      
       // Success haptic feedback
       await capacitorService.hapticNotification('success')
       return
@@ -1452,7 +1677,7 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
     }
   }
 
-  console.log('🛒 [ShopView] Not a bundle product, adding as regular product')
+  
 
   const cartItem: any = {
     product_id: product.id,
@@ -1463,6 +1688,12 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
     image_url: product.display_image_url,
     unit: product.unit,
     max_quantity: product.max_quantity
+  }
+
+  // Mark as draft beverage if requires bottles
+  if (product.requires_bottles) {
+    cartItem.is_draft_beverage = true
+    cartItem.bottle_selection = bottles
   }
 
   // Add custom quantity information for weight-based products
@@ -1487,6 +1718,26 @@ const addToCart = async (product: Product, quantity?: number, bottles?: any, bot
 
   cartStore.addItem(cartItem)
 
+  // Add 1L bottles for draft beverages automatically
+  if (isDraftBeverage(product)) {
+    const beverageQuantity = quantity || 1
+    const bottleQuantity = Math.ceil(beverageQuantity) // 1L = 1 bottle, 2L = 2 bottles
+
+    const bottle1L = {
+      product_id: 'cmclpuhc4003dstlk7h9hxdmn', // 1L bottle ID
+      poster_product_id: '189',
+      name: 'ПЕТ 1 л + кришка',
+      price: 4.71,
+      quantity: bottleQuantity,
+      image_url: '',
+      unit: 'шт',
+      is_bottle_product: true,
+      is_auto_added: true
+    }
+    cartStore.addItem(bottle1L)
+    
+  }
+
   // Success haptic feedback
   await capacitorService.hapticNotification('success')
 }
@@ -1502,11 +1753,13 @@ const addBottleToCart = async (bottleItem: any) => {
     price: bottleItem.price,
     quantity: bottleItem.quantity,
     image_url: '',
-    unit: 'pcs',
-    is_bottle_product: true
+    unit: 'шт',
+    is_bottle_product: true,
+    is_auto_added: true // Mark as auto-added so it can't be edited/deleted separately
   }
 
   cartStore.addItem(cartItem)
+  
 }
 
 const calculateDeliveryFee = (distanceKm: number): number => {
@@ -1544,7 +1797,6 @@ const handleCategoryFromURL = () => {
     )
 
     if (category) {
-      console.log('🔗 Selecting category from URL:', category.display_name, '(slug:', category.slug, ')')
       productStore.selectCategory(category)
       // Lazy load products for this category if not already loaded
       if (!productsByCategory.value.length) {
@@ -1559,16 +1811,17 @@ const handleCategoryFromURL = () => {
 // Lazy load products for a specific category
 const loadProductsForCategory = async (categoryId: string) => {
   try {
-    console.log('📥 Lazy loading products for category:', categoryId)
-    loadingStore.setGlobalLoading(true)
-    loadingStore.startLoading('products')
-    // Load products without inventory - inventory is managed by cron jobs in the background
-    await productStore.fetchProducts(categoryId, false, undefined, true)
+    
+    // Don't show global loading overlay when switching categories
+    // loadingStore.setGlobalLoading(true)
+    // loadingStore.startLoading('products')
+    // Load products with inventory for default branch (from config)
+    await productStore.fetchProducts(categoryId, false, defaultBranchId.value, true)
   } catch (error) {
     console.error('❌ Failed to lazy load category products:', error)
   } finally {
-    loadingStore.stopLoading('products')
-    loadingStore.setGlobalLoading(false)
+    // loadingStore.stopLoading('products')
+    // loadingStore.setGlobalLoading(false)
   }
 }
 
@@ -1589,7 +1842,7 @@ watch(() => route.query.category, () => {
 // Watch for search query parameter
 watch(() => route.query.search, (newSearch) => {
   if (newSearch && typeof newSearch === 'string') {
-    console.log('🔍 Search query from URL:', newSearch)
+    
     searchQuery.value = newSearch
     performSearch(newSearch)
   }
@@ -1619,10 +1872,10 @@ onMounted(async () => {
     const hasProducts = products.value.length > 0
     const hasBranches = branches.value.length > 0
 
-    console.log('🔍 Shop initialization - Cache status:', { hasCategories, hasProducts, hasBranches })
+    
 
     // STEP 1: Load banners, branches, and discounts in parallel (lightweight)
-    console.log('📥 STEP 1: Loading banners, branches, and discounts...')
+    
     const discountStore = useDiscountStore()
     const initialPromises: Promise<any>[] = [
       bannerStore.fetchBanners(),
@@ -1635,16 +1888,18 @@ onMounted(async () => {
 
     await Promise.all(initialPromises)
 
-    // Ensure a branch is selected
+    // Auto-select a branch for cart operations (uses default from config for inventory)
     if (!selectedBranch.value && branches.value.length > 0) {
-      const defaultBranch = branches.value.find(b => b.id === 4) || branches.value[0]
+      // Find branch matching default_shop_branch_id from config, or use first available
+      const configBranchId = siteConfigStore.currentConfig.default_shop_branch_id
+      const defaultBranch = branches.value.find(b => b.id === configBranchId) || branches.value[0]
       branchStore.selectBranch(defaultBranch)
-      console.log('✅ STEP 1: Branch selected:', defaultBranch.display_name)
+      
     }
 
-    // STEP 2: Load categories and products using optimized sequence
+    // STEP 2: Load categories and products using optimized sequence (uses defaultBranchId for inventory)
     if (!hasCategories || !hasProducts) {
-      console.log('📥 STEP 2: Loading categories and products...')
+      
       await loadCategories()
     }
 
@@ -1670,6 +1925,172 @@ onUnmounted(() => {
     preloadLink?.remove()
   }
 })
+
+// Helper functions for product cards (RelatedProducts style)
+const navigateToProduct = (product: Product) => {
+  router.push(`/product/${product.slug || product.id}`)
+}
+
+const getProductImageUrl = (product: Product): string => {
+  const primaryImage = product.display_image_url || product.image_url
+  if (!primaryImage) return ''
+  return backendApi.getImageUrl(primaryImage)
+}
+
+const handleProductImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.style.display = 'none'
+}
+
+const handleRetryCategories = () => {
+  showCategoryError.value = false
+  loadCategories(0, 3)
+}
+
+const formatProductPrice = (price: number, product?: Product): string => {
+  // If product has custom quantity (weight-based), show price per custom unit
+  if (product?.custom_quantity && product?.custom_unit) {
+    // Convert price per kg to price per custom unit (e.g., per 50g)
+    const pricePerCustomUnit = price * product.custom_quantity
+    return pricePerCustomUnit.toFixed(2)
+  }
+
+  // For regular products, show price as is
+  return price.toFixed(2)
+}
+
+const getProductUnitLabel = (unit: string | undefined, product?: Product): string => {
+  // If product has custom quantity, show the custom unit
+  if (product?.custom_quantity && product?.custom_unit) {
+    // Convert custom_quantity to display format
+    if (product.custom_unit === 'г') {
+      const grams = product.custom_quantity * 1000
+      return `${grams}г`
+    } else if (product.custom_unit === 'мл') {
+      const ml = product.custom_quantity * 1000
+      return `${ml}мл`
+    }
+    return product.custom_unit
+  }
+
+  // For regular products, show the unit
+  if (!unit) return 'шт'
+
+  switch (unit.toLowerCase()) {
+    case 'kg':
+    case 'кг':
+      return '1 кг'
+    case 'l':
+    case 'л':
+      return '1 л'
+    case 'g':
+    case 'г':
+      return '100 г'
+    case 'ml':
+    case 'мл':
+      return '100 мл'
+    default:
+      return 'шт'
+  }
+}
+
+const isProductAvailableInBranch = (product: Product): boolean => {
+  if (!product.is_active) return false
+
+  if (product.quantity !== undefined) {
+    return product.available && product.quantity > 0
+  }
+
+  return product.available
+}
+
+const handleQuickAddToCart = async (product: Product, event: Event) => {
+  if (!isProductAvailableInBranch(product)) return
+
+  const button = event.target as HTMLButtonElement
+  const rect = button.getBoundingClientRect()
+  const startX = rect.left + rect.width / 2
+  const startY = rect.top + rect.height / 2
+
+  // Emit animation event
+  handleCartAnimation({ startX, startY })
+
+  // Add to cart using the same logic as RelatedProducts
+  await quickAddToCart(product)
+}
+
+const quickAddToCart = async (product: Product) => {
+  if (!isProductAvailableInBranch(product)) return
+
+  try {
+    // Check if this is a bundle product
+    if (product.is_bundle) {
+      await cartStore.addBundleProduct(product, 1)
+      return
+    }
+
+    // Check if this is a draft beverage that requires bottles (but not if it's already a bottled product)
+    if (isDraftBeverage(product) && !isBottledProduct(product)) {
+      // For draft beverages, use default 1L quantity and auto bottle selection
+      const quantity = 1 // Default 1L
+      const autoBottles = getDefaultBottleSelection(quantity)
+      const bottleCost = calculateBottleCost(autoBottles)
+
+      // Create cart item for the beverage
+      const cartItem: any = {
+        product_id: product.id,
+        poster_product_id: product.poster_product_id,
+        name: product.display_name || product.name,
+        price: product.price,
+        quantity: quantity,
+        image_url: product.display_image_url || product.image_url,
+        unit: product.unit || 'L',
+        max_quantity: product.max_quantity,
+        is_draft_beverage: true
+      }
+
+      // For draft beverages, ONLY add auto bottles to the main product (no separate bottle items)
+      cartItem.bottles = autoBottles
+      cartItem.bottle_cost = bottleCost
+
+      cartStore.addItem(cartItem)
+    } else {
+      // Regular product (non-draft) or bottled product
+      cartStore.addItem({
+        product_id: product.id,
+        poster_product_id: product.poster_product_id,
+        name: product.display_name || product.name,
+        price: product.price,
+        quantity: 1,
+        image_url: product.display_image_url || product.image_url,
+        unit: product.unit || 'шт',
+        max_quantity: product.max_quantity
+      })
+    }
+  } catch (error) {
+    console.error('Failed to add product to cart:', error)
+  }
+}
+
+const selectCategoryAndScroll = async (categoryId: string) => {
+  const category = categoriesWithProducts.value.find(cat => cat.id === categoryId)
+  if (category) {
+    // Switch to desktop view by setting isMobileView to false
+    isMobileView.value = false
+
+    // Use the selectCategory function to properly load products and update URL
+    await selectCategory(category)
+
+    // Scroll to top to show the desktop category view
+    scrollToTop()
+
+    
+  }
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 </script>
 
 <style scoped>
@@ -1680,5 +2101,68 @@ onUnmounted(() => {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
+}
+
+/* Line clamp for product names */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Category Description Styling */
+.category-description :deep(h2) {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.category-description :deep(h3) {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.category-description :deep(p) {
+  font-size: 0.9375rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.category-description :deep(ul),
+.category-description :deep(ol) {
+  margin-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  list-style: disc;
+}
+
+.category-description :deep(li) {
+  font-size: 0.9375rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.category-description :deep(a) {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.category-description :deep(a:hover) {
+  color: #2563eb;
+}
+
+.category-description :deep(strong),
+.category-description :deep(b) {
+  font-weight: 600;
+  color: #1f2937;
 }
 </style>

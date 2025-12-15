@@ -289,7 +289,7 @@ const onLoginSuccess = () => {
 
 const onPasswordSetupSuccess = () => {
   showPasswordModal.value = false
-  console.log('Password setup completed')
+  
 }
 
 // Initialize
@@ -300,7 +300,7 @@ onMounted(async () => {
   if (authStore.isAuthenticated) {
     try {
       await authStore.getBonusInfo()
-      console.log('✅ Bonus info refreshed on profile load')
+      
     } catch (error) {
       console.error('Failed to fetch bonus info on profile load:', error)
     }

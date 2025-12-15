@@ -40,7 +40,7 @@ function verifySignature(data, secretKey) {
 // WayForPay payment callback
 router.post('/callback', async (req, res) => {
   try {
-    console.log('📦 WayForPay callback received:', req.body)
+    
 
     const callbackData = req.body
 
@@ -78,7 +78,7 @@ router.post('/callback', async (req, res) => {
       reason
     } = callbackData
 
-    console.log(`💳 Payment callback for order ${orderReference}: ${transactionStatus}`)
+    
 
     // Find the order
     let order
@@ -104,19 +104,19 @@ router.post('/callback', async (req, res) => {
       case 'approved':
         newStatus = 'confirmed'
         paymentStatus = 'paid'
-        console.log(`✅ Payment approved for order ${orderReference}`)
+        
         break
       
       case 'declined':
       case 'expired':
         newStatus = 'cancelled'
         paymentStatus = 'failed'
-        console.log(`❌ Payment failed for order ${orderReference}: ${reason}`)
+        
         break
       
       default:
         paymentStatus = 'pending'
-        console.log(`⏳ Payment pending for order ${orderReference}`)
+        
     }
 
     // Update order in database
@@ -142,7 +142,7 @@ router.post('/callback', async (req, res) => {
         }
       })
 
-      console.log(`📝 Order ${orderReference} updated with payment status: ${paymentStatus}`)
+      
 
       // TODO: Send notification emails, update inventory, etc.
       

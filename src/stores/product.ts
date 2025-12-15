@@ -106,17 +106,17 @@ export const useProductStore = defineStore('product', () => {
   const fetchCategories = async (force = false, useDatabase = true, includeInactive = false) => {
     // If already loading, wait for it to complete and return the loaded categories
     if (isLoading.value) {
-      console.log('⏳ Categories already loading, waiting...')
+      
       // Wait for loading to complete
       while (isLoading.value) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
-      console.log(`✅ Categories loaded, returning ${categories.value.length} categories`)
+      
       return categories.value
     }
 
     if (!force && categories.value.length > 0 && !isDataStale.value && !includeInactive) {
-      console.log('⚡ Using cached categories')
+      
       return categories.value
     }
 
@@ -127,14 +127,14 @@ export const useProductStore = defineStore('product', () => {
       let fetchedCategories: Category[] = []
 
       if (useDatabase) {
-        console.log('📥 Fetching categories from database...')
+        
         fetchedCategories = await backendApi.getCategories(includeInactive)
-        console.log(`✅ Fetched ${fetchedCategories.length} categories from database`)
-        console.log('📋 First category:', fetchedCategories[0])
+        
+        
       } else {
-        console.log('📥 Fetching categories from Poster API...')
+        
         fetchedCategories = await posterApi.getCategories()
-        console.log(`✅ Fetched ${fetchedCategories.length} categories from Poster API`)
+        
       }
 
       // Validate response is an array
@@ -145,7 +145,7 @@ export const useProductStore = defineStore('product', () => {
 
       // Only filter by is_active if not explicitly including inactive items
       const filtered = includeInactive ? fetchedCategories : fetchedCategories.filter(category => category.is_active)
-      console.log(`🔍 After filtering: ${filtered.length} active categories`)
+      
       categories.value = filtered
 
       lastFetched.value = new Date()
@@ -167,7 +167,7 @@ export const useProductStore = defineStore('product', () => {
         if (stored) {
           const data = JSON.parse(stored)
           if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-            console.log('📦 Restored categories from localStorage:', data.categories.length)
+            
             restoredCategories = data.categories
           }
         }
@@ -188,7 +188,7 @@ export const useProductStore = defineStore('product', () => {
         try {
           const posterCategories = await posterApi.getCategories()
           if (Array.isArray(posterCategories) && posterCategories.length > 0) {
-            console.log('✅ Fetched categories from Poster API as fallback:', posterCategories.length)
+            
             const filtered = includeInactive ? posterCategories : posterCategories.filter(category => category.is_active)
             categories.value = filtered
             error.value = null // Clear error since we have fallback data
@@ -211,12 +211,12 @@ export const useProductStore = defineStore('product', () => {
   const fetchProducts = async (categoryId?: string, force = false, branchId?: string, useDatabase = true, includeInactive = false) => {
     // If already loading, wait for it to complete and return the loaded products
     if (isLoading.value) {
-      console.log('⏳ Products already loading, waiting...')
+      
       // Wait for loading to complete
       while (isLoading.value) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
-      console.log(`✅ Products loaded, returning ${products.value.length} products`)
+      
       return products.value
     }
 
@@ -226,12 +226,12 @@ export const useProductStore = defineStore('product', () => {
         // Check if we have products for this specific category
         const categoryProducts = products.value.filter(p => String(p.category_id) === String(categoryId))
         if (categoryProducts.length > 0) {
-          console.log(`⚡ Using cached products for category ${categoryId}: ${categoryProducts.length} products`)
+          
           return categoryProducts
         }
       } else if (products.value.length > 0) {
         // No category specified, return all cached products
-        console.log('⚡ Using cached products')
+        
         return products.value
       }
     }
@@ -270,11 +270,10 @@ export const useProductStore = defineStore('product', () => {
         products.value = products.value.filter(p => String(p.category_id) !== String(categoryId))
         // Add the new products for this category
         products.value.push(...fetchedProducts)
-        console.log(`📥 Loaded ${fetchedProducts.length} products for category ${categoryId}`)
+        
       } else {
         // Replace all products when no specific category
         products.value = fetchedProducts
-        console.log(`📥 Loaded ${fetchedProducts.length} products (no category filter)`)
       }
 
       lastFetched.value = new Date()
@@ -293,7 +292,7 @@ export const useProductStore = defineStore('product', () => {
           try {
             const data = JSON.parse(stored)
             if (data.products && Array.isArray(data.products) && data.products.length > 0) {
-              console.log('📦 Restored products from localStorage:', data.products.length)
+              
               products.value = data.products
               error.value = null // Clear error since we have fallback data
               return products.value
@@ -314,8 +313,6 @@ export const useProductStore = defineStore('product', () => {
     if (!branchId) return
 
     try {
-      
-
       // Get inventory data for all products at this branch
       const inventoryProducts = await posterApi.getProductsWithInventory(branchId)
 
@@ -343,14 +340,13 @@ export const useProductStore = defineStore('product', () => {
         }
       })
 
-      
       saveToStorage()
     } catch (error) {
       console.error('❌ Failed to apply inventory filter:', error)
     }
   }
 
-  const fetchProduct = async (productIdOrSlug: string): Promise<Product | null> => {
+  const fetchProduct = async (productIdOrSlug: string, branchId?: string): Promise<Product | null> => {
     try {
       // First check if it's a slug by looking in existing products
       const existingBySlug = products.value.find(p => p.slug === productIdOrSlug)
@@ -358,8 +354,28 @@ export const useProductStore = defineStore('product', () => {
         return existingBySlug
       }
 
-      // Try to fetch from API (could be ID or slug)
-      const product = await posterApi.getProduct(productIdOrSlug)
+      // Check if it's an ID by looking in existing products
+      const existingById = products.value.find(p => p.id === productIdOrSlug)
+      if (existingById) {
+        return existingById
+      }
+
+      let product: Product | null = null
+
+      // Try to fetch from backend API first (supports both ID and slug)
+      try {
+        // First try as slug
+        product = await backendApi.getProductBySlug(productIdOrSlug, branchId)
+      } catch (slugErr) {
+        // If slug lookup fails, try as ID
+        try {
+          product = await backendApi.getProduct(productIdOrSlug, branchId)
+        } catch (idErr) {
+          // If both fail, try Poster API as fallback
+          console.warn('⚠️ Backend API failed, trying Poster API as fallback')
+          product = await posterApi.getProduct(productIdOrSlug)
+        }
+      }
 
       if (product) {
         // Update or add product in store
@@ -434,14 +450,11 @@ export const useProductStore = defineStore('product', () => {
     error.value = null
 
     try {
-      
       await backendApi.syncFullData()
 
       // Refresh local data from backend
       await fetchCategories(true, true) // force=true, useDatabase=true
       await fetchProducts(undefined, true, undefined, true) // force=true, useDatabase=true
-
-      
     } catch (err: any) {
       error.value = err.message || 'Failed to sync data from Poster API'
       console.error('❌ Failed to sync data:', err)
@@ -452,9 +465,7 @@ export const useProductStore = defineStore('product', () => {
 
   const quickInventorySync = async () => {
     try {
-      
       await backendApi.syncInventory()
-      
     } catch (err: any) {
       console.error('❌ Quick inventory sync failed:', err)
     }
@@ -462,9 +473,7 @@ export const useProductStore = defineStore('product', () => {
 
   const syncImages = async () => {
     try {
-
       await backendApi.syncImages()
-
     } catch (err: any) {
       console.error('❌ Image sync failed:', err)
     }
@@ -472,9 +481,7 @@ export const useProductStore = defineStore('product', () => {
 
   const downloadImages = async () => {
     try {
-
       await backendApi.downloadImages()
-
     } catch (err: any) {
       console.error('❌ Image download failed:', err)
       throw err
@@ -519,7 +526,7 @@ export const useProductStore = defineStore('product', () => {
 
         // Check if cache version matches - if not, skip loading old cache
         if (productData.version !== CACHE_VERSION) {
-          console.log('⚠️ Cache version mismatch, clearing old cache')
+          
           localStorage.removeItem('pwa-pos-products')
           return
         }

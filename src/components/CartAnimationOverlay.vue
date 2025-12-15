@@ -34,7 +34,7 @@ interface CartAnimation {
 const animations = ref<CartAnimation[]>([])
 
 const addAnimation = (startX: number, startY: number, endX: number, endY: number) => {
-  console.log('🎬 Cart animation triggered:', { startX, startY, endX, endY })
+  
 
   const id = `anim_${Date.now()}_${Math.random()}`
   const animation: CartAnimation = {
@@ -46,17 +46,17 @@ const addAnimation = (startX: number, startY: number, endX: number, endY: number
   }
 
   animations.value.push(animation)
-  console.log('📦 Animation added, total animations:', animations.value.length)
+  
 
   // Remove animation after it completes
   setTimeout(() => {
     animations.value = animations.value.filter(a => a.id !== id)
-    console.log('🗑️ Animation removed, remaining:', animations.value.length)
+    
   }, 800)
 }
 
 onMounted(() => {
-  console.log('✅ CartAnimationOverlay mounted')
+  
 })
 
 defineExpose({

@@ -31,6 +31,31 @@
           />
         </div>
 
+        <!-- Slug (URL-friendly identifier) -->
+        <div class="mb-4" v-if="isEditing">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            URL Slug (SEO-friendly)
+          </label>
+          <div class="flex gap-2">
+            <input
+              v-model="formData.slug"
+              type="text"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., my-product-name"
+            />
+            <button
+              v-if="isEditing && formData.slug"
+              type="button"
+              @click="handleUpdateSlug"
+              :disabled="isUpdatingSlug"
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 transition-colors"
+            >
+              {{ isUpdatingSlug ? 'Updating...' : 'Update' }}
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Only lowercase letters, numbers, and hyphens allowed</p>
+        </div>
+
         <!-- Category -->
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -455,6 +480,7 @@ const emit = defineEmits<Emits>()
 
 const isLoading = ref(false)
 const isUploading = ref(false)
+const isUpdatingSlug = ref(false)
 const fileInput = ref<HTMLInputElement>()
 
 const isEditing = computed(() => !!props.product)
@@ -471,6 +497,7 @@ const formData = ref({
   category_id: '',
   name: '',
   display_name: '',
+  slug: '',
   description: '',
   subtitle: '',
   price: 0,
@@ -514,6 +541,7 @@ watch(() => props.product, (newProduct) => {
       category_id: newProduct.category_id || '',
       name: newProduct.name || '',
       display_name: newProduct.display_name || '',
+      slug: newProduct.slug || '',
       description: newProduct.description || '',
       subtitle: newProduct.subtitle || '',
       price: newProduct.price || 0,
@@ -541,6 +569,7 @@ watch(() => props.product, (newProduct) => {
       category_id: '',
       name: '',
       display_name: '',
+      slug: '',
       description: '',
       subtitle: '',
       price: 0,
@@ -598,6 +627,40 @@ const handleSubmit = async () => {
 
 const handleCancel = () => {
   emit('close')
+}
+
+const handleUpdateSlug = async () => {
+  if (!formData.value.slug || !formData.value.slug.trim()) {
+    alert('Please enter a slug')
+    return
+  }
+
+  // Validate slug format
+  const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+  if (!slugRegex.test(formData.value.slug)) {
+    alert('Slug must be URL-friendly (lowercase letters, numbers, and hyphens only)')
+    return
+  }
+
+  isUpdatingSlug.value = true
+
+  try {
+    const response = await backendApi.put(`/products/${props.product?.id}/slug`, {
+      slug: formData.value.slug
+    })
+
+    if (response.ok) {
+      alert('Slug updated successfully!')
+    } else {
+      const error = await response.json()
+      alert(`Error: ${error.error || 'Failed to update slug'}`)
+    }
+  } catch (error) {
+    console.error('Error updating slug:', error)
+    alert('Failed to update slug')
+  } finally {
+    isUpdatingSlug.value = false
+  }
 }
 
 // Attribute management methods

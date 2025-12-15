@@ -19,6 +19,7 @@
               :alt="product.display_name || product.name || 'Товар Опілля'"
               :widths="productImageWidths"
               :sizes="productImageSizes"
+              :priority="priority"
               wrapper-class="w-full h-full"
               img-class="w-full h-full object-cover"
               @error="onImageError"
@@ -80,98 +81,102 @@
         </div>
       </div>
 
-    <!-- Product Info -->
-    <div class="p-4 relative group">
-      <h3 class="font-bold text-base mb-1">{{ formattedProductName }}</h3>
+    <!-- Product Info - Native App Style -->
+    <div class="p-3 relative group">
+      <!-- Product Name - Larger for mobile -->
+      <h3 class="font-bold text-base md:text-base mb-1 line-clamp-2 min-h-[2.5rem]">{{ formattedProductName }}</h3>
 
       <!-- Product Subtitle -->
-      <p v-if="productSubtitle" class="text-sm text-gray-600 mb-2">{{ productSubtitle }}</p>
+      <p v-if="productSubtitle" class="text-sm text-gray-600 mb-2 line-clamp-1">{{ productSubtitle }}</p>
 
-      <!-- Rating -->
-      <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-2 mb-3">
+      <!-- Rating - Compact -->
+      <div v-if="combinedRating && combinedRating.totalReviews > 0" class="flex items-center gap-1 mb-2">
         <div class="flex">
           <span
             v-for="star in 5"
             :key="star"
-            class="text-sm"
+            class="text-xs"
             :class="star <= Math.round(combinedRating.averageRating) ? 'text-yellow-400' : 'text-gray-300'"
           >
             ⭐
           </span>
         </div>
-        <span class="text-sm text-gray-600">
-          {{ combinedRating.averageRating.toFixed(1) }} ({{ combinedRating.totalReviews }})
+        <span class="text-xs text-gray-600">
+          {{ combinedRating.averageRating.toFixed(1) }}
         </span>
-        <div v-if="combinedRating.hasUntappdRating && combinedRating.hasLocalReviews"
-             class="text-xs bg-orange-100 text-orange-600 px-1 rounded">
-          Змішано
-        </div>
-        <div v-else-if="combinedRating.hasUntappdRating"
-             class="text-xs bg-orange-100 text-orange-600 px-1 rounded">
-          Untappd
-        </div>
       </div>
 
 
 
-      <!-- Price and Add to Cart / Quantity Controls -->
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex flex-col">
-          <div class="flex items-baseline space-x-1">
-            <span :class="[
-              'text-lg font-bold tracking-tight',
-              product.original_price && product.original_price > product.price
-                ? 'text-red-600'
-                : 'text-gray-900'
-            ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }}</span>
-            <span :class="[
-              'text-lg font-bold tracking-tight',
-              product.original_price && product.original_price > product.price
-                ? 'text-red-600'
-                : 'text-gray-900'
-            ]">₴</span>
-            <span v-if="product.original_price && product.original_price > product.price"
-                  class="text-xs text-gray-400 line-through">
-              {{ formatDisplayPrice(product.original_price) }} ₴
-            </span>
-          </div>
-          <span class="text-xs text-gray-500 mt-1">
-            за {{ displayPriceUnit }}
+      <!-- Price Section - Native Style -->
+      <div class="mb-3">
+        <div class="flex items-baseline gap-1">
+          <span :class="[
+            'text-xl md:text-lg font-bold tracking-tight',
+            product.original_price && product.original_price > product.price
+              ? 'text-red-600'
+              : 'text-gray-900 dark:text-gray-100'
+          ]" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">{{ displayPrice }}</span>
+          <span :class="[
+            'text-xl md:text-lg font-bold tracking-tight',
+            product.original_price && product.original_price > product.price
+              ? 'text-red-600'
+              : 'text-gray-900 dark:text-gray-100'
+          ]">₴</span>
+          <span v-if="product.original_price && product.original_price > product.price"
+                class="text-xs text-gray-400 line-through ml-1">
+            {{ formatDisplayPrice(product.original_price) }} ₴
           </span>
         </div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">
+          за {{ displayPriceUnit }}
+        </span>
+      </div>
 
-        <!-- Show quantity controls if product is in cart, otherwise show add button -->
-        <div class="flex-shrink-0 ml-3">
-          <!-- Quantity Controls (shown when ANY product is in cart) -->
-          <div v-if="itemInCart"
-               class="flex items-center border border-blue-500 rounded-lg overflow-hidden">
-            <button
-              @click="decreaseCartQuantity"
-              class="w-8 h-8 bg-white text-gray-700 flex items-center justify-center text-sm font-bold hover:bg-gray-50 transition-colors"
-            >
-              −
-            </button>
-            <span class="w-10 text-center font-bold text-sm bg-white">{{ itemInCart.quantity }}</span>
-            <button
-              @click="increaseCartQuantity"
-              :disabled="itemInCart.quantity >= (product.max_quantity || 999)"
-              class="w-8 h-8 bg-blue-500 text-white flex items-center justify-center text-sm font-bold hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              +
-            </button>
-          </div>
-
-          <!-- Add to Cart Button (shown when product is NOT in cart) -->
+      <!-- Add to Cart / Quantity Controls - Full Width Native Style -->
+      <div class="w-full" role="group" :aria-label="`Керування кількістю ${product.display_name || product.name}`">
+        <!-- Quantity Controls (shown when product is in cart) -->
+        <div v-if="itemInCart"
+             class="flex items-center rounded-xl overflow-hidden border-2 border-primary-500 shadow-sm">
           <button
-            v-else
-            ref="addToCartButton"
-            @click="handleAddToCartWithAnimation"
-            :disabled="!isAvailableInBranch"
-            class="btn-primary px-4 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="decreaseCartQuantity"
+            class="flex-1 h-11 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center justify-center text-lg font-bold hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
+            :aria-label="`Зменшити кількість ${product.display_name || product.name}`"
+            type="button"
           >
-            {{ getButtonText() }}
+            −
+          </button>
+          <span
+            class="flex-1 text-center font-bold text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            role="status"
+            :aria-label="`Кількість: ${itemInCart.quantity}`"
+          >{{ itemInCart.quantity }}</span>
+          <button
+            @click="increaseCartQuantity"
+            :disabled="itemInCart.quantity >= (product.max_quantity || 999)"
+            class="flex-1 h-11 bg-primary-500 text-white flex items-center justify-center text-lg font-bold hover:bg-primary-600 active:scale-95 transition-all disabled:opacity-50"
+            :aria-label="`Збільшити кількість ${product.display_name || product.name}`"
+            type="button"
+          >
+            +
           </button>
         </div>
+
+        <!-- Add to Cart Button (shown when product is NOT in cart) - Full Width -->
+        <button
+          v-else
+          ref="addToCartButton"
+          @click="handleAddToCartWithAnimation"
+          :disabled="!isAvailableInBranch"
+          class="w-full h-11 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-semibold rounded-xl shadow-sm active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          :aria-label="`Додати ${product.display_name || product.name} до кошика`"
+          type="button"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span class="text-sm">{{ getButtonText() }}</span>
+        </button>
       </div>
 
 
@@ -244,9 +249,9 @@
         -->
       </div>
 
-      <!-- Expandable Description Panel -->
+      <!-- Expandable Description Panel (Mobile only) -->
       <div v-if="product.description"
-           class="description-expand">
+           class="description-expand md:hidden">
         <div class="px-4 py-3">
           <p class="text-gray-700 text-sm leading-relaxed whitespace-normal break-words">
             {{ truncatedDescription }}
@@ -267,7 +272,9 @@ import type { Product, BottleSelection } from '@/types'
 import { backendApi } from '@/services/backendApi'
 import { useBranchStore } from '@/stores/branch'
 import { useCartStore } from '@/stores/cart'
-import { ProductAvailabilityService } from '@/services/productAvailabilityService'
+import { useHaptic } from '@/composables/useHaptic'
+import { useToast } from '@/composables/useToast'
+// ProductAvailabilityService import removed - inventory is now loaded with products
 import {
   isDraftBeverage,
   createEmptyBottleSelection,
@@ -293,6 +300,7 @@ import OptimizedImage from '@/components/ui/OptimizedImage.vue'
 
 interface Props {
   product: Product
+  priority?: boolean
 }
 
 interface Emits {
@@ -311,14 +319,14 @@ const { t } = useI18n()
 const branchStore = useBranchStore()
 const cartStore = useCartStore()
 
+// Composables
+const haptic = useHaptic()
+const toast = useToast()
+
 // Image error handling is done directly in the onImageError method
 
-// State for branch-specific inventory
-const branchInventory = ref<{
-  available_quantity: number
-  unit: string
-  is_available: boolean
-} | null>(null)
+// State for branch-specific inventory - now loaded with products from backend
+// No longer needs real-time API calls as inventory is synced via cron jobs
 
 // State for draft beverage functionality
 const selectedQuantity = ref(2) // Default 2L
@@ -348,15 +356,17 @@ const itemInCart = computed(() => {
 })
 
 // Check if product is available in current branch
+// Inventory data is now loaded with products from backend (via cron sync)
 const isAvailableInBranch = computed(() => {
-  if (!branchInventory.value) return props.product.available
-  return branchInventory.value.is_available && branchInventory.value.available_quantity > 0
+  // Product availability is determined by is_active status and quantity
+  if (!props.product.available) return false
+  // If quantity is 0, product is not available (inventory depleted)
+  return (props.product.quantity ?? 0) > 0
 })
 
 // Get available quantity in current branch
 const availableQuantity = computed(() => {
-  if (!branchInventory.value) return 999 // Default high number if no inventory data
-  return branchInventory.value.available_quantity
+  return props.product.quantity ?? 999 // Use product's quantity from backend
 })
 
 // Custom quantity controls based on product settings
@@ -632,22 +642,43 @@ const handleAddToCartWithAnimation = () => {
 const handleAddToCartDirectly = () => {
   if (!isAvailableInBranch.value) return
 
-  if (isDraft.value) {
+  // Haptic feedback
+  haptic.light()
+
+  // Check if this is a draft beverage (розливне) that needs bottles
+  // Only add bottles if the product is sold by weight/volume AND requires bottles
+  // Do NOT add bottles for pre-bottled products (like bottled beer)
+  const needsBottles = isDraft.value && props.product.unit === 'л'
+
+  if (needsBottles) {
     // Handle draft products with auto bottle selection
     const defaultQuantity = 1
     const autoBottles = getDefaultBottleSelection(defaultQuantity)
+
+    
+    
 
     // Emit event to parent (ShopView) to show notification
     emit('add-to-cart', props.product, defaultQuantity, autoBottles)
 
     // Add bottles separately if needed
     const bottleCartItems = getBottleCartItems(autoBottles)
+    
+
     for (const bottleItem of bottleCartItems) {
+      
       emit('add-bottle-to-cart', bottleItem)
     }
+
+    // Success toast
+    toast.success(`${props.product.display_name || props.product.name} додано до кошика`)
   } else {
-    // Handle regular products - emit event to parent (ShopView) to show notification
+    // Handle regular products (including pre-bottled products)
+    // Do NOT add bottles for products that already come in bottles
     emit('add-to-cart', props.product)
+
+    // Success toast
+    toast.success(`${props.product.display_name || props.product.name} додано до кошика`)
   }
 }
 
@@ -726,29 +757,9 @@ const getStockStatus = (product: Product): string => {
   }
 }
 
-// Load branch-specific inventory (lazy - only when needed)
-const loadBranchInventory = async () => {
-  if (!branchStore.selectedBranch?.id) return
-
-  try {
-    const inventory = await ProductAvailabilityService.getProductInventory(
-      props.product.id,
-      branchStore.selectedBranch.id
-    )
-    branchInventory.value = inventory
-  } catch (error) {
-    console.error('Failed to load branch inventory:', error)
-  }
-}
-
-// Load inventory in background after a delay (non-blocking)
-const scheduleInventoryLoad = () => {
-  // Schedule inventory load for 2 seconds after component mount
-  // This allows the page to render first without blocking
-  setTimeout(() => {
-    loadBranchInventory()
-  }, 2000)
-}
+// NOTE: Real-time inventory loading removed
+// Inventory is now synced via cron jobs and loaded with products from backend
+// This eliminates individual API calls per product which caused performance issues
 
 // Initialize quantity based on product settings
 const initializeQuantity = () => {
@@ -799,7 +810,7 @@ const getScaleLevel = (value: string, attributeName: string): number => {
 }
 
 const handleSaleExpired = (product: Product) => {
-  console.log(`🔥 Sale expired for product: ${product.name}`)
+  
   // The sale service will handle the price reversion
   // We could emit an event to parent components if needed
 }
@@ -821,8 +832,7 @@ const loadCombinedRating = async () => {
 
 // Lifecycle
 onMounted(() => {
-  // Don't load inventory immediately - schedule it for later to avoid blocking page render
-  scheduleInventoryLoad()
+  // Inventory is now loaded with products from backend - no need for separate API calls
   initializeQuantity()
   loadCombinedRating()
 })
@@ -870,13 +880,59 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* Override card overflow to allow description to show */
+/* Native App Style Product Card */
 .product-card-container {
   overflow: visible !important;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dark .product-card-container {
+  background: #2A2A2A;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Ensure card-hover doesn't clip the description */
 .product-card-container.card-hover {
   overflow: visible !important;
+}
+
+/* Active/Press State - Native Feel */
+.product-card-container:active {
+  transform: scale(0.97);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Smooth transitions for all interactive elements */
+.product-card-container button {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Active scale effect */
+.active\:scale-98:active {
+  transform: scale(0.98);
+}
+
+.active\:scale-95:active {
+  transform: scale(0.95);
 }
 </style>

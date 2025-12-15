@@ -334,7 +334,7 @@ router.post('/import-untappd/:productId', async (req, res) => {
 
     // Fetch Untappd reviews
     const untappdUrl = `https://untappd.com/b/beer/${untappd_beer_id}`
-    console.log(`Fetching Untappd reviews from: ${untappdUrl}`)
+    
 
     const response = await axios.get(untappdUrl, {
       headers: {

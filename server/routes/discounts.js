@@ -7,7 +7,7 @@ const router = express.Router()
 // Get applicable discounts for order (public) - MUST BE BEFORE /:id route
 router.post('/applicable', async (req, res) => {
   try {
-    console.log('📊 Getting applicable discounts with data:', req.body)
+    
     const { customerId, userId, subtotal, items } = req.body
 
     const orderData = {
@@ -18,7 +18,7 @@ router.post('/applicable', async (req, res) => {
     }
 
     const applicable = await discountService.getApplicableDiscounts(orderData)
-    console.log('✅ Applicable discounts found:', applicable.length, applicable)
+    
     res.json(applicable)
   } catch (error) {
     console.error('Error getting applicable discounts:', error)
@@ -51,7 +51,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 // Create discount (admin only)
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    console.log('Creating discount with data:', req.body)
+    
     const discount = await discountService.createDiscount(req.body)
     res.status(201).json(discount)
   } catch (error) {
@@ -63,7 +63,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // Update discount (admin only)
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    console.log('Updating discount:', req.params.id, 'with data:', req.body)
+    
     const discount = await discountService.updateDiscount(req.params.id, req.body)
     res.json(discount)
   } catch (error) {

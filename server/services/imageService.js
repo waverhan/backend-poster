@@ -112,7 +112,7 @@ class ImageService {
       const optimizedSize = fs.statSync(outputPath).size
       const savings = Math.round((1 - optimizedSize / originalSize) * 100)
 
-      console.log(`✅ Optimized image: ${path.basename(outputPath)} (${savings}% smaller, resized to ${targetSize}x${targetSize})`)
+      console.log(`✅ Image optimized (${savings}% smaller, resized to ${targetSize}x${targetSize})`)
 
       return outputPath
     } catch (error) {
@@ -120,7 +120,6 @@ class ImageService {
       // Fallback: just copy the original file to avoid segmentation faults
       try {
         fs.copyFileSync(inputPath, outputPath)
-        console.log(`✅ Copied original image: ${path.basename(outputPath)}`)
         return outputPath
       } catch (copyError) {
         console.error(`❌ Failed to copy image:`, copyError.message)

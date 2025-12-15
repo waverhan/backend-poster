@@ -245,9 +245,9 @@ const fetchOrders = async () => {
     orders.value = data.orders || []
 
     // Debug log for reorder button investigation
-    console.log('📋 Orders loaded:', orders.value.length, 'orders')
+    
     if (orders.value.length > 0) {
-      console.log('📋 First order sample:', orders.value[0])
+      
     }
   } catch (err) {
     console.error('Error fetching orders:', err)

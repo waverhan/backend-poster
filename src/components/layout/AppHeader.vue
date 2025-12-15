@@ -1,136 +1,135 @@
 <template>
-  <header class="sticky top-0 z-[60] bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+  <header class="sticky top-0 z-[60] bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 safe-top">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Mobile Header -->
+      <!-- Mobile Header - Simplified for Native App Feel -->
       <div class="md:hidden">
-        <div class="flex justify-between items-center h-14 gap-2">
+        <div class="flex justify-between items-center h-16 gap-3">
           <!-- Logo and Site Name -->
-          <router-link to="/" class="flex items-center space-x-2 flex-shrink-0 min-w-0">
-            <div class="w-8 h-8 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+          <router-link to="/" class="flex items-center space-x-3 flex-shrink-0">
+            <div class="w-10 h-10 bg-gradient-to-r from-primary-600 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
               <img
                 v-if="siteConfig.logo_url && siteConfig.logo_url !== '/logo.png'"
                 :src="siteConfig.logo_url"
                 :alt="siteConfig.site_name"
-                class="w-6 h-6 object-contain"
+                class="w-7 h-7 object-contain"
                 @error="showFallbackLogo = true"
               />
-              <span v-else class="text-white font-bold text-sm">🛒</span>
+              <span v-else class="text-white font-bold text-lg">🛒</span>
             </div>
-            <div class="min-w-0 flex-1">
-              <h1 class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{{ siteConfig.site_name }}</h1>
-              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ siteConfig.site_description }}</p>
+            <div class="min-w-0">
+              <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{{ siteConfig.site_name }}</h1>
             </div>
           </router-link>
 
-          <!-- Mobile Right Actions -->
+          <!-- Mobile Right Actions - Minimal -->
           <div class="flex items-center space-x-1 flex-shrink-0">
             <!-- Language Switcher -->
-            <LanguageSwitcher />
-
-            <!-- Theme Toggle -->
-            <ThemeToggle v-if="siteConfigStore.currentConfig.enable_dark_mode" />
-
-            <!-- User Account / Login (Mobile) -->
             <div class="relative">
               <button
-                @click="showUserMenu = !showUserMenu"
-                class="flex items-center justify-center w-8 h-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                @click="toggleLanguageDropdown"
+                class="flex items-center justify-center w-10 h-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                aria-label="Мова"
               >
-                <div v-if="authStore.isAuthenticated" class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
-                  {{ authStore.userInitials }}
+                <span class="text-lg">{{ currentLanguage.flag }}</span>
+              </button>
+
+              <!-- Language Dropdown -->
+              <transition name="dropdown">
+                <div
+                  v-if="showLanguageDropdown"
+                  class="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+                >
+                  <button
+                    v-for="language in availableLanguages"
+                    :key="language.code"
+                    @click="selectLanguage(language.code)"
+                    class="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400': language.code === currentLanguage.code }"
+                  >
+                    <span class="text-lg mr-3">{{ language.flag }}</span>
+                    <span>{{ language.name }}</span>
+                  </button>
                 </div>
-                <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </transition>
+            </div>
+
+            <!-- Contact Icon with Dropdown -->
+            <div class="relative">
+              <button
+                @click="toggleContactDropdown"
+                class="flex items-center justify-center w-10 h-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                aria-label="Контакти"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
               </button>
 
-              <!-- User Dropdown -->
-              <div
-                v-if="showUserMenu"
-                class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-                @click.stop
-              >
-                <div v-if="authStore.isAuthenticated" class="py-2">
-                  <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ authStore.user?.name }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ formatPhoneNumber(authStore.user?.phone || '') }}</p>
-                    <div class="mt-2 flex items-center space-x-2 text-sm">
-                      <svg class="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+              <!-- Contact Dropdown -->
+              <transition name="dropdown">
+                <div
+                  v-if="showContactDropdown"
+                  class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden"
+                >
+                  <div class="p-4">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Зателефонуйте нам</p>
+                    <a
+                      href="tel:+380973244668"
+                      class="flex items-center space-x-3 text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    >
+                      <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
-                      <span class="text-orange-600 dark:text-orange-400 font-medium">{{ authStore.userBonusPoints }} балів</span>
-                    </div>
+                      <span class="font-semibold">+38 (097) 324 46 68</span>
+                    </a>
                   </div>
-
-                  <router-link
-                    to="/profile"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    @click="showUserMenu = false"
-                  >
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                      </svg>
-                      <span>Особистий кабінет</span>
-                    </div>
-                  </router-link>
-
-                  <router-link
-                    to="/orders"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    @click="showUserMenu = false"
-                  >
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                      </svg>
-                      <span>Мої замовлення</span>
-                    </div>
-                  </router-link>
-
-                  <button
-                    @click="handleLogout"
-                    class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                      </svg>
-                      <span>Вийти</span>
-                    </div>
-                  </button>
                 </div>
-
-                <!-- Not Authenticated Menu -->
-                <div v-else class="py-2">
-                  <router-link
-                    to="/login"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    @click="showUserMenu = false"
-                  >
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-1m0-4V7a3 3 0 013-3h4a3 3 0 013 3v4"></path>
-                      </svg>
-                      <span>Вхід</span>
-                    </div>
-                  </router-link>
-                  <router-link
-                    to="/register"
-                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    @click="showUserMenu = false"
-                  >
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                      </svg>
-                      <span>Реєстрація</span>
-                    </div>
-                  </router-link>
-                </div>
-              </div>
+              </transition>
             </div>
+
+            <!-- Profile Icon (if authenticated) -->
+            <router-link
+              v-if="authStore.isAuthenticated"
+              to="/profile"
+              class="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full shadow-md"
+              aria-label="Профіль"
+            >
+              <span class="text-sm font-bold">{{ userInitials }}</span>
+            </router-link>
+
+            <!-- Login Button (if not authenticated) -->
+            <router-link
+              v-else
+              to="/login"
+              class="flex items-center justify-center w-10 h-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              aria-label="Увійти"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </router-link>
+
+            <!-- Notifications Icon (if authenticated) -->
+            <router-link
+              v-if="authStore.isAuthenticated"
+              to="/notifications"
+              class="relative flex items-center justify-center w-10 h-10 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              aria-label="Сповіщення"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <!-- Notification Badge -->
+              <span v-if="false" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </router-link>
           </div>
+
+          <!-- Backdrop for dropdowns -->
+          <div
+            v-if="showLanguageDropdown || showContactDropdown"
+            @click="closeAllDropdowns"
+            class="fixed inset-0 z-40 md:hidden"
+          ></div>
         </div>
       </div>
 
@@ -315,86 +314,8 @@
       </div>
     </div>
 
-    <!-- Search Modal (Desktop) -->
-    <transition name="fade">
-      <div v-if="showSearchModal" class="fixed inset-0 bg-black/50 z-[100] flex items-start justify-center pt-20" @click="showSearchModal = false">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl mx-4" @click.stop>
-          <!-- Search Header -->
-          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">🔍 Пошук товарів</h2>
-            <button @click="showSearchModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <!-- Search Content -->
-          <div class="p-4">
-            <!-- Search Input -->
-            <div class="relative mb-4">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                ref="searchInputRef"
-                v-model="searchQuery"
-                @input="performSearch(searchQuery)"
-                @keyup.enter="handleSearchEnter"
-                type="text"
-                placeholder="Введіть назву товару..."
-                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-              />
-              <button
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center"
-              >
-                <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Search Results -->
-            <div v-if="searchQuery.trim()" class="max-h-96 overflow-y-auto">
-              <div v-if="searchResults.length > 0" class="mb-2 text-sm text-gray-600 dark:text-gray-400">
-                Знайдено {{ searchResults.length }} товарів
-              </div>
-              <div v-if="searchResults.length === 0 && searchQuery.trim()" class="text-center py-8 text-gray-500">
-                <div class="text-4xl mb-2">🔍</div>
-                <div>Товарів не знайдено</div>
-                <div class="text-sm">Спробуйте інший запит</div>
-              </div>
-              <div v-else class="space-y-2">
-                <div
-                  v-for="product in searchResults.slice(0, 20)"
-                  :key="product.id"
-                  @click="goToProduct(product)"
-                  class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <img
-                    :src="getProductImageUrl(product)"
-                    :alt="product.name"
-                    class="w-12 h-12 object-cover rounded-lg"
-                    @error="(e) => { e.target.src = '/images/placeholder.jpg' }"
-                  />
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium text-gray-900 dark:text-white truncate">{{ product.name }}</div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ product.price }}₴</div>
-                  </div>
-                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
+    <!-- Search Modal (Mobile & Desktop) -->
+    <SearchModal v-model="showSearchModal" />
 
     <!-- Login Modal -->
     <PhoneLoginModal
@@ -429,11 +350,13 @@ import { useSiteConfigStore } from '@/stores/siteConfig'
 import { useAuthStore } from '@/stores/auth'
 import { useProductStore } from '@/stores/product'
 import { backendApi } from '@/services/backendApi'
+import { availableLanguages, changeLanguage, getCurrentLanguage } from '@/i18n'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
 import PasswordSetupModal from '@/components/auth/PasswordSetupModal.vue'
 import ProfileCompletionModal from '@/components/auth/ProfileCompletionModal.vue'
+import SearchModal from '@/components/search/SearchModal.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -451,12 +374,59 @@ const showUserMenu = ref(false)
 const pendingUser = ref(null)
 
 // Search state
-const searchQuery = ref('')
 const showSearchModal = ref(false)
-const searchResults = ref<any[]>([])
-const searchInputRef = ref<HTMLInputElement | null>(null)
+
+// Mobile dropdown states
+const showLanguageDropdown = ref(false)
+const showContactDropdown = ref(false)
+
+// Language switcher
+const currentLanguage = computed(() => getCurrentLanguage())
+
+// User initials for profile icon
+const userInitials = computed(() => {
+  const user = authStore.user
+  if (!user) return '?'
+
+  if (user.name) {
+    const names = user.name.trim().split(' ')
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase()
+    }
+    return names[0][0].toUpperCase()
+  }
+
+  if (user.phone) {
+    return user.phone.slice(-2)
+  }
+
+  return '?'
+})
 
 // Methods
+const toggleLanguageDropdown = () => {
+  showLanguageDropdown.value = !showLanguageDropdown.value
+  if (showLanguageDropdown.value) {
+    showContactDropdown.value = false
+  }
+}
+
+const toggleContactDropdown = () => {
+  showContactDropdown.value = !showContactDropdown.value
+  if (showContactDropdown.value) {
+    showLanguageDropdown.value = false
+  }
+}
+
+const closeAllDropdowns = () => {
+  showLanguageDropdown.value = false
+  showContactDropdown.value = false
+}
+
+const selectLanguage = (code: string) => {
+  changeLanguage(code)
+  showLanguageDropdown.value = false
+}
 const formatPhoneNumber = (phone: string) => {
   return authStore.formatPhoneNumber(phone)
 }
@@ -467,7 +437,7 @@ const handleLogout = async () => {
 }
 
 const onLoginSuccess = (user: any, requiresPasswordSetup?: boolean) => {
-  console.log('Login successful:', user)
+  
   showLoginModal.value = false
 
   if (requiresPasswordSetup) {
@@ -477,11 +447,11 @@ const onLoginSuccess = (user: any, requiresPasswordSetup?: boolean) => {
 
 const onPasswordSetupSuccess = () => {
   showPasswordSetup.value = false
-  console.log('Password setup completed')
+  
 }
 
 const onProfileCompletionRequired = (user: any) => {
-  console.log('Profile completion required for user:', user)
+  
   pendingUser.value = user
   showProfileCompletion.value = true
 }
@@ -489,7 +459,7 @@ const onProfileCompletionRequired = (user: any) => {
 const onProfileCompletionSuccess = () => {
   showProfileCompletion.value = false
   pendingUser.value = null
-  console.log('Profile completion successful')
+  
 }
 
 // Search functionality
@@ -575,3 +545,23 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
+
+<style scoped>
+/* Dropdown animation */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.dropdown-enter-to,
+.dropdown-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>

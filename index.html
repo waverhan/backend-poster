@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#B91C1C" />
 
+    <!-- DNS Prefetch & Preconnect for faster external resource loading -->
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://backend-api-production-b3a0.up.railway.app" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://backend-api-production-b3a0.up.railway.app" crossorigin />
+
     <!-- SEO Meta Tags -->
     <meta name="description" content="Найкращі напої та делікатеси з доставкою по Києву. Замовляйте свіжі продукти онлайн." />
     <meta name="keywords" content="напої, делікатеси, доставка, Київ, сир, м'ясо, вино, пиво, закуски" />
@@ -39,7 +45,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Опілля" />
     
-    <!-- Critical font loading: inline Inter subsets + preload heavier weights -->
+    <!-- Critical font loading: preload both 400 and 600 weights for faster rendering -->
+    <link rel="preload" href="/fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/inter-cyrillic-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/inter-latin-600.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/inter-cyrillic-600.woff2" as="font" type="font/woff2" crossorigin>
     <style>
@@ -83,16 +91,8 @@
       }
     </style>
 
-    <!-- Prefetch critical route chunks for faster navigation -->
-    <!-- These will be downloaded during idle time after initial page load -->
-    <link rel="prefetch" href="/assets/ShopView-cbbd20f8.js" as="script">
-    <link rel="prefetch" href="/assets/CheckoutView-01dc9849.js" as="script">
-    <link rel="prefetch" href="/assets/ProductDetailView-51b2bd8f.js" as="script">
-    <link rel="prefetch" href="/assets/CartView-f4a30aaf.js" as="script">
-
-    <!-- Prefetch vendor chunks that are commonly used -->
-    <link rel="prefetch" href="/assets/vue-68a7bf9a.js" as="script">
-    <link rel="prefetch" href="/assets/vendor-352e0cca.js" as="script">
+    <!-- Prefetch links removed - they were causing caching issues with hardcoded filenames -->
+    <!-- Vite automatically handles module preloading with correct hashed filenames -->
 
     <!-- Structured Data - Organization -->
     <script type="application/ld+json">

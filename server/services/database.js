@@ -204,14 +204,15 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
     where.category_id = categoryId
   }
 
-  // Optimize: Only include inventory if branchId is specified
-  // Loading all inventory for all branches is very slow
-  const includeConfig = {
-    category: true
+  // Always require branchId - no default branch logic here
+  // The caller should provide the branchId (default: Bratislavskaya)
+  if (!branchId) {
+    throw new Error('branchId is required for getProducts')
   }
 
-  if (branchId) {
-    includeConfig.inventory = {
+  const includeConfig = {
+    category: true,
+    inventory: {
       where: { branch_id: branchId }
     }
   }
@@ -266,6 +267,14 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       
     }
 
+    // Use inventory quantity from the specified branch
+    const productQuantity = inventory?.quantity ?? 0
+
+    // Product is available if:
+    // - Product is active (is_active = true)
+    // - AND has positive inventory at this branch
+    const isAvailable = product.is_active && productQuantity > 0
+
     return {
       id: product.id,
       poster_product_id: product.poster_product_id,
@@ -280,11 +289,10 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
       original_price: displayOriginalPrice,
       image_url: product.image_url || '',
       display_image_url: product.display_image_url || '',
-      quantity: inventory?.quantity || 0,
+      quantity: productQuantity,
       unit: inventory?.unit || (isWeightBased ? 'kg' : 'pcs'),
-      // Products are available by default if is_active is true
-      // Inventory sync updates quantity in background via cron jobs
-      available: product.is_active,
+      // Available based on is_active AND inventory (when branch specified)
+      available: isAvailable,
       is_active: product.is_active,
       requires_bottles: product.requires_bottles || false,
       attributes: product.attributes ? JSON.parse(product.attributes) : [],
@@ -316,12 +324,16 @@ export async function getProducts(categoryId, branchId, includeInactive = false)
 }
 
 export async function createProduct(data) {
+  // Generate slug from display_name
+  const slug = generateSlug(data.display_name)
+
   const product = await prisma.product.create({
     data: {
       poster_product_id: data.poster_product_id,
       category_id: data.category_id,
       name: data.name,
       display_name: data.display_name,
+      slug: slug || null,
       subtitle: data.subtitle,
       description: data.description,
       price: data.price,

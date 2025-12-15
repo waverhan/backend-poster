@@ -6,7 +6,7 @@ const router = express.Router()
 // DELETE /api/inventory/cleanup-bundles - Remove inventory records for bundle products
 router.delete('/cleanup-bundles', async (req, res) => {
   try {
-    console.log('🧹 Cleaning up inventory records for bundle products...')
+    
 
     // Find all bundle products
     const bundleProducts = await prisma.product.findMany({
@@ -14,7 +14,7 @@ router.delete('/cleanup-bundles', async (req, res) => {
       select: { id: true, name: true, display_name: true }
     })
 
-    console.log(`📦 Found ${bundleProducts.length} bundle products`)
+    
 
     // Delete inventory records for bundle products
     const deleteResult = await prisma.productInventory.deleteMany({
@@ -25,7 +25,7 @@ router.delete('/cleanup-bundles', async (req, res) => {
       }
     })
 
-    console.log(`✅ Deleted ${deleteResult.count} inventory records for bundle products`)
+    
 
     return res.json({
       success: true,
@@ -218,7 +218,7 @@ router.get('/check/:productId/:branchId', async (req, res) => {
     const { productId, branchId } = req.params
     const requiredQuantity = parseFloat(req.query.quantity) || 1
 
-    console.log(`📦 Checking inventory for product: ${productId}, branch: ${branchId}, quantity: ${requiredQuantity}`)
+    
 
     // Validate inputs
     if (!productId || !branchId) {
@@ -248,7 +248,7 @@ router.get('/check/:productId/:branchId', async (req, res) => {
     const stockLevel = inventory?.quantity || 0
     const available = stockLevel >= requiredQuantity
 
-    console.log(`✅ Inventory check result: available=${available}, stock=${stockLevel}`)
+    
 
     res.json({
       available,
@@ -360,7 +360,7 @@ router.post('/sync/trigger', async (req, res) => {
 // POST /api/inventory/sync/daily-trigger - Trigger manual daily sync (new products + prices)
 router.post('/sync/daily-trigger', async (req, res) => {
   try {
-    console.log('🔄 Manual daily sync triggered...')
+    
 
     // This will call the new daily sync endpoint
     const syncResponse = await fetch(`${req.protocol}://${req.get('host')}/api/sync/daily`, {

@@ -6,7 +6,7 @@ const router = express.Router()
 // POST /api/sales/check-expired - Check for expired sales and revert prices
 router.post('/check-expired', async (req, res) => {
   try {
-    console.log('🔥 Checking for expired sales...')
+    
 
     // Check if sale_expires_at field exists in the schema
     try {
@@ -18,7 +18,7 @@ router.post('/check-expired', async (req, res) => {
       `
 
       if (schemaCheck.length === 0) {
-        console.log('⚠️ sale_expires_at field not found in schema, skipping expired sales check')
+        
         return res.json({
           success: true,
           expiredCount: 0,
@@ -26,7 +26,7 @@ router.post('/check-expired', async (req, res) => {
         })
       }
     } catch (schemaError) {
-      console.log('⚠️ Could not check schema, assuming sale_expires_at field does not exist')
+      
       return res.json({
         success: true,
         expiredCount: 0,
@@ -64,14 +64,14 @@ router.post('/check-expired', async (req, res) => {
       product.price < product.original_price
     )
 
-    console.log(`🔥 Found ${expiredSaleProducts.length} products with expired sales`)
+    
 
     const revertedProducts = []
 
     // Revert prices for expired sales
     for (const product of expiredSaleProducts) {
       if (product.original_price && product.original_price > product.price) {
-        console.log(`🔥 Reverting sale price for ${product.name}: ${product.price} → ${product.original_price}`)
+        
 
         const updatedProduct = await prisma.product.update({
           where: { id: product.id },
@@ -128,7 +128,7 @@ router.post('/expire/:productId', async (req, res) => {
       })
     }
 
-    console.log(`🔥 Manually expiring sale for ${product.name}: ${product.price} → ${product.original_price}`)
+    
 
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
@@ -194,7 +194,7 @@ router.post('/set-expiration/:productId', async (req, res) => {
       }
     })
 
-    console.log(`🔥 Set sale expiration for ${product.name} to ${expirationDate}`)
+    
 
     res.json({
       success: true,

@@ -424,6 +424,9 @@ const confirmSelection = () => {
       locationStore.setLocation(data.location)
     }
 
+    // Emit the event so CartView can update its selectedMethod ref
+    emit('methodSelected', data)
+
     // Navigate to checkout
     router.push({
       path: '/checkout',

@@ -163,7 +163,6 @@ const isStandalone = computed(() => {
 const shouldShowPrompt = () => {
   // Don't show if already installed
   if (isStandalone.value) {
-    console.log('✅ App already installed (standalone mode)')
     return false
   }
 
@@ -173,7 +172,7 @@ const shouldShowPrompt = () => {
     const dismissedDate = new Date(dismissed)
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     if (dismissedDate > weekAgo) {
-      console.log('⏳ User dismissed prompt recently')
+      
       return false
     }
   }
@@ -184,35 +183,35 @@ const shouldShowPrompt = () => {
     const installedDate = new Date(installed)
     const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
     if (installedDate > monthAgo) {
-      console.log('✅ User already installed app recently')
+      
       return false
     }
   }
 
-  console.log('✅ Should show install prompt')
+  
   return true
 }
 
 // Install the app
 const installApp = async () => {
-  console.log('🔄 Install button clicked')
-  console.log('📱 Device info:', { isIOS: isIOS.value, isAndroid: isAndroid.value, isStandalone: isStandalone.value })
-  console.log('🎯 Deferred prompt available:', !!deferredPrompt.value)
+  
+  
+  
 
   if (deferredPrompt.value) {
     try {
-      console.log('🚀 Showing native install prompt...')
+      
       // Android Chrome install
       deferredPrompt.value.prompt()
       const { outcome } = await deferredPrompt.value.userChoice
 
-      console.log('✅ User choice:', outcome)
+      
 
       if (outcome === 'accepted') {
         localStorage.setItem('appInstalled', new Date().toISOString())
-        console.log('🎉 App installed successfully!')
+        
       } else {
-        console.log('❌ User dismissed install prompt')
+        
       }
 
       deferredPrompt.value = null
@@ -223,12 +222,12 @@ const installApp = async () => {
       showManualInstructions()
     }
   } else if (isIOS.value) {
-    console.log('🍎 iOS device - showing manual instructions')
+    
     // iOS - just hide the prompt as instructions are shown
     showPrompt.value = false
     localStorage.setItem('installPromptDismissed', new Date().toISOString())
   } else {
-    console.log('🔧 No native install available - showing manual instructions')
+    
     showManualInstructions()
   }
 }
@@ -265,7 +264,7 @@ const dismissPrompt = () => {
 
 // Manual trigger for testing (expose globally for debugging)
 const showPromptManually = () => {
-  console.log('🔧 Manual trigger activated')
+  
   showPrompt.value = true
 }
 
@@ -275,7 +274,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   (window as any).resetInstallPrompt = () => {
     localStorage.removeItem('installPromptDismissed')
     localStorage.removeItem('appInstalled')
-    console.log('🔄 Install prompt storage cleared')
+    
   }
 }
 
@@ -290,21 +289,15 @@ watch(showPrompt, (newValue) => {
 
 // Setup event listeners
 onMounted(() => {
-  console.log('🔧 InstallPrompt mounted')
-  console.log('📱 Device detection:', {
-    isIOS: isIOS.value,
-    isAndroid: isAndroid.value,
-    isMacOS: isMacOS.value,
-    isStandalone: isStandalone.value,
-    userAgent: navigator.userAgent
-  })
+  
+  
 
   // Check if service worker is registered
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(registrations => {
-      console.log('✅ Service Workers registered:', registrations.length)
+      
       registrations.forEach(reg => {
-        console.log('  - Scope:', reg.scope)
+        
       })
     }).catch(err => {
       console.error('❌ Error checking service workers:', err)
@@ -315,17 +308,14 @@ onMounted(() => {
 
   // Listen for beforeinstallprompt event (Android)
   const handleBeforeInstallPrompt = (e: any) => {
-    console.log('🎯 beforeinstallprompt event fired!')
+    
     e.preventDefault()
     deferredPrompt.value = e
 
     // Show prompt after a short delay if conditions are met
     setTimeout(() => {
       if (shouldShowPrompt()) {
-        console.log('✅ Showing install prompt (Android)')
         showPrompt.value = true
-      } else {
-        console.log('❌ Install prompt conditions not met')
       }
     }, 2000) // Show after 2 seconds
   }
@@ -334,7 +324,7 @@ onMounted(() => {
 
   // Listen for app installed event
   const handleAppInstalled = () => {
-    console.log('🎉 App installed event fired!')
+    
     localStorage.setItem('appInstalled', new Date().toISOString())
     showPrompt.value = false
   }
@@ -344,13 +334,9 @@ onMounted(() => {
   // For iOS or if no beforeinstallprompt event, show prompt after delay
   const fallbackTimeout = setTimeout(() => {
     if (!deferredPrompt.value && shouldShowPrompt()) {
-      console.log('✅ Showing install prompt (iOS/fallback)')
       showPrompt.value = true
     }
   }, 3000) // Show after 3 seconds
-
-  // Debug: Check if prompt should show immediately
-  console.log('🔍 Should show prompt:', shouldShowPrompt())
 
   // Cleanup function
   return () => {
@@ -361,20 +347,6 @@ onMounted(() => {
 })
 
 // Cleanup on unmount is handled in onMounted return function
-
-// Global functions for manual testing (only in browser context)
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  (window as any).showInstallPrompt = () => {
-    showPrompt.value = true
-  }
-
-  (window as any).resetInstallPrompt = () => {
-    localStorage.removeItem('installPromptDismissed')
-    localStorage.removeItem('appInstalled')
-    showPrompt.value = false
-    console.log('🔄 Install prompt storage cleared')
-  }
-}
 </script>
 
 <style scoped>

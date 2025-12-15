@@ -38,17 +38,9 @@ class MinIOService {
         minioEndpoint = minioEndpoint.replace(':443', '')
       }
 
-      console.log('🔍 MinIO Configuration Check:')
-      console.log(`   Endpoint: ${minioEndpoint}`)
-      console.log(`   Access Key: ${minioAccessKey ? `✓ Set (${minioAccessKey})` : '✗ Missing'}`)
-      console.log(`   Secret Key: ${minioSecretKey ? `✓ Set (${minioSecretKey.substring(0, 10)}...)` : '✗ Missing'}`)
-      console.log(`   Use SSL: ${minioUseSSL}`)
-      console.log(`   Bucket: ${process.env.MINIO_BUCKET || 'opillia-images'}`)
-
       // Only initialize if credentials are provided
       if (!minioAccessKey || !minioSecretKey) {
-        console.log('⚠️  MinIO credentials not provided. Using local file storage.')
-        console.log('   Available env vars:', Object.keys(process.env).filter(k => k.includes('MINIO')))
+        console.warn('⚠️ MinIO credentials not configured')
         return
       }
 
@@ -60,7 +52,7 @@ class MinIOService {
       })
 
       this.isConfigured = true
-      console.log('✅ MinIO service configured successfully')
+      
       this.ensureBucket()
     } catch (error) {
       console.error('❌ Failed to configure MinIO service:', error)
@@ -74,7 +66,7 @@ class MinIOService {
       const exists = await this.client.bucketExists(this.bucketName)
       if (!exists) {
         await this.client.makeBucket(this.bucketName, 'us-east-1')
-        console.log(`✅ Created MinIO bucket: ${this.bucketName}`)
+        
       }
     } catch (error) {
       console.error(`❌ Failed to ensure bucket ${this.bucketName}:`, error)
@@ -83,7 +75,7 @@ class MinIOService {
 
   async uploadProductImage(filePath, fileName) {
     if (!this.isConfigured) {
-      console.log('⚠️  MinIO not configured. Skipping upload.')
+      
       return null
     }
 
@@ -100,7 +92,7 @@ class MinIOService {
         { 'Content-Type': 'image/jpeg' }
       )
 
-      console.log(`✅ Uploaded image to MinIO: ${objectName}`)
+      
       return objectName
     } catch (error) {
       console.error('❌ Failed to upload image to MinIO:', error)
@@ -113,7 +105,7 @@ class MinIOService {
 
     try {
       await this.client.removeObject(this.bucketName, objectName)
-      console.log(`✅ Deleted image from MinIO: ${objectName}`)
+      
       return true
     } catch (error) {
       console.error('❌ Failed to delete image from MinIO:', error)

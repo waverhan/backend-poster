@@ -51,7 +51,7 @@ class AuthService {
         }
       })
 
-      console.log(`📱 Sending verification code to ${formattedPhone}: ${verificationCode}`)
+      
 
       // Send SMS with timeout handling
       const smsResult = await Promise.race([
@@ -61,7 +61,7 @@ class AuthService {
         )
       ])
 
-      console.log('📱 SMS sending result:', smsResult)
+      
 
       return {
         success: true,
@@ -132,7 +132,7 @@ class AuthService {
         where: { phone: formattedPhone }
       })
       
-      console.log(`✅ Phone verification successful for ${formattedPhone}`)
+      
       
       // Find or create user in our database
       let user = await this.findUserByPhone(formattedPhone)
@@ -222,8 +222,6 @@ class AuthService {
         role: 'user'
       }
 
-      console.log(`👤 Creating new user: ${userData.name} (${phoneNumber})`)
-
       const user = await prisma.user.create({
         data: userData
       })
@@ -242,8 +240,6 @@ class AuthService {
     // Run in background without blocking the login response
     setImmediate(async () => {
       try {
-        console.log(`🔄 Starting background Poster sync for user ${user.id}`)
-
         // Find existing client in Poster
         let posterClient = await Promise.race([
           posterClientService.findClientByPhone(phoneNumber),
@@ -254,7 +250,6 @@ class AuthService {
 
         if (!posterClient && name) {
           // Create new client in Poster
-          console.log(`👤 Creating new Poster client for ${name}`)
           posterClient = await Promise.race([
             posterClientService.createClient({
               name: name,
@@ -271,11 +266,10 @@ class AuthService {
         // Update user with Poster client ID if found
         if (posterClient && !user.poster_client_id) {
           await this.updateUserPosterClientId(user.id, posterClient.client_id)
-          console.log(`✅ Background Poster sync completed for user ${user.id}`)
         } else if (posterClient) {
-          console.log(`ℹ️ User ${user.id} already has Poster client ID`)
+          // Client already has poster_client_id
         } else {
-          console.log(`ℹ️ No Poster client found/created for user ${user.id}`)
+          // No client found or created
         }
       } catch (error) {
         console.warn(`⚠️ Background Poster sync failed for user ${user.id}:`, error.message)
@@ -452,7 +446,7 @@ class AuthService {
         }
       })
 
-      console.log(`🔐 Password set for user: ${userId}`)
+      
       return { success: true, user: updatedUser }
     } catch (error) {
       console.error('❌ Error setting password:', error)
@@ -494,7 +488,7 @@ class AuthService {
       // Get user profile with bonus info
       const profile = await this.getUserProfile(user.id)
 
-      console.log(`🔐 Password login successful for user: ${user.id}`)
+      
 
       return {
         success: true,

@@ -1,70 +1,69 @@
 <template>
-  <div v-if="relatedProducts.length > 0" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h3 class="text-xl font-semibold text-gray-900 mb-4">Схожі товари</h3>
-    
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div
-        v-for="product in relatedProducts"
-        :key="product.id"
-        class="group cursor-pointer"
-        @click="navigateToProduct(product)"
-      >
-        <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
-          <!-- Product Image -->
-          <div class="aspect-square w-full overflow-hidden rounded-t-lg bg-gray-100">
-            <img
-              v-if="getImageUrl(product)"
-              :src="getImageUrl(product)"
-              :alt="product.display_name || product.name"
-              class="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity"
-              loading="lazy"
-              @error="handleImageError"
-            />
-            <div v-else class="h-full w-full flex items-center justify-center text-gray-400">
-              <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+  <div v-if="relatedProducts.length > 0">
+    <!-- Horizontal Scroll Container (Native App Style) -->
+    <div class="overflow-x-auto -mx-4 px-4 scrollbar-hide">
+      <div class="flex gap-4 pb-2">
+        <div
+          v-for="product in relatedProducts"
+          :key="product.id"
+          class="group cursor-pointer flex-shrink-0 w-[160px]"
+          @click="navigateToProduct(product)"
+        >
+          <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <!-- Product Image -->
+            <div class="aspect-square w-full overflow-hidden rounded-t-lg bg-gray-100">
+              <img
+                v-if="getImageUrl(product)"
+                :src="getImageUrl(product)"
+                :alt="product.display_name || product.name"
+                class="h-full w-full object-cover object-center group-hover:opacity-75 transition-opacity"
+                loading="lazy"
+                @error="handleImageError"
+              />
+              <div v-else class="h-full w-full flex items-center justify-center text-gray-400">
+                <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
             </div>
-          </div>
 
-          <!-- Product Info -->
-          <div class="p-4">
-            <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
-              {{ product.display_name || product.name }}
-            </h4>
-            
-            <!-- Price and Cart Icon -->
-            <div class="flex items-center justify-between">
-              <div class="flex flex-col">
-                <div class="flex items-center space-x-2">
+            <!-- Product Info -->
+            <div class="p-4">
+              <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+                {{ product.display_name || product.name }}
+              </h4>
+
+              <!-- Price and Cart Icon -->
+              <div class="flex items-center justify-between">
+                <div class="flex flex-col">
+                  <span class="text-sm font-bold text-primary-600">
+                    {{ formatPrice(product.price, product) }}₴
+                  </span>
                   <span v-if="product.original_price && product.original_price > product.price"
                         class="text-xs text-gray-500 line-through">
                     {{ formatPrice(product.original_price, product) }}₴
                   </span>
-                  <span class="text-sm font-bold text-primary-600">
-                    {{ formatPrice(product.price, product) }}₴
+                  <span class="text-xs text-gray-500 mt-0.5">
+                    за {{ getUnitLabel(product.unit, product) }}
                   </span>
                 </div>
-                <span class="text-xs text-gray-500 mt-0.5">
-                  за {{ getUnitLabel(product.unit, product) }}
-                </span>
-              </div>
 
-              <!-- Cart Icon Button -->
-              <button
-                ref="addToCartButtons"
-                @click.stop="handleAddToCart(product, $event)"
-                :disabled="!isProductAvailable(product)"
-                class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
-                :title="isProductAvailable(product) ? 'Додати до кошика' : 'Немає в наявності'"
-              >
-                <svg v-if="isProductAvailable(product)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
-                </svg>
-                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
+                <!-- Cart Icon Button -->
+                <button
+                  ref="addToCartButtons"
+                  @click.stop="handleAddToCart(product, $event)"
+                  :disabled="!isProductAvailable(product)"
+                  class="w-8 h-8 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0"
+                  :title="isProductAvailable(product) ? 'Додати до кошика' : 'Немає в наявності'"
+                >
+                  <svg v-if="isProductAvailable(product)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"/>
+                  </svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -74,10 +73,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductStore } from '@/stores/product'
 import { useCartStore } from '@/stores/cart'
+import { useBranchStore } from '@/stores/branch'
 import { backendApi } from '@/services/backendApi'
 import {
   isDraftBeverage,
@@ -104,18 +104,49 @@ const emit = defineEmits<{
 const router = useRouter()
 const productStore = useProductStore()
 const cartStore = useCartStore()
+const branchStore = useBranchStore()
 const addToCartButtons = ref<HTMLButtonElement[]>([])
+const isLoadingRelated = ref(false)
+
+// Load products for the current category if needed
+onMounted(async () => {
+  if (!props.currentProduct || !props.currentProduct.category_id) return
+
+  // Check if we already have products for this category
+  const hasProductsForCategory = productStore.products.some(
+    p => p.category_id === props.currentProduct.category_id
+  )
+
+  // If not, load them (this is a fallback in case ProductDetailView didn't load all products)
+  if (!hasProductsForCategory && !isLoadingRelated.value) {
+    isLoadingRelated.value = true
+    try {
+      const branchId = branchStore.selectedBranch?.id
+      
+      await productStore.fetchProducts(
+        props.currentProduct.category_id,
+        false, // force
+        branchId,
+        true // useDatabase
+      )
+    } catch (error) {
+      console.error('Failed to load related products:', error)
+    } finally {
+      isLoadingRelated.value = false
+    }
+  }
+})
 
 // Get related products from the same category
 const relatedProducts = computed(() => {
   if (!props.currentProduct) return []
-  
-  const sameCategory = productStore.products.filter(product => 
+
+  const sameCategory = productStore.products.filter(product =>
     product.id !== props.currentProduct.id && // Exclude current product
     product.category_id === props.currentProduct.category_id && // Same category
     isProductAvailable(product) // Only available products
   )
-  
+
   // Sort by popularity and take the specified number
   return sameCategory
     .sort((a, b) => (b.popularity_score || 0) - (a.popularity_score || 0))
@@ -219,16 +250,28 @@ const handleAddToCart = (product: Product, event: Event) => {
   addToCart(product)
 }
 
-const addToCart = (product: Product) => {
+const addToCart = async (product: Product) => {
   if (!isProductAvailable(product)) return
 
   try {
+    // Check if this is a bundle product
+    if (product.is_bundle) {
+      
+      await cartStore.addBundleProduct(product, 1)
+      
+      return
+    }
+
     // Check if this is a draft beverage that requires bottles (but not if it's already a bottled product)
-    if (isDraftBeverage(product) && !isBottledProduct(product)) {
+    const needsBottles = isDraftBeverage(product) && !isBottledProduct(product) && product.unit === 'л'
+
+    if (needsBottles) {
       // For draft beverages, use default 1L quantity and auto bottle selection
       const quantity = 1 // Default 1L
       const autoBottles = getDefaultBottleSelection(quantity)
-      const bottleCost = calculateBottleCost(autoBottles)
+
+      
+      
 
       // Create cart item for the beverage
       const cartItem: any = {
@@ -243,11 +286,30 @@ const addToCart = (product: Product) => {
         is_draft_beverage: true
       }
 
-      // For draft beverages, ONLY add auto bottles to the main product (no separate bottle items)
-      cartItem.bottles = autoBottles
-      cartItem.bottle_cost = bottleCost
-
+      // Add the beverage to cart
       cartStore.addItem(cartItem)
+
+      // Add bottles separately as individual cart items
+      const bottleCartItems = getBottleCartItems(autoBottles)
+      
+
+      for (const bottleItem of bottleCartItems) {
+        
+
+        const bottleCartItem: any = {
+          product_id: bottleItem.product_id || bottleItem.id,
+          poster_product_id: bottleItem.poster_product_id,
+          name: bottleItem.name,
+          price: bottleItem.price,
+          quantity: bottleItem.quantity,
+          image_url: '',
+          unit: 'шт',
+          is_bottle_product: true,
+          is_auto_added: true // Mark as auto-added so it can't be edited/deleted separately
+        }
+
+        cartStore.addItem(bottleCartItem)
+      }
     } else {
       // Regular product (non-draft) or bottled product
       cartStore.addItem({
@@ -273,5 +335,16 @@ const addToCart = (product: Product) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }
 </style>

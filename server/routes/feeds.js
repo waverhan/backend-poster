@@ -102,7 +102,7 @@ router.get('/google-shopping.xml', async (req, res) => {
 
     // Filter to only products with valid prices for Google Shopping
     const products = allProducts.filter(p => p.price && p.price > 0)
-    console.log(`📊 Google Shopping Feed: ${products.length}/${allProducts.length} products with valid prices`)
+    
 
     const frontendUrl = 'https://opillia.com.ua'
     const backendUrl = 'https://backend-api-production-b3a0.up.railway.app'
@@ -187,7 +187,7 @@ router.get('/facebook-catalog.xml', async (req, res) => {
 
     // Filter to only products with valid prices
     const products = allProducts.filter(p => p.price && p.price > 0)
-    console.log(`📊 Facebook Catalog Feed: ${products.length}/${allProducts.length} products with valid prices`)
+    
 
     const frontendUrl = 'https://opillia.com.ua'
     const backendUrl = 'https://backend-api-production-b3a0.up.railway.app'
@@ -250,7 +250,7 @@ router.get('/products.json', async (req, res) => {
 
     // Filter to only products with valid prices
     const products = allProducts.filter(p => p.price && p.price > 0)
-    console.log(`📊 JSON Product Feed: ${products.length}/${allProducts.length} products with valid prices`)
+    
 
     const frontendUrl = 'https://opillia.com.ua'
     const backendUrl = 'https://backend-api-production-b3a0.up.railway.app'
@@ -305,15 +305,15 @@ router.get('/google-shopping-frontend.xml', async (req, res) => {
       p.inventory && p.inventory.some(inv => inv.quantity > 0)
     )
 
-    console.log(`📊 Frontend Google Shopping Feed: ${productsWithInventory.length}/${allProducts.length} products with inventory > 0`)
+    
 
     // Debug: Log weight-based products
     const weightBasedProducts = productsWithInventory.filter(p => p.custom_quantity && p.custom_unit)
-    console.log(`⚖️ Weight-based products: ${weightBasedProducts.length}`)
+    
     if (weightBasedProducts.length > 0) {
-      console.log('Sample weight-based products:')
+      
       weightBasedProducts.slice(0, 3).forEach(p => {
-        console.log(`  - ${p.display_name}: price=${p.price}, custom_quantity=${p.custom_quantity}, custom_unit=${p.custom_unit}`)
+        
       })
     }
 

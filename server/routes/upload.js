@@ -69,7 +69,7 @@ router.post('/product-image', upload.single('image'), async (req, res) => {
         // Return MinIO path with minio:// prefix for proper handling
         imagePath = `minio://${minioPath}`
         storageType = 'minio'
-        console.log(`✅ Image uploaded to MinIO: ${imagePath}`)
+        
       }
     }
 
@@ -141,7 +141,6 @@ router.get('/minio-image/:filename', async (req, res) => {
     }
 
     // Fetch the image from MinIO
-    console.log(`📁 Fetching image from MinIO: ${filename}${w ? ` (width: ${w}px)` : ''}`)
     const response = await fetch(url)
 
     if (!response.ok) {

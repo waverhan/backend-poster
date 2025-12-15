@@ -1196,7 +1196,7 @@ const handleBulkEdit = async (bulkUpdates: any) => {
     
 
     // Refresh products and clear selection
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
     selectedProducts.value = []
     closeBulkEditModal()
 
@@ -1250,7 +1250,7 @@ const saveInlineEdit = async (productId: string) => {
     }
 
     await backendApi.updateProduct(productId, updates)
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     // Clear editing state
     delete editingProduct.value[productId]
@@ -1292,7 +1292,7 @@ const handleProductsOnlySync = async () => {
     
 
     // Refresh products to show updated data
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     syncStatus.value = {
       type: 'success',
@@ -1320,7 +1320,7 @@ const handlePriceSync = async () => {
 
 
     // Refresh products to show updated prices
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     syncStatus.value = {
       type: 'success',
@@ -1343,7 +1343,7 @@ const handleQuickSync = async () => {
 
   try {
     await productStore.quickInventorySync()
-    await productStore.fetchProducts(undefined, true) // Refresh products
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID) // Refresh products
     syncStatus.value = { type: 'success', message: 'Inventory sync completed successfully!' }
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Inventory sync failed. Please try again.' }
@@ -1372,7 +1372,7 @@ const handleAutoSyncImages = async () => {
     const result = await response.json()
 
     // Refresh products to show updated image URLs
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     syncStatus.value = {
       type: 'success',
@@ -1408,7 +1408,7 @@ const handleManualPriceUpdate = async () => {
     const result = await response.json()
 
     // Refresh products to show updated prices
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     syncStatus.value = {
       type: 'success',
@@ -1445,7 +1445,7 @@ const handleManualNewProductsImport = async () => {
     const result = await response.json()
 
     // Refresh products to show newly imported products
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
 
     syncStatus.value = {
       type: 'success',
@@ -1491,7 +1491,7 @@ const applyQuickMultiplier = async (multiplier: number) => {
     
 
     // Refresh products and clear selection
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
     selectedProducts.value = []
 
     syncStatus.value = {
@@ -1515,7 +1515,7 @@ const handleRefresh = async () => {
 
   try {
     await productStore.fetchCategories(true)
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
     await branchStore.fetchBranches(true)
     syncStatus.value = { type: 'success', message: 'Data refreshed successfully!' }
   } catch (error) {
@@ -1536,7 +1536,7 @@ const handleClearCache = async () => {
 
     // Force refresh all data from backend
     await productStore.fetchCategories(true)
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
     await branchStore.fetchBranches(true)
 
     syncStatus.value = { type: 'success', message: 'Cache cleared and data refreshed successfully!' }
@@ -1682,7 +1682,7 @@ const handleProductSave = async (productData: Partial<Product>) => {
     }
 
     // Refresh products
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
     closeProductModal()
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Failed to save product. Please try again.' }
@@ -1734,7 +1734,7 @@ const toggleProductStatus = async (product: Product) => {
     }
 
     // Refresh products
-    await productStore.fetchProducts(undefined, true)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Failed to update product status.' }
   }
@@ -1805,10 +1805,13 @@ const getStatusColor = (status: Order['status']): string => {
   return colors[status] || 'bg-gray-100 text-gray-800'
 }
 
+// Default branch ID (Bratislavska) for admin panel inventory display
+const DEFAULT_BRANCH_ID = 'cmclpsiy60003stlk9kpfn3yc'
+
 // Watch for toggle changes to refresh data
 watch(showInactiveProducts, async (newValue) => {
   if (authStore.canAccessAdmin) {
-    await productStore.fetchProducts(undefined, true, undefined, true, newValue)
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID, true, newValue)
   }
 })
 

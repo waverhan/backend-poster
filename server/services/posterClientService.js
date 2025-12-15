@@ -39,8 +39,6 @@ class PosterClientService {
     try {
       const url = `${this.baseUrl}/clients.getClients?token=${this.apiToken}&num=${limit}&offset=${offset}`
 
-      console.log(`📋 Fetching clients from Poster (limit: ${limit}, offset: ${offset})...`)
-
       const response = await this.fetchWithTimeout(url)
 
       if (!response.ok) {
@@ -54,7 +52,7 @@ class PosterClientService {
         throw new Error(`Poster API error: ${result.error}`)
       }
 
-      console.log(`✅ Retrieved ${result.response?.length || 0} clients from Poster`)
+      
       return result.response || []
     } catch (error) {
       console.error('❌ Error fetching clients from Poster:', error)
@@ -72,7 +70,7 @@ class PosterClientService {
       const cleanPhone = phoneNumber.replace(/^\+/, '')
       const formattedPhone = cleanPhone.startsWith('380') ? cleanPhone : `380${cleanPhone.substring(1)}`
 
-      console.log(`🔍 Searching for client with phone: ${formattedPhone}`)
+      
 
       // Limit search to prevent long delays - only search first 500 clients
       const maxClients = 500
@@ -102,7 +100,6 @@ class PosterClientService {
           })
 
           if (foundClient) {
-            console.log(`✅ Found client: ${foundClient.client_name} (ID: ${foundClient.client_id})`)
             return foundClient
           }
 
@@ -116,7 +113,6 @@ class PosterClientService {
         }
       }
 
-      console.log(`ℹ️ Client not found for phone: ${formattedPhone} (searched ${searchedCount} clients)`)
       return null
     } catch (error) {
       console.error('❌ Error finding client by phone:', error)
@@ -160,11 +156,7 @@ class PosterClientService {
         newClient.birthday = birthday
       }
 
-      console.log(`👤 Creating new client in Poster:`, {
-        name: newClient.client_name,
-        phone: newClient.phone,
-        email: newClient.email
-      })
+      
 
       const url = `${this.baseUrl}/clients.createClient?token=${this.apiToken}`
 
@@ -187,7 +179,7 @@ class PosterClientService {
         throw new Error(`Failed to create client: ${result.error}`)
       }
 
-      console.log(`✅ Client created successfully in Poster with ID: ${result.response}`)
+      
       
       // Return the created client data
       return {
@@ -207,7 +199,7 @@ class PosterClientService {
    */
   async getClientDetails(clientId) {
     try {
-      console.log(`📋 Getting client details for ID: ${clientId}`)
+      
       
       const url = `${this.baseUrl}/clients.getClient?token=${this.apiToken}&client_id=${clientId}`
       
@@ -219,7 +211,7 @@ class PosterClientService {
         throw new Error(`Failed to get client details: ${result.error}`)
       }
       
-      console.log(`✅ Retrieved client details for: ${result.response.client_name}`)
+      
       return result.response
     } catch (error) {
       console.error('❌ Error getting client details:', error)
@@ -234,7 +226,7 @@ class PosterClientService {
    */
   async updateClientBonus(clientId, bonusAmount) {
     try {
-      console.log(`💰 Updating bonus for client ${clientId}: ${bonusAmount} points`)
+      
       
       const url = `${this.baseUrl}/clients.updateClient?token=${this.apiToken}`
       
@@ -258,7 +250,7 @@ class PosterClientService {
         throw new Error(`Failed to update bonus: ${result.error}`)
       }
 
-      console.log(`✅ Client bonus updated successfully`)
+      
       return result.response
     } catch (error) {
       console.error('❌ Error updating client bonus:', error)
@@ -277,9 +269,7 @@ class PosterClientService {
       const client = await this.getClientDetails(clientId)
       const currentBonus = parseFloat(client.bonus) || 0
       const newBonus = currentBonus + bonusToAdd
-      
-      console.log(`💰 Adding ${bonusToAdd} bonus points to client ${clientId} (current: ${currentBonus}, new: ${newBonus})`)
-      
+
       return await this.updateClientBonus(clientId, newBonus)
     } catch (error) {
       console.error('❌ Error adding bonus points:', error)
@@ -303,9 +293,7 @@ class PosterClientService {
       }
       
       const newBonus = currentBonus - bonusToDeduct
-      
-      console.log(`💰 Deducting ${bonusToDeduct} bonus points from client ${clientId} (current: ${currentBonus}, new: ${newBonus})`)
-      
+
       return await this.updateClientBonus(clientId, newBonus)
     } catch (error) {
       console.error('❌ Error deducting bonus points:', error)
@@ -327,9 +315,9 @@ class PosterClientService {
    */
   async testConnection() {
     try {
-      console.log('🧪 Testing Poster API connection...')
+      
       const clients = await this.getClients(1, 0)
-      console.log('✅ Poster API connection successful')
+      
       return { success: true, clientCount: clients.length }
     } catch (error) {
       console.error('❌ Poster API connection test failed:', error)

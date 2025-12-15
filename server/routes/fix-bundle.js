@@ -7,7 +7,7 @@ const router = express.Router()
 // Body: { product_id: "xxx", bundle_items: [{ product_id: "xxx", quantity: 1 }, ...] }
 router.post('/', async (req, res) => {
   try {
-    console.log('🔧 Fixing gift box bundle product...')
+    
 
     const { product_id, bundle_items } = req.body
 
@@ -44,9 +44,6 @@ router.post('/', async (req, res) => {
       })
     }
 
-    console.log(`📦 Found product: ${product.display_name} (ID: ${product.id})`)
-    console.log(`📝 Setting ${bundle_items.length} bundle items`)
-
     // Update the product to be a bundle
     // Set poster_product_id to null (not empty string) to avoid unique constraint issues
     // since poster_product_id has a unique constraint and empty string counts as a value
@@ -59,9 +56,9 @@ router.post('/', async (req, res) => {
       }
     })
 
-    console.log(`✅ Product updated successfully`)
-    console.log(`   is_bundle: ${updated.is_bundle}`)
-    console.log(`   bundle_items: ${updated.bundle_items}`)
+    
+    
+    
 
     res.json({
       success: true,

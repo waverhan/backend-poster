@@ -214,17 +214,17 @@ const initializeServices = () => {
   // Initialize services based on cookie settings
   if (cookieSettings.value.analytics) {
     // Initialize analytics (Google Analytics, etc.)
-    console.log('Analytics cookies enabled')
+    
   }
   
   if (cookieSettings.value.marketing) {
     // Initialize marketing tools
-    console.log('Marketing cookies enabled')
+    
   }
   
   if (cookieSettings.value.functional) {
     // Initialize functional features
-    console.log('Functional cookies enabled')
+    
   }
 }
 

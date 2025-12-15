@@ -48,6 +48,7 @@ export const useSiteConfigStore = defineStore('siteConfig', () => {
     timezone: 'Europe/Kiev',
     language: 'uk',
     min_order_amount: 300,
+    default_shop_branch_id: 'cmclpsiy60003stlk9kpfn3yc', // Bratislavska branch
 
     // Delivery Pricing
     delivery_base_fee: 99, // Base delivery fee

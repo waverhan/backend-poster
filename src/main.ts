@@ -2,23 +2,25 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { Capacitor } from '@capacitor/core'
 import { StatusBar, Style } from '@capacitor/status-bar'
-import { registerSW } from 'virtual:pwa-register'
 
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import { saleService } from './services/saleService'
+import { initWebVitals } from './utils/webVitals'
 import './style.css'
 
-// Register service worker for PWA
-const updateSW = registerSW({
-  onNeedRefresh() {
-    console.log('New content available, please refresh.')
-  },
-  onOfflineReady() {
-    console.log('App ready to work offline.')
-  },
-})
+// Service worker disabled - offline mode not needed
+
+// Initialize Web Vitals monitoring
+if (typeof window !== 'undefined') {
+  // Use requestIdleCallback to avoid blocking initial render
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(() => initWebVitals(), { timeout: 2000 })
+  } else {
+    setTimeout(() => initWebVitals(), 2000)
+  }
+}
 
 // Initialize Capacitor plugins
 const initializeCapacitor = async () => {

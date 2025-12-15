@@ -7,12 +7,20 @@ const router = express.Router()
 router.get('/', async (req, res) => {
   try {
     const { categoryId, branchId, includeInactive } = req.query
+
+    // branchId is now required to prevent incorrect inventory display
+    if (!branchId) {
+      return res.status(400).json({
+        error: 'branchId is required. Please specify a branch to get accurate inventory data.'
+      })
+    }
+
     const includeInactiveFlag = includeInactive === 'true'
     const products = await getProducts(categoryId, branchId, includeInactiveFlag)
     res.json(products)
   } catch (error) {
     console.error('Error fetching products:', error)
-    res.status(500).json({ error: 'Failed to fetch products' })
+    res.status(500).json({ error: error.message || 'Failed to fetch products' })
   }
 })
 
@@ -27,16 +35,78 @@ router.post('/', async (req, res) => {
   }
 })
 
+// GET /api/products/by-slug/:slug - Get product by slug
+// MUST be before /:id route to avoid route matching issues
+router.get('/by-slug/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params
+    const { branchId } = req.query
+
+    const product = await prisma.product.findUnique({
+      where: { slug }
+    })
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    // If branchId is provided, include inventory data
+    if (branchId) {
+      const inventory = await prisma.productInventory.findUnique({
+        where: {
+          product_id_branch_id: {
+            product_id: product.id,
+            branch_id: branchId
+          }
+        }
+      })
+
+      return res.json({
+        ...product,
+        quantity: inventory?.quantity || 0,
+        unit: inventory?.unit || 'p',
+        available: (inventory?.quantity || 0) > 0
+      })
+    }
+
+    res.json(product)
+  } catch (error) {
+    console.error(`❌ Error fetching product by slug ${req.params.slug}:`, error)
+    res.status(500).json({ error: 'Failed to fetch product' })
+  }
+})
+
+// GET /api/products/:id - Get product by ID
+// MUST be after /by-slug route to avoid route matching issues
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    res.json(product)
+  } catch (error) {
+    console.error(`❌ Error fetching product by ID ${req.params.id}:`, error)
+    res.status(500).json({ error: 'Failed to fetch product' })
+  }
+})
+
 // POST /api/products/generate-slugs - Generate missing product slugs
 // MUST be before /:id route to avoid route matching issues
 router.post('/generate-slugs', async (req, res) => {
   try {
-    console.log('🔄 Generating missing product slugs...')
+    
 
     // Get all products
     const products = await prisma.product.findMany()
 
-    console.log(`📝 Found ${products.length} total products`)
+    
 
     let updated = 0
     for (const product of products) {
@@ -46,7 +116,7 @@ router.post('/generate-slugs', async (req, res) => {
           where: { id: product.id },
           data: { slug }
         })
-        console.log(`✅ Generated slug for "${product.display_name}": ${slug}`)
+        
         updated++
       }
     }
@@ -66,7 +136,7 @@ router.post('/generate-slugs', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    
+
 
     const {
       poster_product_id,
@@ -99,9 +169,6 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Display name is required' })
     }
 
-    // Generate slug from display_name
-    const slug = generateSlug(display_name)
-
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -109,7 +176,6 @@ router.put('/:id', async (req, res) => {
         category_id,
         name,
         display_name,
-        slug: slug || null,
         subtitle,
         description,
         price,
@@ -332,6 +398,98 @@ router.get('/:id/availability/:branchId', async (req, res) => {
   }
 })
 
+// PUT /api/products/:id/slug - Update product slug
+router.put('/:id/slug', async (req, res) => {
+  try {
+    const { id } = req.params
+    const { slug } = req.body
+
+    if (!slug || slug.trim() === '') {
+      return res.status(400).json({ error: 'Slug is required' })
+    }
+
+    // Validate slug format (should be URL-friendly)
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    if (!slugRegex.test(slug)) {
+      return res.status(400).json({ error: 'Slug must be URL-friendly (lowercase letters, numbers, and hyphens only)' })
+    }
+
+    // Check if product exists
+    const product = await prisma.product.findUnique({
+      where: { id }
+    })
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    // Check if slug is already in use by another product
+    const existingSlug = await prisma.product.findFirst({
+      where: {
+        slug: slug,
+        id: { not: id }
+      }
+    })
+
+    if (existingSlug) {
+      return res.status(400).json({ error: 'This slug is already in use by another product' })
+    }
+
+    // Update the slug
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data: { slug },
+      include: {
+        category: true,
+        inventory: true
+      }
+    })
+
+    const inventory = updatedProduct.inventory[0]
+
+    const formattedProduct = {
+      id: updatedProduct.id,
+      poster_product_id: updatedProduct.poster_product_id,
+      category_id: updatedProduct.category_id,
+      name: updatedProduct.name,
+      display_name: updatedProduct.display_name,
+      slug: updatedProduct.slug,
+      subtitle: updatedProduct.subtitle,
+      description: updatedProduct.description,
+      price: updatedProduct.price,
+      original_price: updatedProduct.original_price,
+      image_url: updatedProduct.image_url,
+      display_image_url: updatedProduct.display_image_url,
+      is_active: updatedProduct.is_active,
+      requires_bottles: updatedProduct.requires_bottles || false,
+      attributes: updatedProduct.attributes ? JSON.parse(updatedProduct.attributes) : [],
+      custom_quantity: updatedProduct.custom_quantity,
+      custom_unit: updatedProduct.custom_unit,
+      quantity_step: updatedProduct.quantity_step,
+      min_quantity: updatedProduct.min_quantity,
+      max_quantity: updatedProduct.max_quantity,
+      is_new: updatedProduct.is_new || false,
+      new_until: updatedProduct.new_until ? updatedProduct.new_until.toISOString() : null,
+      sale_expires_at: updatedProduct.sale_expires_at ? updatedProduct.sale_expires_at.toISOString() : null,
+      category: updatedProduct.category ? {
+        id: updatedProduct.category.id,
+        name: updatedProduct.category.name,
+        display_name: updatedProduct.category.display_name
+      } : null,
+      created_at: updatedProduct.created_at.toISOString(),
+      updated_at: updatedProduct.updated_at.toISOString()
+    }
+
+    res.json(formattedProduct)
+  } catch (error) {
+    console.error(`❌ Error updating product slug ${req.params.id}:`, error)
+    res.status(500).json({
+      error: 'Failed to update product slug',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
+  }
+})
+
 // POST /api/products/bulk-edit - Bulk edit multiple products
 router.post('/bulk-edit', async (req, res) => {
   try {
@@ -452,7 +610,7 @@ router.post('/bulk-edit', async (req, res) => {
                 // Weight-based products in Poster are stored as price per 100g, we display as price per kg
                 if (isWeightBased) {
                   newPrice = newPrice * 10
-                  console.log(`📊 Weight-based product: Applied additional 10x multiplier for Poster format`)
+                  
                 }
                 break
               default:
@@ -464,8 +622,6 @@ router.post('/bulk-edit', async (req, res) => {
 
             updateData.price = newPrice
             updateData.original_price = newPrice
-
-            console.log(`💰 Price adjustment: ${currentProduct.price} → ${newPrice} (type: ${type}, weight-based: ${isWeightBased})`)
           }
         }
 
@@ -541,7 +697,7 @@ router.post('/bulk-edit', async (req, res) => {
 // POST /api/products/fix-weight-quantity-steps - Fix quantity_step for weight-based products
 router.post('/fix-weight-quantity-steps', async (req, res) => {
   try {
-    console.log('🔧 Fixing quantity_step for weight-based products...')
+    
 
     // Get all weight-based products (products with custom_quantity)
     const weightBasedProducts = await prisma.product.findMany({
@@ -568,7 +724,7 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
       }
     })
 
-    console.log(`📊 Found ${weightBasedProducts.length} weight-based products`)
+    
 
     let updatedCount = 0
     const results = []
@@ -576,7 +732,7 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
     for (const product of weightBasedProducts) {
       // For weight-based products, quantity_step should always be 1 (representing 1 piece)
       if (product.quantity_step !== 1) {
-        console.log(`🔄 Updating ${product.name}: quantity_step ${product.quantity_step} → 1`)
+        
 
         await prisma.product.update({
           where: { id: product.id },
@@ -592,7 +748,6 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
 
         updatedCount++
       } else {
-        console.log(`✅ ${product.name}: quantity_step already correct (1)`)
         results.push({
           name: product.name,
           quantity_step: 1,
@@ -631,7 +786,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
       return res.status(400).json({ error: 'Updates array is required' })
     }
 
-    console.log(`🔄 Processing ${updates.length} product attribute updates...`)
+    
 
     const results = []
 
@@ -655,7 +810,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
           }
         })
 
-        console.log(`🔍 Found ${products.length} products matching "${searchTerm}"`)
+        
 
         for (const product of products) {
           if (removeAttributes) {
@@ -672,7 +827,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
               success: true
             })
 
-            console.log(`❌ Removed attributes from: ${product.display_name}`)
+            
           } else if (attributes && Array.isArray(attributes)) {
             // Add/update attributes
             await prisma.product.update({
@@ -688,7 +843,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
               success: true
             })
 
-            console.log(`✅ Updated attributes for: ${product.display_name}`)
+            
           }
         }
 

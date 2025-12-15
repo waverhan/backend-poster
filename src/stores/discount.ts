@@ -46,7 +46,7 @@ export const useDiscountStore = defineStore('discount', () => {
   const getEnabledDiscounts = async () => {
     try {
       const { data } = await backendApi.get<Discount[]>('/discounts/enabled')
-      console.log('✅ Enabled discounts loaded:', data)
+      
       discounts.value = data
       return data
     } catch (err: any) {
@@ -58,14 +58,14 @@ export const useDiscountStore = defineStore('discount', () => {
   // Get applicable discounts for current order
   const getApplicableDiscounts = async (customerId: string | null, userId: string | null, subtotal: number, items: any[]) => {
     try {
-      console.log('📊 Requesting applicable discounts:', { customerId, userId, subtotal, itemsCount: items.length })
+      
       const { data } = await backendApi.post<Discount[]>('/discounts/applicable', {
         customerId,
         userId,
         subtotal,
         items
       })
-      console.log('✅ Applicable discounts received:', data)
+      
       applicableDiscounts.value = data
       return data
     } catch (err: any) {

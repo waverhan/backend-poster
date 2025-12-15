@@ -45,12 +45,10 @@ class BackendApiService {
   // Categories
   async getCategories(includeInactive = false): Promise<Category[]> {
     const params = includeInactive ? '?includeInactive=true' : ''
-    console.log(`🔗 Fetching categories from: ${API_BASE_URL}/categories${params}`)
+    
 
     try {
       const categories = await this.request<Category[]>(`/categories${params}`)
-      console.log(`✅ Backend API returned ${Array.isArray(categories) ? categories.length : 'non-array'} categories`)
-      console.log('📋 Response type:', typeof categories, 'Is array:', Array.isArray(categories))
 
       if (!Array.isArray(categories)) {
         console.error('❌ Categories response is not an array:', categories)
@@ -109,6 +107,18 @@ class BackendApiService {
     })
     
     return newProduct
+  }
+
+  async getProduct(id: string, branchId?: string): Promise<Product> {
+    const params = branchId ? `?branchId=${branchId}` : ''
+    const product = await this.request<Product>(`/products/${id}${params}`)
+    return product
+  }
+
+  async getProductBySlug(slug: string, branchId?: string): Promise<Product> {
+    const params = branchId ? `?branchId=${branchId}` : ''
+    const product = await this.request<Product>(`/products/by-slug/${slug}${params}`)
+    return product
   }
 
   async updateProduct(id: string, product: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'quantity' | 'unit' | 'available'>>): Promise<Product> {

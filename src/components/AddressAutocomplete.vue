@@ -226,9 +226,9 @@ const searchAddresses = async () => {
     return
   }
 
-  console.log('🔍 [AddressAutocomplete] Starting search for:', inputValue.value)
-  console.log('🔍 [AddressAutocomplete] Provider:', props.provider)
-  console.log('🔍 [AddressAutocomplete] Limit:', props.limit)
+  
+  
+  
 
   isLoading.value = true
   error.value = ''
@@ -239,8 +239,8 @@ const searchAddresses = async () => {
       limit: props.limit
     })
 
-    console.log('🔍 [AddressAutocomplete] Results received:', results.length)
-    console.log('🔍 [AddressAutocomplete] Results:', results)
+    
+    
 
     suggestions.value = results
     showSuggestions.value = results.length > 0

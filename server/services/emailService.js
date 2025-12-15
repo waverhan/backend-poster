@@ -14,18 +14,17 @@ class EmailService {
 
   initializeTransporter() {
     try {
-      console.log('📧 Email Service Initialization:')
+      
 
       // Check if SendGrid API key is available (preferred method for cloud)
       if (process.env.SENDGRID_API_KEY) {
-        console.log('📧 Using SendGrid API (recommended for cloud infrastructure)')
         this.transporter = nodemailer.createTransport(sgTransport({
           auth: {
             api_key: process.env.SENDGRID_API_KEY
           }
         }))
         this.isConfigured = true
-        console.log('✅ Email service configured with SendGrid')
+        
 
         // Test the connection
         setTimeout(() => {
@@ -33,13 +32,12 @@ class EmailService {
             if (error) {
               console.error('❌ SendGrid verification failed:', error.message)
             } else {
-              console.log('✅ SendGrid connection verified successfully')
+              
             }
           })
         }, 1000)
       } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
         // Fallback to SMTP if SendGrid is not configured
-        console.log('📧 Using SMTP (SendGrid not configured)')
 
         // Try port 465 (SSL) first as it's more reliable for cloud infrastructure
         const emailConfig = {
@@ -64,14 +62,13 @@ class EmailService {
           }
         }
 
-        console.log('📧 SMTP Host:', emailConfig.host)
-        console.log('📧 SMTP Port:', emailConfig.port)
-        console.log('📧 SMTP User:', emailConfig.auth.user ? '✓ Set' : '✗ Not set')
-        console.log('📧 SMTP Pass:', emailConfig.auth.pass ? '✓ Set' : '✗ Not set')
+        
+        
+        
+        
 
         this.transporter = nodemailer.createTransport(emailConfig)
         this.isConfigured = true
-        console.log('✅ Email service configured with SMTP (Port 465 - SSL)')
 
         // Test the connection asynchronously
         setTimeout(() => {
@@ -79,12 +76,11 @@ class EmailService {
             if (error) {
               console.error('❌ SMTP connection verification failed on port 465:', error.message)
               console.error('❌ Error code:', error.code)
-              console.log('📧 Attempting fallback to port 587 (STARTTLS)...')
 
               // Try fallback configuration
               this.tryFallbackConfig(587)
             } else {
-              console.log('✅ SMTP connection verified successfully on port 465')
+              
             }
           })
         }, 1000)
@@ -116,14 +112,14 @@ class EmailService {
         socketTimeout: 15000
       }
 
-      console.log(`📧 Trying fallback configuration on port ${port}...`)
+      
       this.transporter = nodemailer.createTransport(fallbackConfig)
 
       this.transporter.verify((error, success) => {
         if (error) {
           console.error(`❌ Fallback SMTP connection failed on port ${port}:`, error.message)
         } else {
-          console.log(`✅ Fallback SMTP connection verified successfully on port ${port}`)
+          
         }
       })
     } catch (error) {
@@ -138,10 +134,10 @@ class EmailService {
     }
 
     try {
-      console.log('📧 Preparing order confirmation email...')
-      console.log('📧 Order ID:', order.id)
-      console.log('📧 Customer email:', order.customer?.email)
-      console.log('📧 Customer name:', order.customer?.name)
+      
+      
+      
+      
 
       if (!order.customer?.email) {
         console.warn('⚠️ No customer email found in order')
@@ -159,16 +155,16 @@ class EmailService {
         html: emailContent.html
       }
 
-      console.log('📧 Sending email to:', customerMailOptions.to)
-      console.log('📧 From:', customerMailOptions.from)
-      console.log('📧 Subject:', customerMailOptions.subject)
-      console.log('📧 Email body length:', customerMailOptions.html?.length || 0, 'characters')
-      console.log('📧 Transporter ready:', this.transporter ? 'Yes' : 'No')
+      
+      
+      
+      
+      
 
       const customerResult = await this.transporter.sendMail(customerMailOptions)
-      console.log('✅ Customer email sent successfully')
-      console.log('📧 Message ID:', customerResult.messageId)
-      console.log('📧 Response:', customerResult.response)
+      
+      
+      
 
       // Also send notification to company email
       await this.sendOrderNotificationToCompany(order)
@@ -500,12 +496,12 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
       const emailAddresses = this.getOrderNotificationEmails()
 
       if (emailAddresses.length === 0) {
-        console.log('⚠️  No email addresses configured for order notifications')
+        
         return { success: false, error: 'No email addresses configured' }
       }
 
-      console.log('📧 Preparing company order notification...')
-      console.log('📧 Sending to:', emailAddresses)
+      
+      
 
       const emailContent = this.generateCompanyOrderNotification(order)
 
@@ -517,10 +513,7 @@ ${newStatus === 'DELIVERED' || newStatus === 'COMPLETED' ?
         html: emailContent.html
       }
 
-      console.log('📧 Sending company notification...')
       const result = await this.transporter.sendMail(mailOptions)
-      console.log(`✅ Company notification sent successfully to: ${emailAddresses.join(', ')}`)
-      console.log('📧 Message ID:', result.messageId)
 
       return { success: true, messageId: result.messageId }
     } catch (error) {

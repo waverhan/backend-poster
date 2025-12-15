@@ -181,6 +181,9 @@ export interface CartItem {
   is_bottle_product?: boolean
   // For inventory validation
   original_quantity?: number // Original quantity before adjustment
+  // Bundle product support
+  is_bundle?: boolean // True if this is a bundle product
+  bundle_items?: CartItem[] // Sub-items included in the bundle
 }
 
 export interface Cart {
@@ -457,6 +460,7 @@ export interface SiteConfig {
   timezone: string
   language: string
   min_order_amount: number
+  default_shop_branch_id?: string // Default branch for shop inventory display
 
   // Delivery Pricing
   delivery_base_fee: number // Base delivery fee (e.g., 99 UAH)

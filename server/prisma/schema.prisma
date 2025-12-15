@@ -311,6 +311,7 @@ model SiteConfig {
   timezone                  String  @default("Europe/Kiev")
   language                  String  @default("uk")
   min_order_amount          Float   @default(300)
+  default_shop_branch_id    String? // Default branch for shop inventory display
 
   // Delivery Pricing
   delivery_base_fee         Float   @default(99)

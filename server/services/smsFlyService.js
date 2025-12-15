@@ -46,7 +46,7 @@ class SmsFlyService {
         }
       }
 
-      console.log('📱 Getting SMS-Fly sources...')
+      
 
       const response = await this.fetchWithTimeout(this.apiUrl, {
         method: 'POST',
@@ -63,7 +63,7 @@ class SmsFlyService {
       const result = await response.json()
 
       if (result.success === 1) {
-        console.log('✅ SMS-Fly sources retrieved:', result.data)
+        
         return result.data
       } else {
         console.error('❌ Failed to get SMS-Fly sources:', result)
@@ -104,9 +104,6 @@ class SmsFlyService {
         }
       }
 
-      console.log(`📱 Sending SMS verification to ${cleanPhone}...`)
-      console.log('📱 Request data:', JSON.stringify(requestData, null, 2))
-
       const response = await this.fetchWithTimeout(this.apiUrl, {
         method: 'POST',
         headers: {
@@ -120,10 +117,8 @@ class SmsFlyService {
       }
 
       const result = await response.json()
-      console.log('📱 SMS-Fly response:', JSON.stringify(result, null, 2))
 
       if (result.success === 1) {
-        console.log(`✅ SMS sent successfully to ${cleanPhone}`)
         return {
           success: true,
           messageId: result.data?.messageID, // Note: API returns messageID, not messageId
@@ -189,8 +184,6 @@ class SmsFlyService {
         }
       }
 
-      console.log(`📱 Sending verification (Viber+SMS) to ${cleanPhone}...`)
-      
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
@@ -202,7 +195,7 @@ class SmsFlyService {
       const result = await response.json()
       
       if (result.success === 1) {
-        console.log(`✅ Message sent successfully to ${cleanPhone}`)
+        
         return {
           success: true,
           messageId: result.data?.messageId,
@@ -279,20 +272,15 @@ class SmsFlyService {
    */
   async testConnection() {
     try {
-      console.log('🧪 Testing SMS-Fly connection...')
-      console.log(`🔑 Using API key: ${this.apiKey.substring(0, 8)}...`)
-
       const sources = await this.getSources()
 
       if (sources.sms && sources.sms.includes(this.senderName)) {
-        console.log(`✅ SMS-Fly connection successful. Sender "${this.senderName}" is available.`)
         return { success: true, senderAvailable: true, sources }
       } else {
-        console.log(`⚠️ SMS-Fly connected but sender "${this.senderName}" not found in available sources:`, sources.sms)
         // Try to use the first available SMS source if our preferred one is not available
         if (sources.sms && sources.sms.length > 0) {
           const availableSender = sources.sms[0]
-          console.log(`📝 Using available sender: "${availableSender}"`)
+          
           this.senderName = availableSender
           return { success: true, senderAvailable: true, sources, senderChanged: true, newSender: availableSender }
         }

@@ -15,7 +15,7 @@ router.get('/test-sms', async (req, res) => {
       return res.status(403).json({ error: 'Test endpoint not available in production' })
     }
 
-    console.log('🧪 Testing SMS-Fly connection...')
+    
     const testResult = await smsFlyService.testConnection()
 
     res.json({
@@ -245,7 +245,7 @@ router.post('/logout', authenticateToken, (req, res) => {
 // GET /api/auth/test-services - Test SMS and Poster services (development only)
 router.get('/test-services', async (req, res) => {
   try {
-    console.log('🧪 Testing authentication services...')
+    
     
     // Test SMS-Fly connection
     const smsTest = await smsFlyService.testConnection()

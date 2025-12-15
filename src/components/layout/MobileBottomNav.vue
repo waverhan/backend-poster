@@ -1,169 +1,69 @@
 <template>
   <div>
-    <!-- Mobile Bottom Navigation Bar -->
+    <!-- Mobile Bottom Navigation Bar - Native App Style -->
     <div class="mobile-bottom-nav">
       <!-- Main Navigation Bar -->
       <nav class="mobile-nav-bar">
-        <!-- Menu Button -->
-        <button
-          @click="toggleMenu"
-          class="nav-item"
-          :class="{ active: showMenu }"
-        >
-          <div class="nav-icon">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </div>
-          <span class="nav-label">{{ $t('nav.menu') }}</span>
-        </button>
-
         <!-- Shop Button -->
-        <router-link to="/shop" class="nav-item">
+        <router-link to="/shop" class="nav-item" active-class="nav-item-active">
           <div class="nav-icon">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            <!-- Simple grid icon (4 squares) -->
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/>
             </svg>
           </div>
-          <span class="nav-label">{{ $t('nav.shop') }}</span>
+          <span class="nav-label">Товари</span>
         </router-link>
-
-        <!-- Cart Button -->
-        <router-link to="/cart" class="nav-item">
-          <div class="nav-icon">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-            </svg>
-            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount }}</span>
-          </div>
-          <span class="nav-label">{{ $t('nav.cart') }}</span>
-        </router-link>
-
-        <!-- Account Button -->
-        <button @click="toggleAccount" class="nav-item" :class="{ active: showAccount }">
-          <div class="nav-icon">
-            <div v-if="isAuthenticated" class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
-              {{ userInitials }}
-            </div>
-            <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-          </div>
-          <span class="nav-label">{{ $t('nav.account', 'Аккаунт') }}</span>
-        </button>
 
         <!-- Search Button -->
-        <button @click="openSearch" class="nav-item">
+        <button @click.stop="openSearch" class="nav-item" :class="{ 'nav-item-active': showSearch }">
           <div class="nav-icon">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <!-- Simple search icon -->
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
             </svg>
           </div>
-          <span class="nav-label">{{ $t('nav.search', 'Пошук') }}</span>
+          <span class="nav-label">Пошук</span>
         </button>
+
+        <!-- More Button (Account + Footer Info) -->
+        <button @click="toggleMore" class="nav-item" :class="{ 'nav-item-active': showMore }">
+          <div class="nav-icon">
+            <div v-if="isAuthenticated" class="w-7 h-7 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
+              {{ userInitials }}
+            </div>
+            <!-- Simple menu icon (3 horizontal lines) -->
+            <svg v-else class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+            </svg>
+          </div>
+          <span class="nav-label">Більше</span>
+        </button>
+
+        <!-- Cart Button -->
+        <router-link to="/cart" class="nav-item nav-item-cart" active-class="nav-item-active">
+          <div class="nav-icon">
+            <!-- Simple shopping cart icon -->
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+            </svg>
+            <span v-if="cartCount > 0" class="cart-badge">{{ cartCount > 99 ? '99+' : cartCount }}</span>
+          </div>
+          <span class="nav-label">Кошик</span>
+        </router-link>
       </nav>
     </div>
 
-    <!-- Search Modal - Positioned outside nav -->
+    <!-- Search Modal -->
+    <SearchModal v-model="showSearch" />
+
+    <!-- More Menu (Account + Footer Info) - Positioned outside nav -->
     <transition name="slide-up">
-      <div v-if="showSearch" class="mobile-menu-overlay" @click="closeSearch">
-        <div class="mobile-search-modal" @click.stop>
-          <div class="search-header">
-            <h3>🔍 Пошук товарів</h3>
-            <button @click="closeSearch" class="close-btn">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="search-content p-4">
-            <div class="relative mb-4">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                ref="searchInput"
-                v-model="searchQuery"
-                @input="performSearch"
-                type="text"
-                placeholder="Введіть назву товару..."
-                class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                autofocus
-              />
-              <button
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center"
-              >
-                <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Search Results -->
-            <div v-if="searchQuery.trim()" class="search-results">
-              <div v-if="searchResults.length > 0" class="mb-2 text-sm text-gray-600">
-                Знайдено {{ searchResults.length }} товарів
-              </div>
-              <div v-if="searchResults.length === 0 && searchQuery.trim()" class="text-center py-8 text-gray-500">
-                <div class="text-4xl mb-2">🔍</div>
-                <div>Товарів не знайдено</div>
-                <div class="text-sm">Спробуйте інший запит</div>
-              </div>
-              <div v-else class="space-y-2 max-h-60 overflow-y-auto">
-                <div
-                  v-for="product in searchResults.slice(0, 10)"
-                  :key="product.id"
-                  @click="goToProduct(product)"
-                  class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
-                >
-                  <img
-                    :src="getProductImageUrl(product)"
-                    :alt="product.name"
-                    class="w-12 h-12 object-cover rounded-lg"
-                    @error="(e) => { e.target.src = '/images/placeholder.jpg' }"
-                  />
-                  <div class="flex-1 min-w-0">
-                    <div class="font-medium text-gray-900 truncate">{{ product.name }}</div>
-                    <div class="text-sm text-gray-500">{{ product.price }}₴</div>
-                  </div>
-                  <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <!-- Popular Searches or Categories -->
-            <div v-else class="popular-searches">
-              <h4 class="font-medium text-gray-900 mb-3">Популярні категорії</h4>
-              <div class="grid grid-cols-2 gap-2">
-                <button
-                  v-for="category in popularCategories"
-                  :key="category.id"
-                  @click="searchCategory(category.name)"
-                  class="p-3 bg-gray-50 rounded-lg text-left hover:bg-gray-100 transition-colors"
-                >
-                  <div class="font-medium text-gray-900">{{ category.display_name }}</div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Account Menu - Positioned outside nav -->
-    <transition name="slide-up">
-      <div v-if="showAccount" class="mobile-menu-overlay" @click="closeAccount">
+      <div v-if="showMore" class="mobile-menu-overlay" @click="closeMore">
         <div class="mobile-menu" @click.stop>
           <div class="menu-header">
-            <h3>{{ $t('nav.account', 'Аккаунт') }}</h3>
-            <button @click="closeAccount" class="close-btn">
+            <h3>{{ $t('nav.more', 'Більше') }}</h3>
+            <button @click="closeMore" class="close-btn">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -171,7 +71,8 @@
           </div>
 
           <div class="flex-1 overflow-y-auto">
-            <div v-if="isAuthenticated" class="space-y-2 p-4">
+            <!-- Account Section -->
+            <div v-if="isAuthenticated" class="space-y-2 p-4 border-b border-gray-200 dark:border-gray-700">
               <!-- User Info -->
               <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4">
                 <p class="font-medium text-gray-900 dark:text-gray-100">{{ userName }}</p>
@@ -179,7 +80,7 @@
               </div>
 
               <!-- Profile Link -->
-              <router-link to="/profile" @click="closeAccount" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <router-link to="/profile" @click="closeMore" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <div class="flex items-center space-x-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -189,7 +90,7 @@
               </router-link>
 
               <!-- Orders Link -->
-              <router-link to="/orders" @click="closeAccount" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <router-link to="/orders" @click="closeMore" class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <div class="flex items-center space-x-2">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -209,11 +110,58 @@
               </button>
             </div>
 
-            <div v-else class="space-y-2 p-4">
+            <div v-else class="space-y-2 p-4 border-b border-gray-200 dark:border-gray-700">
               <!-- Login Button -->
               <button @click="handleLogin" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 {{ $t('auth.login', 'Вхід') }}
               </button>
+            </div>
+
+            <!-- Footer Links Section -->
+            <div class="p-4 space-y-4">
+              <!-- Company Info -->
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Компанія</h4>
+                <div class="space-y-2">
+                  <router-link to="/about" @click="closeMore" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    Про нас
+                  </router-link>
+                  <router-link to="/branches" @click="closeMore" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    Наші магазини
+                  </router-link>
+                  <router-link to="/contact" @click="closeMore" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    Зв'язатися з нами
+                  </router-link>
+                  <a href="https://blog.opillia.com.ua" target="_blank" rel="noopener noreferrer" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    📝 Блог
+                  </a>
+                  <router-link to="/privacy-policy" @click="closeMore" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    🔒 Політика приватності
+                  </router-link>
+                </div>
+              </div>
+
+              <!-- Contact Info -->
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">Контакти</h4>
+                <div class="space-y-2">
+                  <a href="tel:+380973244668" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    📞 +38 (097) 324 46 68
+                  </a>
+                  <a href="viber://chat?number=%2B380973244668" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900/20 rounded-lg transition-colors">
+                    💜 Viber
+                  </a>
+                  <a href="mailto:info@opillia.com.ua" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    ✉️ info@opillia.com.ua
+                  </a>
+                </div>
+              </div>
+
+              <!-- Working Hours -->
+              <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">🕐 Графік роботи</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Щодня: 10:00 - 22:00</p>
+              </div>
             </div>
           </div>
         </div>
@@ -259,11 +207,6 @@
                 <div class="menu-icon">📞</div>
                 <span>{{ $t('menu.contactUs') }}</span>
               </router-link>
-
-              <button @click="openAIChat" class="menu-item">
-                <div class="menu-icon">🤖</div>
-                <span>{{ $t('menu.aiAssistant') }}</span>
-              </button>
             </div>
 
             <!-- Contact Info -->
@@ -283,25 +226,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
-import { useProductStore } from '@/stores/product'
 import { useAuthStore } from '@/stores/auth'
-import type { Product } from '@/types'
+import SearchModal from '@/components/search/SearchModal.vue'
 
 const router = useRouter()
 const cartStore = useCartStore()
-const productStore = useProductStore()
 const authStore = useAuthStore()
 
 // State
 const showMenu = ref(false)
 const showSearch = ref(false)
-const showAccount = ref(false)
-const searchQuery = ref('')
-const searchResults = ref<Product[]>([])
-const searchInput = ref<HTMLInputElement>()
+const showMore = ref(false)
 
 // Computed
 const cartCount = computed(() => cartStore.totalItems)
@@ -309,10 +247,6 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const userName = computed(() => authStore.user?.name || '')
 const userPhone = computed(() => authStore.formatPhoneNumber(authStore.user?.phone || ''))
 const userInitials = computed(() => authStore.userInitials)
-
-const popularCategories = computed(() => {
-  return productStore.categories.slice(0, 6) // Show first 6 categories
-})
 
 // Methods
 const toggleMenu = () => {
@@ -323,112 +257,31 @@ const closeMenu = () => {
   showMenu.value = false
 }
 
-const toggleAccount = () => {
-  showAccount.value = !showAccount.value
+const toggleMore = () => {
+  showMore.value = !showMore.value
 }
 
-const closeAccount = () => {
-  showAccount.value = false
+const closeMore = () => {
+  showMore.value = false
 }
 
 const handleLogin = () => {
-  closeAccount()
+  closeMore()
   // Emit event or navigate to login
   router.push('/login')
 }
 
 const handleLogout = async () => {
-  closeAccount()
+  closeMore()
   await authStore.logout()
 }
 
 // Search methods
-const openSearch = async () => {
+const openSearch = () => {
   showSearch.value = true
-  await nextTick()
-  searchInput.value?.focus()
 }
 
-const closeSearch = () => {
-  showSearch.value = false
-  clearSearch()
-}
 
-const performSearch = () => {
-  const query = searchQuery.value.trim().toLowerCase()
-
-  if (!query) {
-    searchResults.value = []
-    return
-  }
-
-  // Search in products, excluding out-of-stock products
-  searchResults.value = productStore.products.filter(product => {
-    // First check if it matches search criteria
-    const nameMatch = product.name.toLowerCase().includes(query)
-    const descriptionMatch = product.description?.toLowerCase().includes(query) || false
-    const categoryMatch = product.category?.name.toLowerCase().includes(query) || false
-
-    const matchesSearch = nameMatch || descriptionMatch || categoryMatch
-
-    if (!matchesSearch) {
-      return false
-    }
-
-    // Then check if product is in stock (allow products without stock_quantity field)
-    const isInStock = product.stock_quantity === undefined || product.stock_quantity === null || product.stock_quantity > 0
-
-    return isInStock
-  })
-}
-
-const clearSearch = () => {
-  searchQuery.value = ''
-  searchResults.value = []
-}
-
-const searchCategory = (categoryName: string) => {
-  searchQuery.value = categoryName
-  performSearch()
-}
-
-const goToProduct = (product: Product) => {
-  closeSearch()
-  router.push(`/product/${product.slug || product.id}`)
-}
-
-// Get product image URL with fallback handling
-const getProductImageUrl = (product: Product): string => {
-  if (!product.image_url) {
-    return '/images/placeholder.jpg'
-  }
-
-  // Handle MinIO URLs
-  if (product.image_url.startsWith('minio://')) {
-    const fileName = product.image_url.replace('minio://', '')
-    return `/api/images/${fileName}`
-  }
-
-  // Handle backend API URLs
-  if (product.image_url.startsWith('/api/')) {
-    return product.image_url
-  }
-
-  // Handle Poster API URLs
-  if (product.image_url.startsWith('http')) {
-    return product.image_url
-  }
-
-  // Default fallback
-  return '/images/placeholder.jpg'
-}
-
-const openAIChat = () => {
-  closeMenu()
-  // Trigger AI chat widget
-  const chatEvent = new CustomEvent('open-ai-chat')
-  window.dispatchEvent(chatEvent)
-}
 
 
 
@@ -442,94 +295,132 @@ router.afterEach(handleRouteChange)
 </script>
 
 <style scoped>
+/* ============================================
+   NATIVE APP BOTTOM NAVIGATION
+   ============================================ */
+
 .mobile-bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 50;
-  /* Prevent scrolling issues */
+  /* Hardware acceleration for smooth performance */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .mobile-nav-bar {
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
-  background: white;
-  border-top: 1px solid #e5e7eb;
+  justify-content: space-around;
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   padding: 0.5rem 0;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.95);
-  /* Ensure proper positioning */
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: relative;
   width: 100%;
-  /* Prevent layout shifts */
-  min-height: 60px;
+  min-height: 64px;
+  /* Safe area support for devices with home indicator */
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 .dark .mobile-nav-bar {
-  background: rgba(31, 41, 55, 0.95);
-  border-top: 1px solid #374151;
+  background: rgba(26, 26, 26, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.5rem;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
   text-decoration: none;
-  color: #6b7280;
-  transition: all 0.2s ease;
-  border-radius: 0.5rem;
-  min-width: 80px;
+  color: #999999;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  min-width: 64px;
   flex: 1;
   position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .dark .nav-item {
-  color: #9ca3af;
+  color: #666666;
 }
 
-.nav-item:hover,
-.nav-item.active,
+/* Active State - Native App Style */
+.nav-item.nav-item-active,
 .nav-item.router-link-active {
-  color: var(--color-primary, #2563eb);
-  transform: translateY(-2px);
+  color: #3b82f6;
+}
+
+.nav-item.nav-item-active .nav-icon svg,
+.nav-item.router-link-active .nav-icon svg {
+  stroke-width: 2.5;
+}
+
+/* Hover/Press Effect */
+.nav-item:active {
+  transform: scale(0.92);
+  opacity: 0.7;
 }
 
 .nav-icon {
   position: relative;
   margin-bottom: 0.25rem;
-}
-
-.nav-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-
-
-.cart-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: #ef4444;
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.nav-item.nav-item-active .nav-icon,
+.nav-item.router-link-active .nav-icon {
+  transform: translateY(-2px);
+}
+
+.nav-label {
+  font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+
+
+/* Cart Badge - Native iOS/Android Style */
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #FF3B30 0%, #FF453A 100%);
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
   z-index: 10;
   border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.4);
+  line-height: 1;
+}
+
+.dark .cart-badge {
+  border-color: rgba(26, 26, 26, 0.98);
 }
 
 .mobile-menu-overlay {

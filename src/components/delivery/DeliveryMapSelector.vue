@@ -303,7 +303,7 @@ const geocodeAddress = async (address: string) => {
 
     for (const query of searchQueries) {
       try {
-        console.log('🔍 [DeliveryMapSelector] Geocoding query:', query)
+        
 
         // Use backend proxy for Nominatim (better reliability and no CORS issues)
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
@@ -318,7 +318,7 @@ const geocodeAddress = async (address: string) => {
           })
         })
 
-        console.log('🔍 [DeliveryMapSelector] Response status:', response.status)
+        
 
         if (!response.ok) {
           console.warn('⚠️ Nominatim proxy error:', response.status)
@@ -326,7 +326,7 @@ const geocodeAddress = async (address: string) => {
         }
 
         const data = await response.json()
-        console.log('🔍 [DeliveryMapSelector] Results count:', data.length)
+        
 
 
         if (data.length > 0) {

@@ -526,28 +526,18 @@
 
     </div>
 
-    <!-- Edit Delivery Method Modal -->
-    <div v-if="showEditDeliveryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-gray-900">Edit Delivery Method</h3>
-            <button
-              @click="showEditDeliveryModal = false"
-              class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-            >
-              <span class="text-2xl">&times;</span>
-            </button>
-          </div>
-
-          <DeliveryMethodSelector
-            :show-back-button="false"
-            context="modal"
-            @method-selected="handleModalMethodSelected"
-          />
-        </div>
-      </div>
-    </div>
+    <!-- Edit Delivery Method Bottom Sheet -->
+    <BottomSheet
+      v-model="showEditDeliveryModal"
+      title="Оберіть спосіб доставки"
+      :full-height="true"
+    >
+      <DeliveryMethodSelector
+        :show-back-button="false"
+        context="modal"
+        @method-selected="handleModalMethodSelected"
+      />
+    </BottomSheet>
 
     <!-- Login Modal -->
     <PhoneLoginModal
@@ -574,6 +564,7 @@ import wayforpayService from '@/services/wayforpayService'
 import { getDefaultBottleSelection, getBottleCartItems, getBottleProduct } from '@/utils/bottleUtils'
 import DeliveryMethodSelector from '@/components/delivery/DeliveryMethodSelector.vue'
 import PhoneLoginModal from '@/components/auth/PhoneLoginModal.vue'
+import BottomSheet from '@/components/ui/BottomSheet.vue'
 import type { Branch, LocationData, Product } from '@/types'
 import type { OrderFormData } from '@/stores/orders'
 
@@ -918,12 +909,12 @@ const goBack = () => {
 
 // Helper function to recalculate bottles for draft beverages when quantities are adjusted
 const recalculateBottlesForDraftBeverage = async (newBeerQuantity: number) => {
-  console.log('🔄 Recalculating 1L bottles for new beer quantity:', newBeerQuantity)
+  
 
   // Remove all existing bottle products from cart
   const bottleItems = cartItems.value.filter(item => item.is_bottle_product)
   for (const bottleItem of bottleItems) {
-    console.log('🗑️ Removing old bottle:', bottleItem.name)
+    
     cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
   }
 
@@ -932,13 +923,13 @@ const recalculateBottlesForDraftBeverage = async (newBeerQuantity: number) => {
 
   // Simple calculation: need exactly newBeerQuantity number of 1L bottles
   const needed1LBottles = Math.ceil(newBeerQuantity)
-  console.log('🍾 Need', needed1LBottles, '× 1L bottles')
+  
 
   // Add the exact number of 1L bottles needed
   if (needed1LBottles > 0) {
     const bottle1L = getBottleProduct('1L')
     if (bottle1L) {
-      console.log(`➕ Adding ${needed1LBottles}x ${bottle1L.name}`)
+      
 
       const cartItem = {
         product_id: bottle1L.id,
@@ -957,7 +948,7 @@ const recalculateBottlesForDraftBeverage = async (newBeerQuantity: number) => {
     }
   }
 
-  console.log('✅ Bottle recalculation completed')
+  
 
   // Force reactive update
   cartUpdateTrigger.value++
@@ -993,18 +984,15 @@ const placeOrder = async () => {
         if (!inventoryValidationResult.value.adjustedItems.find(adj => adj.product_id === item.product_id)) {
           const cartItem = cartItems.value.find(ci => ci.product_id === item.product_id)
           if (cartItem) {
-            console.log(`🗑️ Removing unavailable item: ${item.name} (cart_item_id: ${cartItem.cart_item_id})`)
             cartStore.removeItem(cartItem.cart_item_id || cartItem.product_id)
           }
         }
       }
 
       // Update quantities for adjusted items
-      console.log('📝 Updating cart quantities:')
       for (const item of inventoryValidationResult.value.adjustedItems) {
         const cartItem = cartItems.value.find(ci => ci.product_id === item.product_id)
         if (cartItem) {
-          console.log(`  - ${item.name}: ${cartItem.quantity} → ${item.quantity} (cart_item_id: ${cartItem.cart_item_id})`)
           cartStore.updateItemQuantity(cartItem.cart_item_id || cartItem.product_id, item.quantity)
         }
       }
@@ -1014,22 +1002,14 @@ const placeOrder = async () => {
       cartUpdateTrigger.value++ // Force reactive update
       await nextTick() // Wait again for reactivity to complete
 
-      // Debug: Verify cart quantities after updates
-      console.log('✅ Cart quantities after updates:')
-      cartItems.value.filter(item => item.is_draft_beverage).forEach(item => {
-        console.log(`  - ${item.name}: ${item.quantity}L`)
-      })
-
       // After all adjustments, recalculate bottles based on total remaining draft beverage quantity
       const remainingDraftBeverages = cartItems.value.filter(item => item.is_draft_beverage)
       const totalDraftQuantity = remainingDraftBeverages.reduce((total, item) => total + item.quantity, 0)
 
       if (totalDraftQuantity > 0) {
-        console.log(`🍺 Total remaining draft beverage quantity: ${totalDraftQuantity}L`)
         await recalculateBottlesForDraftBeverage(totalDraftQuantity)
       } else {
         // No draft beverages left, remove all bottles
-        console.log('🗑️ No draft beverages remaining, removing all bottles')
         const bottleItems = cartItems.value.filter(item => item.is_bottle_product)
         for (const bottleItem of bottleItems) {
           cartStore.removeItem(bottleItem.cart_item_id || bottleItem.product_id)
@@ -1038,12 +1018,6 @@ const placeOrder = async () => {
 
       // Wait for cart updates to complete before re-validating
       await nextTick()
-
-      // Debug: Log current cart state after bottle recalculation
-      console.log('🔍 Cart state after bottle recalculation:')
-      console.log('📦 All items:', cartItems.value.map(item => `${item.name}: ${item.quantity}`))
-      console.log('🍺 Draft items:', cartItems.value.filter(item => item.is_draft_beverage).map(item => `${item.name}: ${item.quantity}L`))
-      console.log('🍾 Bottle items:', cartItems.value.filter(item => item.is_bottle_product).map(item => `${item.name}: ${item.quantity}x`))
 
       // Force reactive update
       cartUpdateTrigger.value++
@@ -1058,9 +1032,6 @@ const placeOrder = async () => {
 
       const allDraftBeverages = cartItems.value.filter(item => item.is_draft_beverage)
       const totalDraftQuantity = allDraftBeverages.reduce((total, item) => total + item.quantity, 0)
-
-      console.log(`🔄 Final bottle recalculation for ${totalDraftQuantity}L total draft beverages`)
-      console.log('🍺 Current draft beverages:', allDraftBeverages.map(item => `${item.name}: ${item.quantity}L`))
 
       if (totalDraftQuantity > 0) {
         await recalculateBottlesForDraftBeverage(totalDraftQuantity)
@@ -1111,10 +1082,6 @@ const placeOrder = async () => {
         }
       })
 
-    // Debug: Log order items to console
-    console.log('🛒 Order items being sent:', orderItems)
-    console.log('📦 Product IDs:', orderItems.map(item => item.product_id))
-
     // Check if we have any items to order
     if (orderItems.length === 0) {
       await capacitorService.showToast({
@@ -1163,7 +1130,7 @@ const placeOrder = async () => {
 
         // Only update if there are changes
         if (Object.keys(profileUpdateData).length > 0) {
-          console.log('📝 Updating user profile with order information:', profileUpdateData)
+          
           await authStore.updateProfile(profileUpdateData)
         }
       } catch (error) {
@@ -1177,7 +1144,7 @@ const placeOrder = async () => {
       try {
         // Deduct bonus points from user account
         await authStore.getBonusInfo() // Refresh current bonus info
-        console.log(`💰 Processing bonus usage: ${bonusDiscount.value} points for order ${order.id}`)
+        
 
         // Note: Actual bonus deduction will be handled by the backend when the order is processed
         // For now, we just log the usage and refresh the user's bonus info after order completion
@@ -1416,7 +1383,7 @@ onMounted(async () => {
 // Login success handler
 const onLoginSuccess = (user: any) => {
   showLoginModal.value = false
-  console.log('Login successful in checkout:', user)
+  
   // Optionally pre-fill customer form with user data
   if (user.name) {
     customerForm.value.customer_name = user.name

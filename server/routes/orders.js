@@ -150,7 +150,7 @@ router.get('/', async (req, res) => {
 // Test endpoint for email functionality
 router.get('/test-email', async (req, res) => {
   try {
-    console.log('🧪 Testing email functionality...')
+    
 
     // Create a test order object
     const testOrder = {
@@ -180,14 +180,14 @@ router.get('/test-email', async (req, res) => {
       updated_at: new Date()
     }
 
-    console.log(`📧 Sending test email to: ${testOrder.customer.email}`)
+    
 
     // Send the email
     const result = await emailService.sendOrderConfirmationEmail(testOrder)
 
     if (result.success) {
-      console.log(`✅ Test email sent successfully!`)
-      console.log(`📧 Message ID: ${result.messageId}`)
+      
+      
 
       res.json({
         success: true,
@@ -198,8 +198,8 @@ router.get('/test-email', async (req, res) => {
         emailConfigured: emailService.isConfigured
       })
     } else {
-      console.log(`❌ Failed to send test email`)
-      console.log(`❌ Error: ${result.error}`)
+      
+      
 
       res.status(500).json({
         success: false,
@@ -223,7 +223,7 @@ router.get('/test-email', async (req, res) => {
 // Diagnostic endpoint for SMTP connection
 router.get('/debug/smtp-test', async (req, res) => {
   try {
-    console.log('🔍 Testing SMTP connection...')
+    
 
     const smtpConfig = {
       host: process.env.SMTP_HOST,
@@ -232,7 +232,7 @@ router.get('/debug/smtp-test', async (req, res) => {
       pass: process.env.SMTP_PASS ? '***' : 'NOT SET'
     }
 
-    console.log('📧 SMTP Configuration:', smtpConfig)
+    
 
     // Try to verify the transporter
     if (emailService.transporter) {
@@ -247,7 +247,7 @@ router.get('/debug/smtp-test', async (req, res) => {
             config: smtpConfig
           })
         } else {
-          console.log('✅ SMTP connection successful')
+          
           res.json({
             success: true,
             message: 'SMTP connection successful',
@@ -330,8 +330,6 @@ router.get('/:id', async (req, res) => {
 // POST /api/orders - Create new order
 router.post('/', optionalAuth, async (req, res) => {
   try {
-    console.log('📦 Incoming order request body:', JSON.stringify(req.body, null, 2))
-
     const {
       customer_name,
       customer_email,
@@ -353,16 +351,16 @@ router.post('/', optionalAuth, async (req, res) => {
     const authenticatedUser = req.user
     const orderUserId = authenticatedUser?.id || userId || null
 
-    console.log(`👤 Order user info: authenticated=${!!authenticatedUser}, userId=${orderUserId}, bonusUsed=${bonusUsed}`)
-    console.log(`🚚 Order details: method=${delivery_method}, pickup_branch=`, pickup_branch)
+    
+    
 
     
     
 
     // Validate that all products exist and check inventory
-    console.log('🔍 Validating products exist and checking inventory...')
+    
     const productIds = items.map(item => item.product_id)
-    console.log('📦 Product IDs to validate:', productIds)
+    
 
     const existingProducts = await prisma.product.findMany({
       where: {
@@ -378,14 +376,12 @@ router.post('/', optionalAuth, async (req, res) => {
       }
     })
 
-    console.log('✅ Found products:', existingProducts.map(p => ({ id: p.id, name: p.name, is_active: p.is_active })))
-
     const existingProductIds = existingProducts.map(p => p.id)
     const missingProductIds = productIds.filter(id => !existingProductIds.includes(id))
     const inactiveProducts = existingProducts.filter(p => !p.is_active)
 
     // Check inventory levels for each product at the selected branch
-    console.log('📊 Checking inventory levels...')
+    
     const inventoryIssues = []
 
     for (const item of items) {
@@ -402,7 +398,7 @@ router.post('/', optionalAuth, async (req, res) => {
         const stockLevel = inventory?.quantity || 0
         const product = existingProducts.find(p => p.id === item.product_id)
 
-        console.log(`📦 Product ${product?.name}: requested ${item.quantity}, available ${stockLevel}`)
+        
 
         if (stockLevel < item.quantity) {
           inventoryIssues.push({
@@ -420,16 +416,15 @@ router.post('/', optionalAuth, async (req, res) => {
     }
 
     if (inventoryIssues.length > 0) {
-      console.log('⚠️ Inventory issues detected:', inventoryIssues)
+      
 
       // Log detailed inventory issue for debugging
       inventoryIssues.forEach(issue => {
-        console.log(`❌ ${issue.product_name}: requested ${issue.requested_quantity}, available ${issue.available_quantity}, shortage ${issue.shortage}`)
+        
       })
 
       // For now, just log the warning but allow order creation
       // TODO: Re-enable strict inventory validation after testing
-      console.log('⚠️ Proceeding with order creation despite inventory issues (for testing)')
 
       // return res.status(400).json({
       //   error: 'Insufficient inventory',
@@ -459,7 +454,7 @@ router.post('/', optionalAuth, async (req, res) => {
         console.warn('⚠️ Missing bottle products (will be filtered out):', missingBottles)
         // Filter out missing bottles from the items
         items = items.filter(item => !missingBottles.includes(item.product_id))
-        console.log('✅ Filtered items (bottles removed):', items.length, 'items remaining')
+        console.log('✅ Filtered items:', items.length, 'items remaining')
       }
     }
 
@@ -472,7 +467,7 @@ router.post('/', optionalAuth, async (req, res) => {
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     const total = subtotal + (delivery_fee || 0)
 
-    console.log('💰 Order totals after filtering:', { subtotal, delivery_fee, total, items_count: items.length })
+    
 
     // Create or find customer
     let customer = null
@@ -529,7 +524,7 @@ router.post('/', optionalAuth, async (req, res) => {
     // Find branch (use pickup branch for pickup, or delivery branch for delivery)
     let branch
     if (delivery_method === 'pickup' && pickup_branch) {
-      console.log(`🏪 Looking for pickup branch with ID: ${pickup_branch.id}`)
+      
 
       // First try to find by the provided ID (which should be the database UUID)
       branch = await prisma.branch.findUnique({
@@ -552,11 +547,11 @@ router.post('/', optionalAuth, async (req, res) => {
       }
 
       if (branch) {
-        console.log(`✅ Found pickup branch: ${branch.name} (poster_id: ${branch.poster_id})`)
+        // Branch found
       }
     } else if (delivery_method === 'delivery' && pickup_branch) {
       // For delivery, pickup_branch actually contains the selected delivery branch
-      console.log(`🚚 Looking for delivery branch with ID: ${pickup_branch.id}`)
+      
 
       branch = await prisma.branch.findUnique({
         where: {
@@ -566,11 +561,11 @@ router.post('/', optionalAuth, async (req, res) => {
       })
 
       if (branch) {
-        console.log(`✅ Found delivery branch: ${branch.name} (poster_id: ${branch.poster_id})`)
+        // Branch found
       }
     } else {
       // Fallback: use the first available branch
-      console.log(`⚠️ No branch specified, using first available branch`)
+      
       branch = await prisma.branch.findFirst({
         where: { is_active: true }
       })
@@ -581,20 +576,9 @@ router.post('/', optionalAuth, async (req, res) => {
       return res.status(400).json({ error: 'No available branch found' })
     }
 
-    console.log(`📍 Using branch for order: ${branch.name} (ID: ${branch.id}, poster_id: ${branch.poster_id})`)
-
     // Create order with error handling
     let order
     try {
-      console.log('🔄 Creating order with data:', {
-        customer_id: customer?.id,
-        branch_id: branch.id,
-        delivery_method: delivery_method.toUpperCase(),
-        total_amount: total,
-        delivery_fee: delivery_fee || 0,
-        items_count: items.length
-      })
-
       order = await prisma.order.create({
         data: {
           customer_id: customer?.id,
@@ -602,6 +586,9 @@ router.post('/', optionalAuth, async (req, res) => {
           branch_id: branch.id,
           order_number: generateOrderNumber(),
           status: 'PENDING',
+          total_amount: total,
+          delivery_fee: delivery_fee || 0,
+          items_count: items.length,
           fulfillment: delivery_method.toUpperCase(),
           total_amount: total,
           delivery_fee: delivery_fee || 0,
@@ -633,7 +620,7 @@ router.post('/', optionalAuth, async (req, res) => {
         }
       })
 
-      console.log('✅ Order created successfully:', order.id)
+      
     } catch (orderError) {
       console.error('❌ Failed to create order:', orderError)
       throw orderError
@@ -679,22 +666,22 @@ router.post('/', optionalAuth, async (req, res) => {
 
     // Send email notification to customer (async, don't wait for it)
     if (transformedOrder.customer_email) {
-      console.log(`📧 Sending order confirmation email to: ${transformedOrder.customer_email}`)
+      
       emailService.sendOrderConfirmationEmail(order)
         .then(result => {
           if (result.success) {
-            console.log(`✅ Order confirmation email sent successfully to ${transformedOrder.customer_email}`)
-            console.log(`📧 Message ID: ${result.messageId}`)
+            
+            
           } else {
-            console.log(`❌ Failed to send order confirmation email to ${transformedOrder.customer_email}`)
-            console.log(`❌ Error: ${result.error}`)
+            
+            
           }
         })
         .catch(error => {
           console.error(`❌ Error sending email confirmation:`, error)
         })
     } else {
-      console.log('⚠️ No customer email provided, skipping email notification')
+      
     }
 
     // Send Viber notification to customer (async, don't wait for it)
@@ -725,36 +712,72 @@ router.post('/', optionalAuth, async (req, res) => {
       })
 
       // Map order items to Poster format with proper quantity handling
-      const posterProducts = order.items.map(item => {
+      // For bundle products, expand to individual items
+      const posterProducts = []
+
+      for (const item of order.items) {
         const product = products.find(p => p.id === item.product_id)
 
-        // Calculate the correct quantity for Poster POS
-        let posterQuantity = item.quantity
+        // Check if this is a bundle product
+        if (product && product.is_bundle && product.bundle_items) {
+          
 
-        // If item has custom quantity system (weight-based), convert to grams for Poster
-        if (item.custom_quantity && item.custom_unit) {
-          // item.quantity is the number of units ordered
-          // item.custom_quantity is the weight per unit in kg
-          // Poster expects quantity in grams, so multiply by 1000
-          posterQuantity = (item.quantity * item.custom_quantity) * 1000
-          console.log(`🔄 Weight conversion: ${item.quantity} units × ${item.custom_quantity}kg = ${item.quantity * item.custom_quantity}kg = ${posterQuantity}g`)
+          // Parse bundle items
+          const bundleItems = JSON.parse(product.bundle_items)
+
+          // Get all bundle product IDs to fetch their details
+          const bundleProductIds = bundleItems.map(bi => bi.product_id)
+          const bundleProducts = await prisma.product.findMany({
+            where: { id: { in: bundleProductIds } }
+          })
+
+          // Add each bundle item to posterProducts
+          for (const bundleItem of bundleItems) {
+            const bundleProduct = bundleProducts.find(p => p.id === bundleItem.product_id)
+            if (bundleProduct && bundleProduct.poster_product_id) {
+              const bundleQuantity = bundleItem.quantity * item.quantity
+              
+
+              posterProducts.push({
+                product_id: parseInt(bundleProduct.poster_product_id),
+                count: bundleQuantity
+              })
+            }
+          }
+        } else {
+          // Regular product (not a bundle)
+          // Calculate the correct quantity for Poster POS
+          let posterQuantity = item.quantity
+
+          // If item has custom quantity system (weight-based), convert to grams for Poster
+          if (item.custom_quantity && item.custom_unit) {
+            // item.quantity is the number of units ordered
+            // item.custom_quantity is the weight per unit in kg
+            // Poster expects quantity in grams, so multiply by 1000
+            posterQuantity = (item.quantity * item.custom_quantity) * 1000
+            
+          }
+
+          if (product?.poster_product_id && !isNaN(parseInt(product.poster_product_id))) {
+            posterProducts.push({
+              product_id: parseInt(product.poster_product_id),
+              count: posterQuantity
+            })
+          }
         }
+      }
 
-        return {
-          product_id: parseInt(product?.poster_product_id) || parseInt(item.product_id),
-          count: posterQuantity
-        }
-      }).filter(item => item.product_id && !isNaN(item.product_id)) // Only include items with valid Poster product IDs
+      // Filter out any invalid products
+      const validPosterProducts = posterProducts.filter(item => item.product_id && !isNaN(item.product_id))
 
-      if (posterProducts.length > 0) {
+      if (validPosterProducts.length > 0) {
         // Prepare Poster API request according to documentation
         const spotId = parseInt(order.branch.shop_id) || parseInt(order.branch.poster_id) || 1
-        console.log(`📍 Using spot_id ${spotId} for branch ${order.branch.name} (shop_id: ${order.branch.shop_id}, poster_id: ${order.branch.poster_id})`)
 
         const posterOrderData = {
           spot_id: spotId,
           phone: formatPhoneForPoster(order.customer?.phone),
-          products: posterProducts
+          products: validPosterProducts
         }
 
         // Build comprehensive comment with all order details
@@ -953,50 +976,91 @@ router.post('/:id/send-to-poster', async (req, res) => {
     })
 
     // Map order items to Poster format and combine duplicates
+    // For bundle products, expand to individual items
     const productMap = new Map()
 
-    order.items.forEach(item => {
+    for (const item of order.items) {
       const product = products.find(p => p.id === item.product_id)
-      const posterProductId = parseInt(product?.poster_product_id) || parseInt(item.product_id)
 
-      console.log(`🔍 Processing item: ${item.product_id}, poster_product_id: ${product?.poster_product_id}, final posterProductId: ${posterProductId}`)
-
-      if (!posterProductId || isNaN(posterProductId)) {
-        console.log(`❌ Skipping invalid product ID: ${posterProductId}`)
-        return // Skip invalid product IDs
+      if (!product) {
+        console.warn(`⚠️ Product ${item.product_id} not found, skipping`)
+        continue
       }
 
-      // Calculate the correct quantity for Poster POS
-      let posterQuantity = item.quantity
+      // Check if this is a bundle product
+      if (product.is_bundle && product.bundle_items) {
+        
 
-      // If item has custom quantity system (weight-based), convert to grams for Poster
-      if (item.custom_quantity && item.custom_unit) {
-        // item.quantity is the number of units ordered (e.g., 2 units of 50g snacks)
-        // item.custom_quantity is the weight per unit in kg (e.g., 0.05 for 50g)
-        // Poster expects quantity in grams, so multiply by 1000
-        posterQuantity = (item.quantity * item.custom_quantity) * 1000
-        console.log(`🔄 Weight conversion: ${item.quantity} units × ${item.custom_quantity}kg = ${item.quantity * item.custom_quantity}kg = ${posterQuantity}g`)
-      }
+        // Parse bundle items
+        const bundleItems = JSON.parse(product.bundle_items)
 
-      // Combine quantities for duplicate products
-      if (productMap.has(posterProductId)) {
-        const oldQuantity = productMap.get(posterProductId)
-        const newQuantity = oldQuantity + posterQuantity
-        productMap.set(posterProductId, newQuantity)
-        console.log(`🔄 Combined duplicate product ${posterProductId}: ${oldQuantity} + ${posterQuantity} = ${newQuantity}`)
+        // Get all bundle product IDs to fetch their details
+        const bundleProductIds = bundleItems.map(bi => bi.product_id)
+        const bundleProducts = await prisma.product.findMany({
+          where: { id: { in: bundleProductIds } }
+        })
+
+        // Add each bundle item to productMap
+        for (const bundleItem of bundleItems) {
+          const bundleProduct = bundleProducts.find(p => p.id === bundleItem.product_id)
+          if (bundleProduct && bundleProduct.poster_product_id) {
+            const posterProductId = parseInt(bundleProduct.poster_product_id)
+            const bundleQuantity = bundleItem.quantity * item.quantity
+
+            
+
+            // Combine quantities for duplicate products
+            if (productMap.has(posterProductId)) {
+              const oldQuantity = productMap.get(posterProductId)
+              const newQuantity = oldQuantity + bundleQuantity
+              productMap.set(posterProductId, newQuantity)
+              
+            } else {
+              productMap.set(posterProductId, bundleQuantity)
+            }
+          }
+        }
       } else {
-        productMap.set(posterProductId, posterQuantity)
-        console.log(`➕ Added new product ${posterProductId}: ${posterQuantity}`)
+        // Regular product (not a bundle)
+        const posterProductId = parseInt(product?.poster_product_id) || parseInt(item.product_id)
+
+        
+
+        if (!posterProductId || isNaN(posterProductId)) {
+          
+          continue
+        }
+
+        // Calculate the correct quantity for Poster POS
+        let posterQuantity = item.quantity
+
+        // If item has custom quantity system (weight-based), convert to grams for Poster
+        if (item.custom_quantity && item.custom_unit) {
+          // item.quantity is the number of units ordered (e.g., 2 units of 50g snacks)
+          // item.custom_quantity is the weight per unit in kg (e.g., 0.05 for 50g)
+          // Poster expects quantity in grams, so multiply by 1000
+          posterQuantity = (item.quantity * item.custom_quantity) * 1000
+          
+        }
+
+        // Combine quantities for duplicate products
+        if (productMap.has(posterProductId)) {
+          const oldQuantity = productMap.get(posterProductId)
+          const newQuantity = oldQuantity + posterQuantity
+          productMap.set(posterProductId, newQuantity)
+          
+        } else {
+          productMap.set(posterProductId, posterQuantity)
+          
+        }
       }
-    })
+    }
 
     // Convert map to array format expected by Poster
     const posterProducts = Array.from(productMap.entries()).map(([product_id, count]) => ({
       product_id,
       count
     }))
-
-    console.log(`📦 Final products for Poster:`, JSON.stringify(posterProducts, null, 2))
 
     if (posterProducts.length === 0) {
       return res.status(400).json({
@@ -1007,9 +1071,6 @@ router.post('/:id/send-to-poster', async (req, res) => {
 
     // Prepare Poster API request according to documentation
     const spotId = parseInt(order.branch.shop_id) || parseInt(order.branch.poster_id) || 1
-    console.log(`📍 Using spot_id ${spotId} for branch ${order.branch.name} (shop_id: ${order.branch.shop_id}, poster_id: ${order.branch.poster_id})`)
-
-
 
     const posterOrderData = {
       spot_id: spotId,
@@ -1196,7 +1257,7 @@ router.get('/debug/poster-products', async (req, res) => {
 // POST /api/orders/debug/sync-tara - Sync only Тара category from Poster POS
 router.post('/debug/sync-tara', async (req, res) => {
   try {
-    console.log('🔄 Starting selective sync for Тара category...')
+    
 
     const POSTER_TOKEN = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
     const POSTER_API_BASE = 'https://joinposter.com/api'
@@ -1206,7 +1267,7 @@ router.post('/debug/sync-tara', async (req, res) => {
     }
 
     // Get categories from Poster POS
-    console.log('📂 Fetching categories from Poster POS...')
+    
     const categoriesResponse = await axios.get(`${POSTER_API_BASE}/menu.getCategories?token=${POSTER_TOKEN}`)
     const posterCategories = categoriesResponse.data.response
 
@@ -1216,16 +1277,16 @@ router.post('/debug/sync-tara', async (req, res) => {
       return res.status(404).json({ error: 'Тара category not found in Poster POS' })
     }
 
-    console.log('✅ Found Тара category:', taraCategory.category_name, 'ID:', taraCategory.category_id)
+    
 
     // Get products from Poster POS for Тара category
-    console.log('📦 Fetching products from Poster POS...')
+    
     const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts?token=${POSTER_TOKEN}&type=products`)
     const posterProducts = productsResponse.data.response
 
     // Filter products for Тара category
     const taraProducts = posterProducts.filter(product => product.category_id === taraCategory.category_id)
-    console.log(`📦 Found ${taraProducts.length} products in Тара category`)
+    
 
     // Ensure Тара category exists in our database
     let dbCategory = await prisma.category.findFirst({
@@ -1233,7 +1294,7 @@ router.post('/debug/sync-tara', async (req, res) => {
     })
 
     if (!dbCategory) {
-      console.log('➕ Creating Тара category in database...')
+      
       dbCategory = await prisma.category.create({
         data: {
           name: 'Тара',
@@ -1242,7 +1303,7 @@ router.post('/debug/sync-tara', async (req, res) => {
         }
       })
     } else {
-      console.log('✅ Тара category exists in database, updating...')
+      
       dbCategory = await prisma.category.update({
         where: { id: dbCategory.id },
         data: {
@@ -1279,13 +1340,13 @@ router.post('/debug/sync-tara', async (req, res) => {
             data: productData
           })
           updated++
-          console.log(`✅ Updated: ${posterProduct.product_name}`)
+          
         } else {
           await prisma.product.create({
             data: productData
           })
           created++
-          console.log(`➕ Created: ${posterProduct.product_name}`)
+          
         }
       } catch (error) {
         console.error(`❌ Error syncing product ${posterProduct.product_name}:`, error.message)
@@ -1293,7 +1354,7 @@ router.post('/debug/sync-tara', async (req, res) => {
       }
     }
 
-    console.log('🎉 Тара category sync completed!')
+    
 
     res.json({
       success: true,
@@ -1326,11 +1387,11 @@ router.get('/debug/poster-categories', async (req, res) => {
     const POSTER_TOKEN = process.env.POSTER_TOKEN || '218047:05891220e474bad7f26b6eaa0be3f344'
     const POSTER_API_BASE = 'https://joinposter.com/api'
 
-    console.log('📂 Fetching all categories from Poster POS...')
+    
     const categoriesResponse = await axios.get(`${POSTER_API_BASE}/menu.getCategories?token=${POSTER_TOKEN}`)
     const posterCategories = categoriesResponse.data.response
 
-    console.log('📦 Fetching all products from Poster POS...')
+    
     const productsResponse = await axios.get(`${POSTER_API_BASE}/menu.getProducts?token=${POSTER_TOKEN}&type=products`)
     const posterProducts = productsResponse.data.response
 
@@ -1365,7 +1426,7 @@ router.get('/debug/poster-categories', async (req, res) => {
 // POST /api/orders/debug/test-full-order - Test complete order creation process
 router.post('/debug/test-full-order', async (req, res) => {
   try {
-    console.log('🧪 Testing complete order creation process...')
+    
 
     // Simulate an order with draft beverage + bottles (same as real order)
     const testOrderData = {
@@ -1392,11 +1453,8 @@ router.post('/debug/test-full-order', async (req, res) => {
       payment_method: 'cash'
     }
 
-    console.log('📦 Test order data:', JSON.stringify(testOrderData, null, 2))
-
     // Step 1: Validate products exist
     const productIds = testOrderData.items.map(item => item.product_id)
-    console.log('🔍 Step 1: Validating product IDs:', productIds)
 
     const existingProducts = await prisma.product.findMany({
       where: {
@@ -1410,7 +1468,7 @@ router.post('/debug/test-full-order', async (req, res) => {
       }
     })
 
-    console.log('✅ Found products:', existingProducts)
+    
 
     const existingProductIds = existingProducts.map(p => p.id)
     const missingProductIds = productIds.filter(id => !existingProductIds.includes(id))
@@ -1426,7 +1484,7 @@ router.post('/debug/test-full-order', async (req, res) => {
     }
 
     // Step 2: Check branch
-    console.log('🔍 Step 2: Checking branch:', testOrderData.pickup_branch)
+    
     const branch = await prisma.branch.findUnique({
       where: { id: testOrderData.pickup_branch }
     })
@@ -1440,10 +1498,10 @@ router.post('/debug/test-full-order', async (req, res) => {
       })
     }
 
-    console.log('✅ Found branch:', branch.name)
+    
 
     // Step 3: Try to create customer
-    console.log('🔍 Step 3: Creating/finding customer')
+    
     let customer = await prisma.customer.findUnique({
       where: { email: testOrderData.customer_email }
     })
@@ -1456,15 +1514,15 @@ router.post('/debug/test-full-order', async (req, res) => {
           phone: testOrderData.customer_phone
         }
       })
-      console.log('✅ Created new customer:', customer.id)
+      
     } else {
-      console.log('✅ Found existing customer:', customer.id)
+      
     }
 
     // Step 4: Calculate totals
     const subtotal = testOrderData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     const total = subtotal + (testOrderData.delivery_fee || 0)
-    console.log('💰 Step 4: Calculated totals:', { subtotal, delivery_fee: testOrderData.delivery_fee, total })
+    
 
     res.json({
       success: true,
@@ -1495,7 +1553,7 @@ router.get('/debug/check-products', async (req, res) => {
     const { ids } = req.query
     const productIds = ids ? ids.split(',') : []
 
-    console.log('🔍 Checking products:', productIds)
+    
 
     const products = await prisma.product.findMany({
       where: {

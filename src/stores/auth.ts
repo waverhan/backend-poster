@@ -83,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
         throw new Error(data.details || data.error || 'Failed to set password')
       }
 
-      console.log('✅ Password set successfully')
+      
 
       // Update user to reflect password is set
       if (user.value) {
@@ -155,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('auth_token', data.token)
       localStorage.setItem('user_data', JSON.stringify(data.user))
 
-      console.log('✅ Password login successful:', data.user.name)
+      
 
       return data
     } catch (err: any) {
@@ -302,7 +302,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Skip refresh for admin tokens (they are local-only)
       if (token.value.startsWith('admin_token_')) {
-        console.log('ℹ️ Skipping profile refresh for admin token (local-only)')
         return user.value
       }
 
