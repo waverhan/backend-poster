@@ -272,9 +272,11 @@ const showPromptManually = () => {
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   (window as any).showInstallPrompt = showPromptManually
   (window as any).resetInstallPrompt = () => {
-    localStorage.removeItem('installPromptDismissed')
-    localStorage.removeItem('appInstalled')
-    
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('installPromptDismissed')
+      localStorage.removeItem('appInstalled')
+    }
+    showPrompt.value = true
   }
 }
 
