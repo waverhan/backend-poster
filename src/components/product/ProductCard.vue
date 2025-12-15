@@ -266,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, computed, ref, onMounted } from 'vue'
+import { defineProps, defineEmits, computed, ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Product, BottleSelection } from '@/types'
 import { backendApi } from '@/services/backendApi'
@@ -329,7 +329,8 @@ const toast = useToast()
 // No longer needs real-time API calls as inventory is synced via cron jobs
 
 // State for draft beverage functionality
-const selectedQuantity = ref(2) // Default 2L
+// Initialize with a default value that will be updated based on product settings
+const selectedQuantity = ref(1) // Default 1L (will be updated based on minQuantity)
 const selectedBottles = ref<BottleSelection>(createEmptyBottleSelection())
 const showBottleSelector = ref(false)
 
@@ -519,15 +520,19 @@ const productImagePath = computed(() => {
 // Methods for quantity control
 const increaseQuantity = () => {
   const newQuantity = selectedQuantity.value + quantityStep.value
-  if (newQuantity <= maxQuantity.value) {
-    selectedQuantity.value = newQuantity
+  // Round to avoid floating point errors
+  const roundedQuantity = Math.round(newQuantity * 100) / 100
+  if (roundedQuantity <= maxQuantity.value) {
+    selectedQuantity.value = roundedQuantity
   }
 }
 
 const decreaseQuantity = () => {
   const newQuantity = selectedQuantity.value - quantityStep.value
-  if (newQuantity >= minQuantity.value) {
-    selectedQuantity.value = newQuantity
+  // Round to avoid floating point errors
+  const roundedQuantity = Math.round(newQuantity * 100) / 100
+  if (roundedQuantity >= minQuantity.value) {
+    selectedQuantity.value = roundedQuantity
   }
 }
 
@@ -766,6 +771,19 @@ const initializeQuantity = () => {
   selectedQuantity.value = minQuantity.value
 }
 
+// Watch for changes to selectedQuantity and ensure it respects min/max bounds
+const validateQuantity = () => {
+  // Ensure quantity is within bounds
+  if (selectedQuantity.value < minQuantity.value) {
+    selectedQuantity.value = minQuantity.value
+  } else if (selectedQuantity.value > maxQuantity.value) {
+    selectedQuantity.value = maxQuantity.value
+  }
+
+  // Round to avoid floating point errors
+  selectedQuantity.value = Math.round(selectedQuantity.value * 100) / 100
+}
+
 // Get color class for attribute scale bars
 const getAttributeBarColor = (color?: string) => {
   switch (color?.toLowerCase()) {
@@ -835,6 +853,11 @@ onMounted(() => {
   // Inventory is now loaded with products from backend - no need for separate API calls
   initializeQuantity()
   loadCombinedRating()
+})
+
+// Watch for changes to selectedQuantity to ensure it's always valid
+watch(selectedQuantity, () => {
+  validateQuantity()
 })
 </script>
 
