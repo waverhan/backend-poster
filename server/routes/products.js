@@ -608,12 +608,6 @@ router.post('/bulk-edit', async (req, res) => {
                 break
               case 'multiply':
                 newPrice = currentProduct.price * parseFloat(value)
-                // For weight-based products, multiply by 10 to account for Poster POS price format
-                // Weight-based products in Poster are stored as price per 100g, we display as price per kg
-                if (isWeightBased) {
-                  newPrice = newPrice * 10
-                  
-                }
                 break
               default:
                 throw new Error(`Unknown price adjustment type: ${type}`)
