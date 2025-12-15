@@ -140,6 +140,7 @@ router.put('/:id', async (req, res) => {
 
     const {
       poster_product_id,
+      ingredient_id,
       category_id,
       name,
       display_name,
@@ -173,6 +174,7 @@ router.put('/:id', async (req, res) => {
       where: { id },
       data: {
         poster_product_id,
+        ingredient_id,
         category_id,
         name,
         display_name,
