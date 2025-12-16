@@ -381,9 +381,53 @@ router.post('/', optionalAuth, async (req, res) => {
     const inactiveProducts = existingProducts.filter(p => !p.is_active)
 
     // Check inventory levels for each product at the selected branch
-    
+    // Note: We'll check inventory after we determine the branch
+
     const inventoryIssues = []
 
+    // Determine branch first before checking inventory
+    let branch
+    if (delivery_method === 'pickup' && pickup_branch) {
+      // First try to find by the provided ID (which should be the database UUID)
+      branch = await prisma.branch.findUnique({
+        where: {
+          id: pickup_branch.id,
+          is_active: true
+        }
+      })
+
+      if (!branch) {
+        console.warn(`⚠️ No branch found with ID ${pickup_branch.id}, trying poster_id lookup`)
+        // Fallback: try to map as if it's a simple numeric ID
+        const posterBranchId = mapShopIdToPosterBranchId(pickup_branch.id)
+        branch = await prisma.branch.findFirst({
+          where: {
+            poster_id: posterBranchId,
+            is_active: true
+          }
+        })
+      }
+    } else if (delivery_method === 'delivery' && pickup_branch) {
+      // For delivery, pickup_branch actually contains the selected delivery branch
+      branch = await prisma.branch.findUnique({
+        where: {
+          id: pickup_branch.id,
+          is_active: true
+        }
+      })
+    } else {
+      // Fallback: use the first available branch
+      branch = await prisma.branch.findFirst({
+        where: { is_active: true }
+      })
+    }
+
+    if (!branch) {
+      console.error(`❌ No branch found for pickup_branch:`, pickup_branch)
+      return res.status(400).json({ error: 'No available branch found' })
+    }
+
+    // Now check inventory for each product
     for (const item of items) {
       try {
         const inventory = await prisma.productInventory.findUnique({
@@ -521,60 +565,7 @@ router.post('/', optionalAuth, async (req, res) => {
       }
     }
 
-    // Find branch (use pickup branch for pickup, or delivery branch for delivery)
-    let branch
-    if (delivery_method === 'pickup' && pickup_branch) {
-      
-
-      // First try to find by the provided ID (which should be the database UUID)
-      branch = await prisma.branch.findUnique({
-        where: {
-          id: pickup_branch.id,
-          is_active: true
-        }
-      })
-
-      if (!branch) {
-        console.warn(`⚠️ No branch found with ID ${pickup_branch.id}, trying poster_id lookup`)
-        // Fallback: try to map as if it's a simple numeric ID
-        const posterBranchId = mapShopIdToPosterBranchId(pickup_branch.id)
-        branch = await prisma.branch.findFirst({
-          where: {
-            poster_id: posterBranchId,
-            is_active: true
-          }
-        })
-      }
-
-      if (branch) {
-        // Branch found
-      }
-    } else if (delivery_method === 'delivery' && pickup_branch) {
-      // For delivery, pickup_branch actually contains the selected delivery branch
-      
-
-      branch = await prisma.branch.findUnique({
-        where: {
-          id: pickup_branch.id,
-          is_active: true
-        }
-      })
-
-      if (branch) {
-        // Branch found
-      }
-    } else {
-      // Fallback: use the first available branch
-      
-      branch = await prisma.branch.findFirst({
-        where: { is_active: true }
-      })
-    }
-
-    if (!branch) {
-      console.error(`❌ No branch found for pickup_branch:`, pickup_branch)
-      return res.status(400).json({ error: 'No available branch found' })
-    }
+    // Branch is already determined above
 
     // Create order with error handling
     let order
@@ -588,10 +579,7 @@ router.post('/', optionalAuth, async (req, res) => {
           status: 'PENDING',
           total_amount: total,
           delivery_fee: delivery_fee || 0,
-          items_count: items.length,
           fulfillment: delivery_method.toUpperCase(),
-          total_amount: total,
-          delivery_fee: delivery_fee || 0,
           delivery_address,
           notes,
           no_callback_confirmation: no_callback_confirmation !== undefined ? no_callback_confirmation : true,
