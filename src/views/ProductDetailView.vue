@@ -173,6 +173,27 @@
             {{ showFullDescription ? '▲ Показати менше' : '▼ Показати більше' }}
           </button>
         </div>
+
+        <!-- Bundle Items (What's Included) -->
+        <div v-if="product.is_bundle && product.bundle_items && product.bundle_items.length > 0" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <span class="text-xl">📦</span>
+            Що включено в набір
+          </h3>
+          <div class="space-y-2">
+            <div
+              v-for="(item, idx) in product.bundle_items"
+              :key="`bundle-item-${idx}`"
+              class="flex items-center justify-between text-sm py-2 px-3 bg-white rounded border border-blue-100"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-blue-600 font-semibold">•</span>
+                <span class="text-gray-700">{{ item.name }}</span>
+              </div>
+              <span class="text-gray-600 font-medium">{{ item.quantity }} {{ item.unit || 'шт' }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Reviews Section -->
@@ -415,6 +436,27 @@
               >
                 {{ showFullDescription ? '▲ Показати менше' : '▼ Показати більше' }}
               </button>
+            </div>
+
+            <!-- Bundle Items (What's Included) -->
+            <div v-if="product.is_bundle && product.bundle_items && product.bundle_items.length > 0" class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="text-2xl">📦</span>
+                Що включено в набір
+              </h3>
+              <div class="space-y-2">
+                <div
+                  v-for="(item, idx) in product.bundle_items"
+                  :key="`bundle-item-${idx}`"
+                  class="flex items-center justify-between text-base py-3 px-4 bg-white rounded border border-blue-100"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="text-blue-600 font-semibold">•</span>
+                    <span class="text-gray-700">{{ item.name }}</span>
+                  </div>
+                  <span class="text-gray-600 font-medium">{{ item.quantity }} {{ item.unit || 'шт' }}</span>
+                </div>
+              </div>
             </div>
 
             <!-- Reviews Section -->
