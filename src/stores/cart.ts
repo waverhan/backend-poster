@@ -61,12 +61,16 @@ export const useCartStore = defineStore('cart', () => {
         i.poster_product_id === item.poster_product_id &&
         i.is_bottle_product
       )
+    } else if (item.is_bundle) {
+      // Bundle products should NOT be combined - each bundle is a separate cart item
+      existingItem = undefined
     } else {
       // For all other products (including draft beverages), just check product_id
       // This ensures draft beverages with the same product_id are always combined
       existingItem = items.value.find(i =>
         i.product_id === item.product_id &&
-        !i.is_bottle_product
+        !i.is_bottle_product &&
+        !i.is_bundle
       )
     }
 
