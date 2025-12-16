@@ -360,6 +360,73 @@
 
 
 
+        <!-- Bundle Configuration -->
+        <div class="mb-6 border-t pt-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-3">📦 Bundle Configuration</h3>
+          <label class="flex items-center mb-4">
+            <input
+              v-model="formData.is_bundle"
+              type="checkbox"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span class="ml-2 text-sm text-gray-700">This is a bundle/gift set product</span>
+          </label>
+
+          <div v-if="formData.is_bundle" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Select Products to Include in Bundle
+              </label>
+              <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-white">
+                <div v-if="availableProducts.length === 0" class="text-sm text-gray-500">
+                  No products available
+                </div>
+                <label v-for="product in availableProducts" :key="product.id" class="flex items-center">
+                  <input
+                    type="checkbox"
+                    :checked="isBundleItemSelected(product.id)"
+                    @change="toggleBundleItem(product.id)"
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">{{ product.display_name }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div v-if="formData.bundle_items && formData.bundle_items.length > 0" class="space-y-3">
+              <h4 class="text-sm font-medium text-gray-700">Bundle Items Quantities</h4>
+              <div
+                v-for="(item, index) in formData.bundle_items"
+                :key="item.product_id"
+                class="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg"
+              >
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-700">
+                    {{ getProductName(item.product_id) }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="text-xs text-gray-600">Qty:</label>
+                  <input
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="w-16 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  @click="removeBundleItem(index)"
+                  class="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Custom Quantity Settings -->
         <div class="mb-6 border-t pt-4">
           <h3 class="text-sm font-medium text-gray-700 mb-3">Custom Quantity Settings</h3>
@@ -514,7 +581,23 @@ const formData = ref({
   quantity_step: null as number | null,
   min_quantity: null as number | null,
   max_quantity: null as number | null,
-  attributes: [] as ProductAttribute[]
+  attributes: [] as ProductAttribute[],
+  is_bundle: false,
+  bundle_items: [] as Array<{ product_id: string; quantity: number }>
+})
+
+const allProducts = ref<Product[]>([])
+
+// Watch for modal open to load all products
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen && allProducts.value.length === 0) {
+    try {
+      const response = await backendApi.get('/products')
+      allProducts.value = response.data as Product[]
+    } catch (error) {
+      console.error('Failed to load products:', error)
+    }
+  }
 })
 
 // Watch for product changes to populate form
@@ -533,6 +616,21 @@ watch(() => props.product, (newProduct) => {
       } catch (e) {
         console.warn('Failed to parse product attributes:', e)
         attributes = []
+      }
+    }
+
+    // Parse bundle_items if they exist
+    let bundleItems = []
+    if (newProduct.bundle_items) {
+      try {
+        if (typeof newProduct.bundle_items === 'string') {
+          bundleItems = JSON.parse(newProduct.bundle_items)
+        } else if (Array.isArray(newProduct.bundle_items)) {
+          bundleItems = newProduct.bundle_items
+        }
+      } catch (e) {
+        console.warn('Failed to parse bundle items:', e)
+        bundleItems = []
       }
     }
 
@@ -558,7 +656,9 @@ watch(() => props.product, (newProduct) => {
       quantity_step: newProduct.quantity_step || null,
       min_quantity: newProduct.min_quantity || null,
       max_quantity: newProduct.max_quantity || null,
-      attributes: attributes
+      attributes: attributes,
+      is_bundle: newProduct.is_bundle || false,
+      bundle_items: bundleItems
     }
 
 
@@ -586,7 +686,9 @@ watch(() => props.product, (newProduct) => {
       quantity_step: null,
       min_quantity: null,
       max_quantity: null,
-      attributes: []
+      attributes: [],
+      is_bundle: false,
+      bundle_items: []
     }
   }
 }, { immediate: true })
@@ -605,6 +707,34 @@ watch(() => formData.value.image_url, (newImageUrl) => {
   }
 })
 
+// Computed property for available products (exclude current product)
+const availableProducts = computed(() => {
+  return allProducts.value.filter(p => p.id !== props.product?.id)
+})
+
+// Bundle item management methods
+const isBundleItemSelected = (productId: string): boolean => {
+  return formData.value.bundle_items.some(item => item.product_id === productId)
+}
+
+const toggleBundleItem = (productId: string) => {
+  const index = formData.value.bundle_items.findIndex(item => item.product_id === productId)
+  if (index >= 0) {
+    formData.value.bundle_items.splice(index, 1)
+  } else {
+    formData.value.bundle_items.push({ product_id: productId, quantity: 1 })
+  }
+}
+
+const removeBundleItem = (index: number) => {
+  formData.value.bundle_items.splice(index, 1)
+}
+
+const getProductName = (productId: string): string => {
+  const product = allProducts.value.find(p => p.id === productId)
+  return product?.display_name || 'Unknown Product'
+}
+
 const handleSubmit = async () => {
 
   isLoading.value = true
@@ -615,7 +745,8 @@ const handleSubmit = async () => {
       name: formData.value.name || formData.value.display_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
       display_image_url: formData.value.display_image_url || formData.value.image_url,
       original_price: formData.value.original_price || formData.value.price,
-      attributes: formData.value.attributes // Send as array, backend will stringify
+      attributes: formData.value.attributes, // Send as array, backend will stringify
+      bundle_items: formData.value.is_bundle ? formData.value.bundle_items : [] // Send bundle items if it's a bundle
     }
 
 
