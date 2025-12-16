@@ -37,7 +37,7 @@ router.post('/photon-search', async (req, res) => {
         'User-Agent': 'PWA-POS-Shop/1.0 (https://opillia.com.ua)',
         'Accept': 'application/json'
       },
-      timeout: 5000 // 5 second timeout
+      timeout: 10000 // 10 second timeout
     })
 
     
@@ -123,7 +123,7 @@ router.post('/nominatim-search', async (req, res) => {
         'Accept-Language': 'uk,ru,en',
         'Accept': 'application/json'
       },
-      timeout: 5000 // 5 second timeout
+      timeout: 15000 // 15 second timeout (Nominatim can be slow)
     })
 
     
