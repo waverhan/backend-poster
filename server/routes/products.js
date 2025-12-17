@@ -3,6 +3,32 @@ import { getProducts, createProduct, prisma, generateSlug, transliterateCyrillic
 
 const router = express.Router()
 
+// GET /api/products/admin/all - Get all products for admin panel (no branch required)
+router.get('/admin/all', async (req, res) => {
+  try {
+    const { includeInactive } = req.query
+    const includeInactiveFlag = includeInactive === 'true'
+
+    // Get all products without branch filtering for admin use
+    const where = includeInactiveFlag ? {} : { is_active: true }
+
+    const products = await prisma.product.findMany({
+      where,
+      include: {
+        category: true
+      },
+      orderBy: [
+        { sort_order: 'asc' }
+      ]
+    })
+
+    res.json(products)
+  } catch (error) {
+    console.error('Error fetching admin products:', error)
+    res.status(500).json({ error: error.message || 'Failed to fetch products' })
+  }
+})
+
 // GET /api/products
 router.get('/', async (req, res) => {
   try {
