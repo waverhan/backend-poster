@@ -377,9 +377,20 @@
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Select Products to Include in Bundle
               </label>
+
+              <!-- Search Box -->
+              <div class="mb-3">
+                <input
+                  v-model="bundleSearchQuery"
+                  type="text"
+                  placeholder="🔍 Search products..."
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               <div class="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-white">
                 <div v-if="availableProducts.length === 0" class="text-sm text-gray-500">
-                  No products available
+                  {{ bundleSearchQuery ? 'No products match your search' : 'No products available' }}
                 </div>
                 <label v-for="product in availableProducts" :key="product.id" class="flex items-center">
                   <input
@@ -587,6 +598,7 @@ const formData = ref({
 })
 
 const allProducts = ref<Product[]>([])
+const bundleSearchQuery = ref('')
 
 // Watch for modal open to load all products
 watch(() => props.isOpen, async (isOpen) => {
@@ -710,9 +722,19 @@ watch(() => formData.value.image_url, (newImageUrl) => {
   }
 })
 
-// Computed property for available products (exclude current product)
+// Computed property for available products (exclude current product and filter by search)
 const availableProducts = computed(() => {
-  return allProducts.value.filter(p => p.id !== props.product?.id)
+  let filtered = allProducts.value.filter(p => p.id !== props.product?.id)
+
+  if (bundleSearchQuery.value.trim()) {
+    const query = bundleSearchQuery.value.toLowerCase()
+    filtered = filtered.filter(p =>
+      p.display_name.toLowerCase().includes(query) ||
+      (p.name && p.name.toLowerCase().includes(query))
+    )
+  }
+
+  return filtered
 })
 
 // Bundle item management methods
