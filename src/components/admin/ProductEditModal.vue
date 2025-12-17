@@ -590,12 +590,15 @@ const allProducts = ref<Product[]>([])
 
 // Watch for modal open to load all products
 watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen && allProducts.value.length === 0) {
+  if (isOpen) {
     try {
-      const response = await backendApi.get('/products')
+      // Always fetch products when modal opens to ensure we have the latest list
+      const response = await backendApi.get('/products/admin/all?includeInactive=true')
       allProducts.value = response.data as Product[]
+      console.log('Loaded products for bundle selection:', allProducts.value.length)
     } catch (error) {
       console.error('Failed to load products:', error)
+      allProducts.value = []
     }
   }
 })
