@@ -1,7 +1,50 @@
 import express from 'express'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 import { prisma } from '../services/database.js'
 
 const router = express.Router()
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '../public/images/site')
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+// Configure multer for site image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir)
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now()
+    const ext = path.extname(file.originalname)
+    const type = req.body.type || 'image'
+    const sanitizedType = type.replace(/[^a-zA-Z0-9]/g, '_')
+    cb(null, `${sanitizedType}_${timestamp}${ext}`)
+  }
+})
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Check if file is an image
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only image files are allowed'), false)
+    }
+  }
+})
 
 // Default site configuration
 const defaultConfig = {
@@ -176,6 +219,28 @@ router.put('/', async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating site config:', error)
     res.status(500).json({ error: 'Failed to update site configuration', details: error.message })
+  }
+})
+
+// POST /api/site-config/upload-image - Upload site images (logo, favicon, hero banner)
+router.post('/upload-image', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image file provided' })
+    }
+
+    const imageUrl = `/images/site/${req.file.filename}`
+
+    res.json({
+      success: true,
+      url: imageUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size
+    })
+  } catch (error) {
+    console.error('❌ Error uploading site image:', error)
+    res.status(500).json({ error: 'Failed to upload image', details: error.message })
   }
 })
 
