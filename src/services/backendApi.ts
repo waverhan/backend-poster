@@ -478,6 +478,32 @@ class BackendApiService {
     return urls
   }
 
+  // Site Image Upload
+  async uploadSiteImage(formData: FormData): Promise<{ url: string }> {
+    const url = `${API_BASE_URL}/site-config/upload-image`
+    const token = this.getAuthToken()
+
+    const headers: Record<string, string> = {}
+
+    // Add authorization header if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    return response.json()
+  }
+
   // Generic HTTP methods for use by stores
   async get<T>(endpoint: string): Promise<{ data: T }> {
     const data = await this.request<T>(endpoint)

@@ -41,23 +41,73 @@
                   placeholder="Brief description of your shop"
                 />
               </div>
+
+              <!-- Logo Upload -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
-                <input
-                  v-model="formData.logo_url"
-                  type="url"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="/logo.png"
-                />
+                <label class="block text-sm font-medium text-gray-700 mb-2">📸 Logo</label>
+                <div class="space-y-2">
+                  <div v-if="formData.logo_url" class="relative w-full h-24 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                    <img :src="formData.logo_url" alt="Logo preview" class="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div class="flex space-x-2">
+                    <button
+                      type="button"
+                      @click="triggerFileUpload('logo')"
+                      class="flex-1 px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      Choose Logo
+                    </button>
+                    <button
+                      v-if="formData.logo_url"
+                      type="button"
+                      @click="formData.logo_url = ''"
+                      class="px-3 py-2 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <input
+                    ref="logoFileInput"
+                    type="file"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleImageUpload('logo', $event)"
+                  />
+                </div>
               </div>
+
+              <!-- Favicon Upload -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Favicon URL</label>
-                <input
-                  v-model="formData.favicon_url"
-                  type="url"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="/favicon.ico"
-                />
+                <label class="block text-sm font-medium text-gray-700 mb-2">🔗 Favicon</label>
+                <div class="space-y-2">
+                  <div v-if="formData.favicon_url" class="relative w-full h-24 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                    <img :src="formData.favicon_url" alt="Favicon preview" class="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div class="flex space-x-2">
+                    <button
+                      type="button"
+                      @click="triggerFileUpload('favicon')"
+                      class="flex-1 px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      Choose Favicon
+                    </button>
+                    <button
+                      v-if="formData.favicon_url"
+                      type="button"
+                      @click="formData.favicon_url = ''"
+                      class="px-3 py-2 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <input
+                    ref="faviconFileInput"
+                    type="file"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleImageUpload('favicon', $event)"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -96,14 +146,39 @@
                     placeholder="keyword1, keyword2, keyword3"
                   />
                 </div>
+                <!-- Open Graph Image Upload -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Open Graph Image</label>
-                  <input
-                    v-model="formData.og_image_url"
-                    type="url"
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="/og-image.jpg"
-                  />
+                  <label class="block text-sm font-medium text-gray-700 mb-2">🖼️ Open Graph Image</label>
+                  <div class="space-y-2">
+                    <div v-if="formData.og_image_url" class="relative w-full h-24 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                      <img :src="formData.og_image_url" alt="OG image preview" class="max-h-full max-w-full object-contain" />
+                    </div>
+                    <div class="flex space-x-2">
+                      <button
+                        type="button"
+                        @click="triggerFileUpload('ogImage')"
+                        class="flex-1 px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        Choose OG Image
+                      </button>
+                      <button
+                        v-if="formData.og_image_url"
+                        type="button"
+                        @click="formData.og_image_url = ''"
+                        class="px-3 py-2 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <input
+                      ref="ogImageFileInput"
+                      type="file"
+                      accept="image/*"
+                      style="display: none"
+                      @change="handleImageUpload('ogImage', $event)"
+                    />
+                    <p class="text-xs text-gray-500">Recommended size: 1200x630px</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -180,14 +255,39 @@
                   placeholder="Subtitle or description under the main headline"
                 ></textarea>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Hero Banner URL</label>
-                <input
-                  v-model="formData.hero_banner_url"
-                  type="url"
-                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="/hero-banner.jpg"
-                />
+              <!-- Hero Banner Upload -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">🖼️ Hero Banner Image</label>
+                <div class="space-y-2">
+                  <div v-if="formData.hero_banner_url" class="relative w-full h-40 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                    <img :src="formData.hero_banner_url" alt="Hero banner preview" class="w-full h-full object-cover" />
+                  </div>
+                  <div class="flex space-x-2">
+                    <button
+                      type="button"
+                      @click="triggerFileUpload('heroBanner')"
+                      class="flex-1 px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      Choose Hero Banner
+                    </button>
+                    <button
+                      v-if="formData.hero_banner_url"
+                      type="button"
+                      @click="formData.hero_banner_url = ''"
+                      class="px-3 py-2 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <input
+                    ref="heroBannerFileInput"
+                    type="file"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleImageUpload('heroBanner', $event)"
+                  />
+                  <p class="text-xs text-gray-500">Recommended size: 1920x600px</p>
+                </div>
               </div>
             </div>
 
@@ -723,6 +823,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { useSiteConfigStore } from '@/stores/siteConfig'
+import { backendApi } from '@/services/backendApi'
 import type { SiteConfig } from '@/types'
 
 // Props & Emits
@@ -742,10 +843,63 @@ const siteConfigStore = useSiteConfigStore()
 // State
 const formData = ref<Partial<SiteConfig>>({})
 const isLoading = ref(false)
+const logoFileInput = ref<HTMLInputElement>()
+const faviconFileInput = ref<HTMLInputElement>()
+const heroBannerFileInput = ref<HTMLInputElement>()
+const ogImageFileInput = ref<HTMLInputElement>()
 
 // Methods
 const loadFormData = () => {
   formData.value = { ...siteConfigStore.currentConfig }
+}
+
+const triggerFileUpload = (type: 'logo' | 'favicon' | 'heroBanner' | 'ogImage') => {
+  if (type === 'logo') {
+    logoFileInput.value?.click()
+  } else if (type === 'favicon') {
+    faviconFileInput.value?.click()
+  } else if (type === 'heroBanner') {
+    heroBannerFileInput.value?.click()
+  } else if (type === 'ogImage') {
+    ogImageFileInput.value?.click()
+  }
+}
+
+const handleImageUpload = async (type: 'logo' | 'favicon' | 'heroBanner' | 'ogImage', event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  try {
+    isLoading.value = true
+
+    // Create FormData for file upload
+    const uploadFormData = new FormData()
+    uploadFormData.append('file', file)
+    uploadFormData.append('type', type)
+
+    // Upload to backend
+    const response = await backendApi.uploadSiteImage(uploadFormData)
+
+    // Update form data with the returned URL
+    if (type === 'logo') {
+      formData.value.logo_url = response.url
+    } else if (type === 'favicon') {
+      formData.value.favicon_url = response.url
+    } else if (type === 'heroBanner') {
+      formData.value.hero_banner_url = response.url
+    } else if (type === 'ogImage') {
+      formData.value.og_image_url = response.url
+    }
+  } catch (error) {
+    console.error('Failed to upload image:', error)
+    alert('Failed to upload image. Please try again.')
+  } finally {
+    isLoading.value = false
+    // Reset file input
+    if (target) target.value = ''
+  }
 }
 
 const handleSave = async () => {
