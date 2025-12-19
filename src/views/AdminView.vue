@@ -502,15 +502,39 @@
               </svg>
               <span>Bulk Edit ({{ selectedProducts.length }})</span>
             </button>
-            <button
-              @click="handleExportProducts"
-              class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>Export</span>
-            </button>
+            <div class="relative group">
+              <button
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Export</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </button>
+              <div class="absolute left-0 mt-0 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button
+                  @click="handleExportProducts('all')"
+                  class="w-full text-left px-4 py-2 hover:bg-gray-100 first:rounded-t-lg text-gray-800"
+                >
+                  📦 Export All Products
+                </button>
+                <button
+                  @click="handleExportProducts('available')"
+                  class="w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-800"
+                >
+                  ✅ Export Available Only
+                </button>
+                <button
+                  @click="handleExportProducts('in-stock')"
+                  class="w-full text-left px-4 py-2 hover:bg-gray-100 last:rounded-b-lg text-gray-800"
+                >
+                  📊 Export In Stock Only
+                </button>
+              </div>
+            </div>
             <button
               @click="triggerImportFile"
               class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
@@ -1768,13 +1792,23 @@ const toggleProductStatus = async (product: Product) => {
 // Export/Import methods
 const importFileInput = ref<HTMLInputElement>()
 
-const handleExportProducts = () => {
+const handleExportProducts = (filterType: 'all' | 'available' | 'in-stock' = 'all') => {
   try {
+    let productsToExport = products.value
+
+    // Apply filters
+    if (filterType === 'available') {
+      productsToExport = products.value.filter(p => p.is_active)
+    } else if (filterType === 'in-stock') {
+      productsToExport = products.value.filter(p => p.is_active && p.available && p.quantity > 0)
+    }
+
     const exportData = {
       version: '1.0',
       exportDate: new Date().toISOString(),
-      totalProducts: products.value.length,
-      products: products.value.map(product => ({
+      filterType: filterType,
+      totalProducts: productsToExport.length,
+      products: productsToExport.map(product => ({
         poster_product_id: product.poster_product_id,
         category_id: product.category_id,
         name: product.name,
@@ -1807,13 +1841,15 @@ const handleExportProducts = () => {
     const url = URL.createObjectURL(dataBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `products-export-${new Date().toISOString().split('T')[0]}.json`
+    const filterSuffix = filterType === 'all' ? '' : `-${filterType}`
+    link.download = `products-export${filterSuffix}-${new Date().toISOString().split('T')[0]}.json`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
 
-    syncStatus.value = { type: 'success', message: `Exported ${products.value.length} products successfully!` }
+    const filterLabel = filterType === 'all' ? 'all' : filterType === 'available' ? 'available' : 'in-stock'
+    syncStatus.value = { type: 'success', message: `Exported ${productsToExport.length} ${filterLabel} products successfully!` }
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Failed to export products.' }
   }
