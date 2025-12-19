@@ -223,18 +223,18 @@
               </div>
 
               <!-- Bundle Items (shown under bundle product) -->
-              <div v-if="item.is_bundle && item.bundle_items && item.bundle_items.length > 0" class="mt-3 ml-4 sm:ml-20 space-y-2">
-                <div class="text-xs text-gray-500 font-medium mb-2">{{ $t('cart.bundleIncludes') || 'Включає:' }}</div>
+              <div v-if="item.is_bundle && item.bundle_items && item.bundle_items.length > 0" class="mt-1 ml-4 sm:ml-20 space-y-0.5">
+                <div class="text-xs text-gray-500 font-medium mb-1">{{ $t('cart.bundleIncludes') || 'Включає:' }}</div>
                 <div
                   v-for="(bundleItem, idx) in item.bundle_items"
                   :key="`bundle-${item.cart_item_id}-${idx}`"
-                  class="flex items-center justify-between text-xs text-gray-600 py-1 px-2 bg-gray-50 rounded"
+                  class="flex items-center justify-between text-xs text-gray-600 py-0.5 px-1.5 bg-gray-50 rounded"
                 >
-                  <div class="flex items-center space-x-2">
+                  <div class="flex items-center space-x-1">
                     <span class="text-gray-400">•</span>
-                    <span>{{ bundleItem.name }}</span>
+                    <span class="truncate">{{ bundleItem.name }}</span>
                   </div>
-                  <span class="text-gray-500">{{ bundleItem.quantity }} {{ bundleItem.unit }}</span>
+                  <span class="text-gray-500 ml-1 flex-shrink-0">{{ bundleItem.quantity }}{{ bundleItem.unit }}</span>
                 </div>
               </div>
             </div>
