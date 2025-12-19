@@ -503,6 +503,31 @@
               <span>Bulk Edit ({{ selectedProducts.length }})</span>
             </button>
             <button
+              @click="handleExportProducts"
+              class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Export</span>
+            </button>
+            <button
+              @click="triggerImportFile"
+              class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 flex items-center space-x-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" />
+              </svg>
+              <span>Import</span>
+            </button>
+            <input
+              ref="importFileInput"
+              type="file"
+              accept=".json,.csv"
+              style="display: none"
+              @change="handleImportFile"
+            />
+            <button
               @click="openProductModal()"
               class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
             >
@@ -1737,6 +1762,117 @@ const toggleProductStatus = async (product: Product) => {
     await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
   } catch (error) {
     syncStatus.value = { type: 'error', message: 'Failed to update product status.' }
+  }
+}
+
+// Export/Import methods
+const importFileInput = ref<HTMLInputElement>()
+
+const handleExportProducts = () => {
+  try {
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      totalProducts: products.value.length,
+      products: products.value.map(product => ({
+        poster_product_id: product.poster_product_id,
+        category_id: product.category_id,
+        name: product.name,
+        display_name: product.display_name,
+        slug: product.slug,
+        description: product.description,
+        subtitle: product.subtitle,
+        price: product.price,
+        original_price: product.original_price,
+        image_url: product.image_url,
+        display_image_url: product.display_image_url,
+        is_active: product.is_active,
+        requires_bottles: product.requires_bottles,
+        is_new: product.is_new,
+        new_until: product.new_until,
+        sale_expires_at: product.sale_expires_at,
+        custom_quantity: product.custom_quantity,
+        custom_unit: product.custom_unit,
+        quantity_step: product.quantity_step,
+        min_quantity: product.min_quantity,
+        max_quantity: product.max_quantity,
+        attributes: product.attributes,
+        is_bundle: product.is_bundle,
+        bundle_items: product.bundle_items
+      }))
+    }
+
+    const dataStr = JSON.stringify(exportData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `products-export-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    syncStatus.value = { type: 'success', message: `Exported ${products.value.length} products successfully!` }
+  } catch (error) {
+    syncStatus.value = { type: 'error', message: 'Failed to export products.' }
+  }
+}
+
+const triggerImportFile = () => {
+  importFileInput.value?.click()
+}
+
+const handleImportFile = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  try {
+    isLoading.value = true
+    const fileContent = await file.text()
+    const importData = JSON.parse(fileContent)
+
+    if (!importData.products || !Array.isArray(importData.products)) {
+      throw new Error('Invalid file format. Expected products array.')
+    }
+
+    let successCount = 0
+    let errorCount = 0
+
+    for (const productData of importData.products) {
+      try {
+        // Check if product exists by poster_product_id
+        const existingProduct = products.value.find(p => p.poster_product_id === productData.poster_product_id)
+
+        if (existingProduct) {
+          // Update existing product
+          await backendApi.updateProduct(existingProduct.id, productData)
+          successCount++
+        } else {
+          // Create new product
+          await backendApi.createProduct(productData as Omit<Product, 'id' | 'created_at' | 'updated_at' | 'quantity' | 'unit' | 'available'>)
+          successCount++
+        }
+      } catch (error) {
+        errorCount++
+      }
+    }
+
+    // Refresh products
+    await productStore.fetchProducts(undefined, true, DEFAULT_BRANCH_ID)
+
+    syncStatus.value = {
+      type: 'success',
+      message: `Import completed! ${successCount} products processed${errorCount > 0 ? `, ${errorCount} failed` : ''}.`
+    }
+  } catch (error) {
+    syncStatus.value = { type: 'error', message: 'Failed to import products. Invalid file format.' }
+  } finally {
+    isLoading.value = false
+    // Reset file input
+    if (target) target.value = ''
   }
 }
 
