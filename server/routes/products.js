@@ -22,7 +22,47 @@ router.get('/admin/all', async (req, res) => {
       ]
     })
 
-    res.json(products)
+    // Format products with parsed attributes and bundle_items
+    const formattedProducts = products.map(product => ({
+      id: product.id,
+      poster_product_id: product.poster_product_id,
+      ingredient_id: product.ingredient_id,
+      category_id: product.category_id,
+      name: product.name,
+      display_name: product.display_name,
+      slug: product.slug,
+      subtitle: product.subtitle || '',
+      description: product.description || '',
+      price: product.price,
+      original_price: product.original_price,
+      image_url: product.image_url || '',
+      display_image_url: product.display_image_url || '',
+      sort_order: product.sort_order,
+      is_active: product.is_active,
+      requires_bottles: product.requires_bottles || false,
+      attributes: product.attributes ? JSON.parse(product.attributes) : [],
+      custom_quantity: product.custom_quantity,
+      custom_unit: product.custom_unit,
+      quantity_step: product.quantity_step,
+      min_quantity: product.min_quantity,
+      max_quantity: product.max_quantity,
+      is_new: product.is_new || false,
+      new_until: product.new_until ? product.new_until.toISOString() : null,
+      sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
+      is_bundle: product.is_bundle || false,
+      bundle_items: product.bundle_items ? JSON.parse(product.bundle_items) : [],
+      category_name: product.category?.display_name,
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        display_name: product.category.display_name,
+        slug: product.category.slug
+      } : null,
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString()
+    }))
+
+    res.json(formattedProducts)
   } catch (error) {
     console.error('Error fetching admin products:', error)
     res.status(500).json({ error: error.message || 'Failed to fetch products' })
@@ -69,11 +109,54 @@ router.get('/by-slug/:slug', async (req, res) => {
     const { branchId } = req.query
 
     const product = await prisma.product.findUnique({
-      where: { slug }
+      where: { slug },
+      include: {
+        category: true
+      }
     })
 
     if (!product) {
       return res.status(404).json({ error: 'Product not found' })
+    }
+
+    // Format product response with parsed attributes and bundle_items
+    const formattedProduct = {
+      id: product.id,
+      poster_product_id: product.poster_product_id,
+      ingredient_id: product.ingredient_id,
+      category_id: product.category_id,
+      name: product.name,
+      display_name: product.display_name,
+      slug: product.slug,
+      subtitle: product.subtitle || '',
+      description: product.description || '',
+      price: product.price,
+      original_price: product.original_price,
+      image_url: product.image_url || '',
+      display_image_url: product.display_image_url || '',
+      sort_order: product.sort_order,
+      is_active: product.is_active,
+      requires_bottles: product.requires_bottles || false,
+      attributes: product.attributes ? JSON.parse(product.attributes) : [],
+      custom_quantity: product.custom_quantity,
+      custom_unit: product.custom_unit,
+      quantity_step: product.quantity_step,
+      min_quantity: product.min_quantity,
+      max_quantity: product.max_quantity,
+      is_new: product.is_new || false,
+      new_until: product.new_until ? product.new_until.toISOString() : null,
+      sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
+      is_bundle: product.is_bundle || false,
+      bundle_items: product.bundle_items ? JSON.parse(product.bundle_items) : [],
+      category_name: product.category?.display_name,
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        display_name: product.category.display_name,
+        slug: product.category.slug
+      } : null,
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString()
     }
 
     // If branchId is provided, include inventory data
@@ -88,14 +171,19 @@ router.get('/by-slug/:slug', async (req, res) => {
       })
 
       return res.json({
-        ...product,
+        ...formattedProduct,
         quantity: inventory?.quantity || 0,
-        unit: inventory?.unit || 'p',
+        unit: inventory?.unit || 'pcs',
         available: (inventory?.quantity || 0) > 0
       })
     }
 
-    res.json(product)
+    res.json({
+      ...formattedProduct,
+      quantity: 0,
+      unit: 'pcs',
+      available: false
+    })
   } catch (error) {
     console.error(`❌ Error fetching product by slug ${req.params.slug}:`, error)
     res.status(500).json({ error: 'Failed to fetch product' })
@@ -109,14 +197,60 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params
 
     const product = await prisma.product.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        category: true
+      }
     })
 
     if (!product) {
       return res.status(404).json({ error: 'Product not found' })
     }
 
-    res.json(product)
+    // Format product response with parsed attributes and bundle_items
+    const formattedProduct = {
+      id: product.id,
+      poster_product_id: product.poster_product_id,
+      ingredient_id: product.ingredient_id,
+      category_id: product.category_id,
+      name: product.name,
+      display_name: product.display_name,
+      slug: product.slug,
+      subtitle: product.subtitle || '',
+      description: product.description || '',
+      price: product.price,
+      original_price: product.original_price,
+      image_url: product.image_url || '',
+      display_image_url: product.display_image_url || '',
+      sort_order: product.sort_order,
+      is_active: product.is_active,
+      requires_bottles: product.requires_bottles || false,
+      attributes: product.attributes ? JSON.parse(product.attributes) : [],
+      custom_quantity: product.custom_quantity,
+      custom_unit: product.custom_unit,
+      quantity_step: product.quantity_step,
+      min_quantity: product.min_quantity,
+      max_quantity: product.max_quantity,
+      is_new: product.is_new || false,
+      new_until: product.new_until ? product.new_until.toISOString() : null,
+      sale_expires_at: product.sale_expires_at ? product.sale_expires_at.toISOString() : null,
+      is_bundle: product.is_bundle || false,
+      bundle_items: product.bundle_items ? JSON.parse(product.bundle_items) : [],
+      category_name: product.category?.display_name,
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        display_name: product.category.display_name,
+        slug: product.category.slug
+      } : null,
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString(),
+      quantity: 0,
+      unit: 'pcs',
+      available: false
+    }
+
+    res.json(formattedProduct)
   } catch (error) {
     console.error(`❌ Error fetching product by ID ${req.params.id}:`, error)
     res.status(500).json({ error: 'Failed to fetch product' })
