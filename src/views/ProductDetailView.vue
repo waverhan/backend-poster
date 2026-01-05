@@ -702,6 +702,61 @@ const displayAttributes = computed(() => {
   return result
 })
 
+const sanitizeText = (value?: string | null): string => {
+  return (value || '').replace(/\s+/g, ' ').trim()
+}
+
+const truncateText = (value: string, maxLength = 165): string => {
+  if (value.length <= maxLength) return value
+  return value.slice(0, maxLength - 3).trimEnd() + '...'
+}
+
+const buildProductSeoMeta = (canonicalPath: string, ogImage?: string | null) => {
+  if (!product.value) return null
+
+  const name = sanitizeText(product.value.display_name || product.value.name || 'Товар')
+  const subtitle = sanitizeText(product.value.subtitle)
+  const rawDescription = sanitizeText(product.value.description)
+  const priceText = product.value.price ? `Ціна ${product.value.price.toFixed(2)}₴.` : ''
+
+  const description = truncateText([
+    rawDescription,
+    subtitle,
+    `Купити ${name} з доставкою по Києву.`,
+    priceText
+  ].filter(Boolean).join(' '))
+
+  const keywordSet = new Set<string>()
+  ;[
+    name,
+    sanitizeText(product.value.name),
+    sanitizeText(product.value.category_name || product.value.category?.name),
+    subtitle,
+    'купити',
+    'доставка Київ',
+    'Опілля'
+  ].forEach(keyword => {
+    const cleanKeyword = sanitizeText(keyword)
+    if (cleanKeyword) keywordSet.add(cleanKeyword)
+  })
+
+  const configKeywords = siteConfigStore.currentConfig.seo_keywords
+  if (configKeywords) {
+    configKeywords.split(',').forEach(keyword => {
+      const cleanKeyword = sanitizeText(keyword)
+      if (cleanKeyword) keywordSet.add(cleanKeyword)
+    })
+  }
+
+  return {
+    title: `Купити "${name}" в Києві | OpilliaSHOP`,
+    description: description || `Купити ${name} з доставкою по Києву`,
+    keywords: Array.from(keywordSet).join(', '),
+    canonicalPath,
+    ogImage: ogImage || undefined
+  }
+}
+
 // Add Google Rich Snippets structured data for SEO
 const addStructuredData = () => {
   if (!product.value) return
@@ -709,13 +764,16 @@ const addStructuredData = () => {
   const imageUrl = product.value.display_image_url ? backendApi.getImageUrl(product.value.display_image_url) : undefined
 
   const productSlugOrId = product.value.slug || product.value.id
+  const canonicalPath = `/product/${productSlugOrId}`
   const productUrl = absoluteUrl(`/product/${productSlugOrId}`)
+  const productSeo = buildProductSeoMeta(canonicalPath, imageUrl)
+  const descriptionForSchema = productSeo?.description || sanitizeText(product.value.description)
 
   const structuredData: Record<string, any> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.value.display_name,
-    description: product.value.description || '',
+    description: descriptionForSchema,
     image: imageUrl,
     sku: product.value.poster_product_id || product.value.id,
     mpn: product.value.id,
@@ -816,17 +874,16 @@ const addStructuredData = () => {
     }
   }
 
-  const productTitle = `Купити "${product.value.display_name}" в Києві | OpilliaSHOP`
-  const productDescription = `ᐉ Замовити "${product.value.display_name}" онлайн – купуйте з доставкою по Києву ☎ ${siteConfigStore.currentConfig.company_phone || '097 324 46 68'} ⚡ Доступні ціни ⚡ Акції і знижки ⭐ краща якість`
-  const canonicalPath = `/product/${productSlugOrId}`
-
-  updateSeoMeta({
-    title: productTitle,
-    description: productDescription,
-    canonical: canonicalPath,
-    ogType: 'product',
-    ogImage: imageUrl
-  })
+  if (productSeo) {
+    updateSeoMeta({
+      title: productSeo.title,
+      description: productSeo.description,
+      keywords: productSeo.keywords,
+      canonical: productSeo.canonicalPath,
+      ogType: 'product',
+      ogImage: productSeo.ogImage
+    })
+  }
 
   const breadcrumbItems = [
     { name: 'Головна', url: absoluteUrl('/') },

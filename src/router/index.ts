@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSiteConfigStore } from '@/stores/siteConfig'
 import { updateSeoMeta, removeStructuredData, appendStructuredData, buildBreadcrumbSchema, absoluteUrl } from '@/utils/seoUtils'
+import { backendApi } from '@/services/backendApi'
 
 // Prefetch critical routes on idle
 const prefetchRoute = (routeName: string) => {
@@ -10,6 +11,44 @@ const prefetchRoute = (routeName: string) => {
       router.getRoutes().find(r => r.name === routeName)
     })
   }
+}
+
+// Helper function to set product SEO meta tags
+const setProductSeoMeta = (product: any) => {
+  if (!product) return
+
+  const name = product.display_name || product.name || 'Товар'
+  const subtitle = product.subtitle || ''
+  const description = product.description || ''
+  const price = product.price ? `Ціна ${product.price.toFixed(2)}₴.` : ''
+
+  const metaDescription = [
+    description,
+    subtitle,
+    `Купити ${name} з доставкою по Києву.`,
+    price
+  ].filter(Boolean).join(' ').substring(0, 160)
+
+  const keywords = [
+    name,
+    product.name,
+    product.category_name || product.category?.name,
+    subtitle,
+    'купити',
+    'доставка Київ',
+    'Опілля'
+  ].filter(Boolean).join(', ')
+
+  const imageUrl = product.display_image_url ? backendApi.getImageUrl(product.display_image_url) : undefined
+
+  updateSeoMeta({
+    title: `Купити "${name}" в Києві | OpilliaSHOP`,
+    description: metaDescription,
+    keywords: keywords,
+    canonical: `/product/${product.slug || product.id}`,
+    ogType: 'product',
+    ogImage: imageUrl
+  })
 }
 
 const router = createRouter({
@@ -338,6 +377,20 @@ router.beforeEach(async (to, from, next) => {
   // Set page title
   if (to.meta.title) {
     document.title = to.meta.title as string
+  }
+
+  // Preload product data and set SEO meta tags for product detail pages
+  if (to.name === 'product-detail') {
+    try {
+      const productId = to.params.id as string
+      const product = await backendApi.getProduct(productId)
+      if (product) {
+        setProductSeoMeta(product)
+      }
+    } catch (error) {
+      console.error('Failed to preload product for SEO:', error)
+      // Continue anyway - the component will handle loading
+    }
   }
 
   // Handle homepage redirect based on configuration
