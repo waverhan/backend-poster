@@ -138,9 +138,9 @@
         </div>
 
         <!-- Product Attributes -->
-        <div v-if="displayAttributes && displayAttributes.length > 0">
+        <div v-if="displayAttributes && displayAttributes.length > 0" class="space-y-3">
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Характеристики</h3>
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div
               v-for="attribute in displayAttributes"
               :key="attribute.name"
@@ -151,7 +151,7 @@
                 class="text-base font-bold"
                 :class="attribute.color === 'orange' ? 'text-primary-600' : 'text-gray-900'"
               >
-                {{ attribute.value }}{{ attribute.unit }}
+                {{ attribute.value }}<span v-if="attribute.unit" class="text-sm">{{ attribute.unit }}</span>
               </div>
               <div v-if="attribute.color === 'orange'" class="w-full h-1 bg-primary-600 rounded mt-1"></div>
             </div>
@@ -159,9 +159,9 @@
         </div>
 
         <!-- Description -->
-        <div v-if="displayDescription">
+        <div v-if="displayDescription" class="space-y-3">
           <h3 class="text-lg font-semibold text-gray-900 mb-3">Опис</h3>
-          <div class="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+          <div class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap break-words">
             <span v-if="!isLongDescription || showFullDescription">{{ displayDescription }}</span>
             <span v-else>{{ truncatedDescription }}</span>
           </div>
@@ -674,29 +674,68 @@ const displayAttributes = computed(() => {
   const result = []
 
   attrs.forEach(attr => {
-    // Show ABV, IBU, and OG with orange color
-    if (attr.name === 'ABV' && attr.value && parseFloat(attr.value) > 0) {
-      result.push({
-        name: 'Міцність',
-        value: attr.value,
-        unit: attr.unit || '%',
-        color: 'orange'
-      })
-    } else if (attr.name === 'IBU' && attr.value && parseInt(attr.value) > 0) {
-      result.push({
-        name: 'Гіркота',
-        value: attr.value,
-        unit: ' IBU',
-        color: 'orange'
-      })
-    } else if (attr.name === 'OG' && attr.value && parseFloat(attr.value) > 0) {
-      result.push({
-        name: 'Щільність',
-        value: attr.value,
-        unit: attr.unit || '%',
-        color: 'orange'
-      })
+    // Skip internal/system attributes that shouldn't be displayed
+    const skipAttributes = ['untappd_url', 'untappd_rating', 'untappd_rating_count', 'style', 'brewery']
+    if (skipAttributes.includes(attr.name?.toLowerCase())) {
+      return
     }
+
+    // Map attribute names to Ukrainian display names
+    const attributeNameMap: Record<string, string> = {
+      'ABV': 'Міцність',
+      'IBU': 'Гіркота',
+      'OG': 'Щільність',
+      'EBC': 'Колір',
+      'Style': 'Стиль',
+      'Brewery': 'Пивоварня',
+      'Country': 'Країна',
+      'Volume': 'Об\'єм',
+      'Type': 'Тип'
+    }
+
+    // Skip if no value
+    if (!attr.value) return
+
+    // Determine if this is a key attribute (ABV, IBU, OG) that should be highlighted
+    const isKeyAttribute = attr.name === 'ABV' || attr.name === 'IBU' || attr.name === 'OG'
+    const isKeyAttributeUkrainian = attr.name === 'Міцність' || attr.name === 'Гіркота' || attr.name === 'Щільність'
+
+    // Get display name
+    const displayName = attributeNameMap[attr.name] || attr.name
+
+    // Determine color and unit
+    let color = 'gray'
+    let unit = attr.unit || ''
+
+    if (attr.name === 'ABV' || attr.name === 'Міцність') {
+      if (parseFloat(attr.value) > 0) {
+        color = 'orange'
+        unit = attr.unit || '%'
+      } else {
+        return
+      }
+    } else if (attr.name === 'IBU' || attr.name === 'Гіркота') {
+      if (parseInt(attr.value) > 0) {
+        color = 'orange'
+        unit = attr.unit || ' IBU'
+      } else {
+        return
+      }
+    } else if (attr.name === 'OG' || attr.name === 'Щільність') {
+      if (parseFloat(attr.value) > 0) {
+        color = 'orange'
+        unit = attr.unit || '%'
+      } else {
+        return
+      }
+    }
+
+    result.push({
+      name: displayName,
+      value: attr.value,
+      unit: unit,
+      color: color
+    })
   })
 
   return result

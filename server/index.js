@@ -31,6 +31,7 @@ import notFoundErrorsRouter from './routes/notFoundErrors.js'
 import discountsRouter from './routes/discounts.js'
 import geocodingRouter from './routes/geocoding.js'
 import fixBundleRouter from './routes/fix-bundle.js'
+import updateProductsRouter from './routes/update-products.js'
 import './scripts/setup-cron.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -219,6 +220,7 @@ app.use('/api/404-errors', notFoundErrorsRouter)
 app.use('/api/discounts', discountsRouter)
 app.use('/api/geocoding', geocodingRouter)
 app.use('/api/fix-bundle', fixBundleRouter)
+app.use('/api/update-products', updateProductsRouter)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

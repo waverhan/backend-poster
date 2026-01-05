@@ -30,6 +30,7 @@ model Category {
 model Product {
   id                String             @id @default(cuid())
   poster_product_id String?            @unique
+  google_shopping_id String?           @unique // Google Shopping ID for product matching
   ingredient_id     String?
   category_id       String
   name              String
