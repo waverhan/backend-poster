@@ -423,3 +423,4 @@ server/public/images/banners/*
 # PWA POS Shop - License and Security
 *.license
 api-keys.json
+opillia-next/

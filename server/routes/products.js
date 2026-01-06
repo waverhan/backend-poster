@@ -108,6 +108,7 @@ router.get('/by-slug/:slug', async (req, res) => {
     const { slug } = req.params
     const { branchId } = req.query
 
+    console.log(`🔍 [Backend] Fetching product by slug: "${slug}"`)
     const product = await prisma.product.findUnique({
       where: { slug },
       include: {
@@ -116,6 +117,7 @@ router.get('/by-slug/:slug', async (req, res) => {
     })
 
     if (!product) {
+      console.log(`❌ [Backend] Product not found for slug: "${slug}"`)
       return res.status(404).json({ error: 'Product not found' })
     }
 
@@ -158,6 +160,8 @@ router.get('/by-slug/:slug', async (req, res) => {
       created_at: product.created_at.toISOString(),
       updated_at: product.updated_at.toISOString()
     }
+
+    console.log(`✅ [Backend] Found product: "${product.display_name}" (ID: ${product.id})`)
 
     // If branchId is provided, include inventory data
     if (branchId) {
@@ -261,22 +265,23 @@ router.get('/:id', async (req, res) => {
 // MUST be before /:id route to avoid route matching issues
 router.post('/generate-slugs', async (req, res) => {
   try {
-    
+
 
     // Get all products
     const products = await prisma.product.findMany()
 
-    
+
 
     let updated = 0
     for (const product of products) {
-      const slug = generateSlug(product.display_name)
-      if (slug && (!product.slug || product.slug === '')) {
+      const generatedSlug = generateSlug(product.display_name)
+      // Update if slug is missing OR if it doesn't match the display name (renamed in Poster)
+      if (generatedSlug && product.slug !== generatedSlug) {
         await prisma.product.update({
           where: { id: product.id },
-          data: { slug }
+          data: { slug: generatedSlug }
         })
-        
+
         updated++
       }
     }
@@ -403,7 +408,7 @@ router.put('/:id', async (req, res) => {
       updated_at: product.updated_at.toISOString()
     }
 
-    
+
     res.json(formattedProduct)
   } catch (error) {
     console.error(`❌ Error updating product ${req.params.id}:`, error)
@@ -433,7 +438,7 @@ router.put('/:id', async (req, res) => {
 router.get('/:id/inventory/:branchId', async (req, res) => {
   try {
     const { id: productId, branchId } = req.params
-    
+
 
     // Check if product exists
     const product = await prisma.product.findUnique({
@@ -501,7 +506,7 @@ router.get('/:id/inventory/:branchId', async (req, res) => {
 router.get('/:id/availability/:branchId', async (req, res) => {
   try {
     const { id: productId, branchId } = req.params
-    
+
 
     // Check if product exists
     const product = await prisma.product.findUnique({
@@ -655,7 +660,7 @@ router.put('/:id/slug', async (req, res) => {
 // POST /api/products/bulk-edit - Bulk edit multiple products
 router.post('/bulk-edit', async (req, res) => {
   try {
-    
+
 
     const { productIds, updates } = req.body
 
@@ -828,7 +833,7 @@ router.post('/bulk-edit', async (req, res) => {
       }
     }
 
-    
+
 
     res.json({
       success: true,
@@ -853,7 +858,7 @@ router.post('/bulk-edit', async (req, res) => {
 // POST /api/products/fix-weight-quantity-steps - Fix quantity_step for weight-based products
 router.post('/fix-weight-quantity-steps', async (req, res) => {
   try {
-    
+
 
     // Get all weight-based products (products with custom_quantity)
     const weightBasedProducts = await prisma.product.findMany({
@@ -880,7 +885,7 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
       }
     })
 
-    
+
 
     let updatedCount = 0
     const results = []
@@ -888,7 +893,7 @@ router.post('/fix-weight-quantity-steps', async (req, res) => {
     for (const product of weightBasedProducts) {
       // For weight-based products, quantity_step should always be 1 (representing 1 piece)
       if (product.quantity_step !== 1) {
-        
+
 
         await prisma.product.update({
           where: { id: product.id },
@@ -942,7 +947,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
       return res.status(400).json({ error: 'Updates array is required' })
     }
 
-    
+
 
     const results = []
 
@@ -966,7 +971,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
           }
         })
 
-        
+
 
         for (const product of products) {
           if (removeAttributes) {
@@ -983,7 +988,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
               success: true
             })
 
-            
+
           } else if (attributes && Array.isArray(attributes)) {
             // Add/update attributes
             await prisma.product.update({
@@ -999,7 +1004,7 @@ router.post('/bulk-update-attributes', async (req, res) => {
               success: true
             })
 
-            
+
           }
         }
 

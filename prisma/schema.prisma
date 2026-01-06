@@ -11,15 +11,20 @@ datasource db {
 }
 
 model Category {
-  id           String    @id @default(cuid())
-  name         String
-  display_name String
-  description  String?
-  image_url    String?
-  sort_order   Int       @default(0)
-  is_active    Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  poster_category_id   String?   @unique // Link to Poster POS category
+  name                 String
+  display_name         String
+  slug                 String?   @unique
+  description          String?
+  image_url            String?
+  sort_order           Int       @default(0)
+  is_active            Boolean   @default(true)
+  seo_title            String?
+  seo_meta_description String?
+  seo_content          String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
   // Relations
   products     Product[]
@@ -34,6 +39,8 @@ model Product {
   category_id       String
   name              String
   display_name      String
+  slug              String?  @unique
+  subtitle          String?
   description       String?
   price             Float
   original_price    Float?   // For discounts
@@ -52,6 +59,11 @@ model Product {
   quantity_step     Float?   // Step for quantity increase (e.g., 0.5 for beer, 0.05 for snacks)
   min_quantity      Float?   // Minimum order quantity
   max_quantity      Float?   // Maximum order quantity
+  
+  // Bundle/Gift Set features
+  is_bundle         Boolean  @default(false)
+  bundle_items      String?  // JSON string for bundle items
+
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 

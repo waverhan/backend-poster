@@ -1225,6 +1225,7 @@ watch(product, (newProduct) => {
 onMounted(async () => {
   try {
     const productIdOrSlug = route.params.id as string
+    console.log('🔍 [ProductDetailView] Mounted with ID:', productIdOrSlug)
 
     // Ensure branches are loaded
     if (branchStore.branches.length === 0) {
@@ -1252,6 +1253,7 @@ onMounted(async () => {
     // Try to find product in store first (by slug or ID)
     const existingProduct = productStore.productBySlugOrId(productIdOrSlug)
     if (existingProduct) {
+      console.log('✅ [ProductDetailView] Found in store cache:', existingProduct.display_name, 'ID:', existingProduct.id, 'Slug:', existingProduct.slug)
       product.value = existingProduct
       // Load combined rating and add structured data after product is loaded
       await loadCombinedRating()
@@ -1265,6 +1267,7 @@ onMounted(async () => {
     // If not found in store, fetch from API with branch inventory data
     const fetchedProduct = await productStore.fetchProduct(productIdOrSlug, currentBranchId)
     if (fetchedProduct) {
+      console.log('✅ [ProductDetailView] Fetched from API:', fetchedProduct.display_name, 'ID:', fetchedProduct.id, 'Slug:', fetchedProduct.slug)
       product.value = fetchedProduct
       // Load combined rating and add structured data after product is loaded
       await loadCombinedRating()

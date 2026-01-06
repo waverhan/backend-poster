@@ -62,12 +62,23 @@ export const useProductStore = defineStore('product', () => {
 
   const productBySlugOrId = computed(() => {
     return (slugOrId: string) => {
+      console.log('🧐 [ProductStore] productBySlugOrId lookup for:', slugOrId)
       // First try to find by slug
       const bySlug = products.value.find(product => product.slug === slugOrId)
-      if (bySlug) return bySlug
+      if (bySlug) {
+        console.log('🎯 [ProductStore] Match found by slug:', bySlug.display_name)
+        return bySlug
+      }
 
       // Then try to find by ID (for backward compatibility)
-      return products.value.find(product => product.id === slugOrId)
+      const byId = products.value.find(product => product.id === slugOrId)
+      if (byId) {
+        console.log('🎯 [ProductStore] Match found by ID:', byId.display_name)
+        return byId
+      }
+
+      console.log('❌ [ProductStore] No match found for:', slugOrId)
+      return undefined
     }
   })
 
@@ -106,17 +117,17 @@ export const useProductStore = defineStore('product', () => {
   const fetchCategories = async (force = false, useDatabase = true, includeInactive = false) => {
     // If already loading, wait for it to complete and return the loaded categories
     if (isLoading.value) {
-      
+
       // Wait for loading to complete
       while (isLoading.value) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
-      
+
       return categories.value
     }
 
     if (!force && categories.value.length > 0 && !isDataStale.value && !includeInactive) {
-      
+
       return categories.value
     }
 
@@ -127,14 +138,14 @@ export const useProductStore = defineStore('product', () => {
       let fetchedCategories: Category[] = []
 
       if (useDatabase) {
-        
+
         fetchedCategories = await backendApi.getCategories(includeInactive)
-        
-        
+
+
       } else {
-        
+
         fetchedCategories = await posterApi.getCategories()
-        
+
       }
 
       // Validate response is an array
@@ -145,7 +156,7 @@ export const useProductStore = defineStore('product', () => {
 
       // Only filter by is_active if not explicitly including inactive items
       const filtered = includeInactive ? fetchedCategories : fetchedCategories.filter(category => category.is_active)
-      
+
       categories.value = filtered
 
       lastFetched.value = new Date()
@@ -167,7 +178,7 @@ export const useProductStore = defineStore('product', () => {
         if (stored) {
           const data = JSON.parse(stored)
           if (data.categories && Array.isArray(data.categories) && data.categories.length > 0) {
-            
+
             restoredCategories = data.categories
           }
         }
@@ -188,7 +199,7 @@ export const useProductStore = defineStore('product', () => {
         try {
           const posterCategories = await posterApi.getCategories()
           if (Array.isArray(posterCategories) && posterCategories.length > 0) {
-            
+
             const filtered = includeInactive ? posterCategories : posterCategories.filter(category => category.is_active)
             categories.value = filtered
             error.value = null // Clear error since we have fallback data
@@ -211,12 +222,12 @@ export const useProductStore = defineStore('product', () => {
   const fetchProducts = async (categoryId?: string, force = false, branchId?: string, useDatabase = true, includeInactive = false) => {
     // If already loading, wait for it to complete and return the loaded products
     if (isLoading.value) {
-      
+
       // Wait for loading to complete
       while (isLoading.value) {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
-      
+
       return products.value
     }
 
@@ -226,12 +237,12 @@ export const useProductStore = defineStore('product', () => {
         // Check if we have products for this specific category
         const categoryProducts = products.value.filter(p => String(p.category_id) === String(categoryId))
         if (categoryProducts.length > 0) {
-          
+
           return categoryProducts
         }
       } else if (products.value.length > 0) {
         // No category specified, return all cached products
-        
+
         return products.value
       }
     }
@@ -270,7 +281,7 @@ export const useProductStore = defineStore('product', () => {
         products.value = products.value.filter(p => String(p.category_id) !== String(categoryId))
         // Add the new products for this category
         products.value.push(...fetchedProducts)
-        
+
       } else {
         // Replace all products when no specific category
         products.value = fetchedProducts
@@ -292,7 +303,7 @@ export const useProductStore = defineStore('product', () => {
           try {
             const data = JSON.parse(stored)
             if (data.products && Array.isArray(data.products) && data.products.length > 0) {
-              
+
               products.value = data.products
               error.value = null // Clear error since we have fallback data
               return products.value
@@ -363,17 +374,22 @@ export const useProductStore = defineStore('product', () => {
       let product: Product | null = null
 
       // Try to fetch from backend API first (supports both ID and slug)
+      console.log('🌐 [ProductStore] Fetching from API:', productIdOrSlug)
       try {
         // First try as slug
         product = await backendApi.getProductBySlug(productIdOrSlug, branchId)
+        console.log('✅ [ProductStore] API Response (Slug):', product?.display_name)
       } catch (slugErr) {
+        console.log('ℹ️ [ProductStore] Slug fetch failed, trying ID...')
         // If slug lookup fails, try as ID
         try {
           product = await backendApi.getProduct(productIdOrSlug, branchId)
+          console.log('✅ [ProductStore] API Response (ID):', product?.display_name)
         } catch (idErr) {
           // If both fail, try Poster API as fallback
-          console.warn('⚠️ Backend API failed, trying Poster API as fallback')
+          console.warn('⚠️ [ProductStore] Backend API failed, trying Poster API as fallback')
           product = await posterApi.getProduct(productIdOrSlug)
+          console.log('✅ [ProductStore] Poster API Response:', product?.display_name)
         }
       }
 
@@ -496,7 +512,7 @@ export const useProductStore = defineStore('product', () => {
     localStorage.removeItem('pwa-pos-products')
     localStorage.removeItem('pwa-pos-categories')
     localStorage.removeItem('pwa-pos-selected-category')
-    
+
   }
 
   // Persistence
@@ -526,7 +542,7 @@ export const useProductStore = defineStore('product', () => {
 
         // Check if cache version matches - if not, skip loading old cache
         if (productData.version !== CACHE_VERSION) {
-          
+
           localStorage.removeItem('pwa-pos-products')
           return
         }
